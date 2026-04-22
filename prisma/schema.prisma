@@ -12,4 +12,165 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  
 }
+// definition des enums
+
+enum TaskStatut {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// definition des differents models qui sont les tables du projet
+model User {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  Username  String      @unique
+  avatarUrl String?
+
+  //metadonnees
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+
+
+//relations
+
+  projects          Project[]
+  assignedTasks     Task[]
+  comments          Comment[]
+  projectMembers     ProjectMember[]
+
+//index
+
+  @@map("users")
+} 
+
+
+      //le modele project
+
+model Project {
+  id String @default(uuid())
+  name String
+  description String?
+  color String @default("#2E5F9C")
+  isArchived Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ownerId String
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  tasks Task[]
+  members ProjectMember []
+
+  @@index([ownerId])
+  @@map("projects")
+}
+
+    //le modele task
+
+model Task {
+  id String @id @default(uuid())
+  title String
+  description String?
+  status TaskStatut @default(TODO)
+  priority Priority @default(MEDIUM)
+  dueDate DateTime?
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assigneedId String?
+  assignee User?  @relation(fields: [assigneedId], onDelete: SetNull, references: [id])
+
+  comments Comment[]
+  
+  categories Category[] @relation("TaskCategories")
+  @@index([projectId])
+  @@index([assigneedId])
+  @@index([status])
+  @@map("tasks")
+}
+
+      //le model Category et la relation N-N
+
+
+model Category {
+  id String @id @default(uuid())
+  name String @unique
+  color String @default("#666666")
+
+  tasks Task[] @relation("TaskCategories")
+
+  @@map("categories")
+}
+
+// la table de jonction explicite projectmembers
+
+
+model ProjectMember {
+  id String @id @default(uuid())
+  role ProjectRole @default(MEMBER)
+  joindAt DateTime @default(now())
+
+//cle etrangeres
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+//contrainte d;unicite
+
+  @@unique([userId , projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("projext_members")
+}
+
+
+    // le modele comment
+
+model Comment {
+  id String @id @default(uuid())
+  content String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  taskId String
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  @@index([taskId])
+  @@index([authorId])
+  @@map("comments")
+} 
+
+
+
+
