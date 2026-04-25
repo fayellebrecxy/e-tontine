@@ -69,7 +69,7 @@ model User {
       //le modele project
 
 model Project {
-  id String @default(uuid())
+  id String @id @default(uuid())
   name String
   description String?
   color String @default("#2E5F9C")
