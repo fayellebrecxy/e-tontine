@@ -15,162 +15,125 @@ datasource db {
   directUrl = env("DIRECT_URL")
   
 }
-// definition des enums
 
-enum TaskStatut {
-  TODO
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
-  CANCELLED
-}
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
 
-enum ProjectRole {
-  OWNER
+enum Role {
   ADMIN
-  MEMBER
-  VIEWER
+  MEMBRE
+  UTILISATEUR
 }
 
-// definition des differents models qui sont les tables du projet
+enum StatutAdhesion {
+  ACTIF
+  INACTIF
+  EN_ATTENTE
+}
+
+enum StatutVisuel {
+  EN_LIGNE
+  HORS_LIGNE
+}
+
+// --- MODELES ---
+
 model User {
-  id        String      @id @default(uuid())
-  email     String      @unique
-  Username  String      @unique
-  avatarUrl String?
-
-  //metadonnees
-
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-
-
-//relations
-
-  projects          Project[]
-  assignedTasks     Task[]
-  comments          Comment[]
-  projectMembers     ProjectMember[]
-
-//index
+  id_user         String            @id @default(uuid())
+  nom             String
+  prenom          String
+  email           String         @unique
+  telephone       String         @unique
+  mot_de_passe    String
+  photo_de_profil String?
+  nom_groupe      String?
+  role            Role           @default(UTILISATEUR)
+  statut_adhesion StatutAdhesion @default(EN_ATTENTE)
+  date_adhesion   DateTime       @default(now())
+  date_depart     DateTime?
+  statut_visuel   StatutVisuel   @default(HORS_LIGNE)
+  
+  // Relations
+  cotisations     Cotisations[]
+  penalites       Penalite[]
+  groupes         Groupes[] @relation("UserGroupe")
 
   @@map("users")
-} 
-
-
-      //le modele project
-
-model Project {
-  id String @default(uuid())
-  name String
-  description String?
-  color String @default("#2E5F9C")
-  isArchived Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ownerId String
-
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  tasks Task[]
-  members ProjectMember []
-
-  @@index([ownerId])
-  @@map("projects")
 }
 
-    //le modele task
 
-model Task {
-  id String @id @default(uuid())
-  title String
-  description String?
-  status TaskStatut @default(TODO)
-  priority Priority @default(MEDIUM)
-  dueDate DateTime?
-  position Int @default(0)
+model Groupes {
+  id_groupe        String         @id @default(uuid())
+  nom              String
+  description      String?
+  devise           String         @default("XAF")
+  lien_invitation  String?        @unique
+  date_de_creation DateTime       @default(now())
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Relations
 
-  projectId String
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycles           CycleTontine[]
+  user             User[] @relation("UserGroupe")   
 
-  assigneedId String?
-  assignee User?  @relation(fields: [assigneedId], onDelete: SetNull, references: [id])
+  @@map("groupes")
+}
 
-  comments Comment[]
+
+model CycleTontine {
+  id_cycle           String           @id @default(uuid())
+  nom_cycle          String
+  date_debut         DateTime         @default(now())
+  date_fin           DateTime
+  duree_tour_de_gain Int
+  ordre_beneficiaire String?
   
-  categories Category[] @relation("TaskCategories")
-  @@index([projectId])
-  @@index([assigneedId])
-  @@index([status])
-  @@map("tasks")
-}
+  id_groupe          String
+  groupe             Groupes        @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  cotisations        Cotisations[]
 
-      //le model Category et la relation N-N
-
-
-model Category {
-  id String @id @default(uuid())
-  name String @unique
-  color String @default("#666666")
-
-  tasks Task[] @relation("TaskCategories")
-
-  @@map("categories")
-}
-
-// la table de jonction explicite projectmembers
-
-
-model ProjectMember {
-  id String @id @default(uuid())
-  role ProjectRole @default(MEMBER)
-  joindAt DateTime @default(now())
-
-//cle etrangeres
-
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-//contrainte d;unicite
-
-  @@unique([userId , projectId])
-  @@index([userId])
-  @@index([projectId])
-  @@map("projext_members")
+  @@index([id_groupe])
+  @@map("cycles_tontine")
 }
 
 
-    // le modele comment
+model Cotisations {
+  id_cotisation      String           @id @default(uuid())
+  date_debut         DateTime
+  montant            Decimal       @db.Decimal(15, 2)
+  date_de_paiement   DateTime?
+  penalite_appliquee Boolean       @default(false)
+  montant_penalite   Decimal?      @db.Decimal(15, 2)
 
-model Comment {
-  id String @id @default(uuid())
-  content String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id_user            String
+  user               User          @relation(fields: [id_user],references: [id_user])
+  id_cycle           String
+  cycle              CycleTontine  @relation(fields: [id_cycle], references: [id_cycle])
 
-  taskId String
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  penalite          Penalite[]
+  Penalite         Penalite[]   @relation("PenaliteCotisations")
 
-  authorId String
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  @@index([taskId])
-  @@index([authorId])
-  @@map("comments")
-} 
+  @@index([id_cycle])
+  @@map("cotisations")
+}
 
 
+model Penalite {
+  id_penalite              String       @id @default(uuid())
+  montant_base             Decimal      @db.Decimal(15, 2)
+  motif                    String
+  taux_augmentation_heure  Decimal     @db.Decimal(5, 2)
+  seuil_heure_augmentation Int
+  date_application         DateTime
+  montant_final            Decimal     @db.Decimal(15, 2)
+
+  // Relations
+  id_user                  String
+  user                     User        @relation(fields: [id_user], references: [id_user])
+  id_cotisation            String
+  cotisations              Cotisations @relation(fields: [id_cotisation], references: [id_cotisation])
+  Cotisations              Cotisations[] @relation("PenaliteCotisations")
+
+  @@index([id_user])
+  @@map("penalites")
+}
 
 
