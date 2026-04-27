@@ -99,7 +99,7 @@ model Cotisations {
   id_cotisation      String           @id @default(uuid())
   date_debut         DateTime
   montant            Decimal       @db.Decimal(15, 2)
-  date_de_paiement   DateTime?
+  date_de_paiement   DateTime
   penalite_appliquee Boolean       @default(false)
   montant_penalite   Decimal?      @db.Decimal(15, 2)
 
