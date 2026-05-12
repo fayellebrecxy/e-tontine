@@ -27,7 +27,7 @@ export function RegisterForm() {
   const router = useRouter();
   const form = useForm<Values>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: "", password: "", displayName: "" },
+    defaultValues: { nom: "", prenom: "", telephone: "", email: "", password: "" },
   });
 
   const [pending, startTransition] = React.useTransition();
@@ -39,7 +39,7 @@ export function RegisterForm() {
         toast.error(res.error);
         return;
       }
-      toast.success("Account created!");
+      toast.success(res.message ?? "Compte créé.");
       router.push(res.redirectTo);
       router.refresh();
     });
@@ -50,12 +50,12 @@ export function RegisterForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="email"
+          name="nom"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Nom</FormLabel>
               <FormControl>
-                <Input placeholder="you@example.com" type="email" autoComplete="email" {...field} />
+                <Input placeholder="Tedom" autoComplete="family-name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -63,12 +63,38 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
-          name="displayName"
+          name="prenom"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Display name (optional)</FormLabel>
+              <FormLabel>Prénom</FormLabel>
               <FormControl>
-                <Input placeholder="Jane" autoComplete="nickname" {...field} />
+                <Input placeholder="Dimitri" autoComplete="given-name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="telephone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Téléphone</FormLabel>
+              <FormControl>
+                <Input placeholder="+237 6 00 00 00 00" type="tel" autoComplete="tel" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -94,13 +120,13 @@ export function RegisterForm() {
         />
 
         <Button className="w-full" type="submit" disabled={pending}>
-          {pending ? "Creating account..." : "Create account"}
+          {pending ? "Création..." : "Créer le compte"}
         </Button>
 
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Déjà un compte ?{" "}
           <Link href="/auth/login" className="text-foreground underline underline-offset-4">
-            Log in
+            Se connecter
           </Link>
           .
         </p>

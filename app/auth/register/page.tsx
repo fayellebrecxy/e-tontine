@@ -5,8 +5,8 @@ export default function RegisterPage() {
   return (
     <div className="flex justify-center">
       <AuthCard
-        title="Create your account"
-        description="Email/password sign-up backed by Supabase Auth."
+        title="Créer un compte"
+        description="Ton compte donne accès à tes groupes de tontine."
       >
         <RegisterForm />
       </AuthCard>

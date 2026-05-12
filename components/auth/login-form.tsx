@@ -42,7 +42,7 @@ export function LoginForm() {
         toast.error(res.error);
         return;
       }
-      toast.success("Welcome back!");
+      toast.success("Bienvenue !");
       router.push(res.redirectTo);
       router.refresh();
     });
@@ -58,7 +58,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="you@example.com" type="email" autoComplete="email" {...field} />
+                <Input placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -84,15 +84,20 @@ export function LoginForm() {
         />
 
         <Button className="w-full" type="submit" disabled={pending}>
-          {pending ? "Signing in..." : "Sign in"}
+          {pending ? "Connexion..." : "Se connecter"}
         </Button>
 
         <p className="text-sm text-muted-foreground">
-          No account?{" "}
+          Pas encore de compte ?{" "}
           <Link href="/auth/register" className="text-foreground underline underline-offset-4">
-            Create one
+            Créer un compte
           </Link>
           .
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/auth/reset-password" className="text-foreground underline underline-offset-4">
+            Mot de passe oublié ?
+          </Link>
         </p>
       </form>
     </Form>
