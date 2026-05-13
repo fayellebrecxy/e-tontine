@@ -54,7 +54,9 @@ export async function signInAction(
   return { ok: true as const, redirectTo: normalizeNextPath(input.next) };
 }
 
-export async function signUpAction(input: z.infer<typeof signUpSchema>): Promise<AuthActionResult> {
+export async function signUpAction(
+  input: z.infer<typeof signUpSchema> & { next?: string },
+): Promise<AuthActionResult> {
   const parsed = signUpSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: "Invalid input." };
@@ -74,11 +76,12 @@ export async function signUpAction(input: z.infer<typeof signUpSchema>): Promise
   }
 
   const origin = await getOrigin();
+  const nextPath = normalizeNextPath(input.next);
   const { data, error } = await supabase.auth.signUp({
     email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       data: {
         nom: normalizeName(parsed.data.nom),
         prenom: normalizeName(parsed.data.prenom),
@@ -113,7 +116,7 @@ export async function signUpAction(input: z.infer<typeof signUpSchema>): Promise
 
   return {
     ok: true as const,
-    redirectTo: data.session ? "/dashboard" : "/auth/login",
+    redirectTo: data.session ? nextPath : `/auth/login?next=${encodeURIComponent(nextPath)}`,
     message: data.session
       ? "Compte créé."
       : "Compte créé. Vérifie ton email pour confirmer ton inscription.",

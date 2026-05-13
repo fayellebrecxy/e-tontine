@@ -33,7 +33,12 @@ export default async function DashboardPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Mes groupes</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-medium">Mes groupes</h2>
+          <Button asChild size="sm">
+            <Link href="/dashboard/groups/new">Créer un groupe</Link>
+          </Button>
+        </div>
         {dbUser?.memberships.length ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {dbUser.memberships.map((membership) => (
@@ -45,6 +50,14 @@ export default async function DashboardPage() {
                 <p className="text-sm text-muted-foreground">
                   {membership.role} · {membership.statut_adhesion} · {membership.statut_visuel}
                 </p>
+
+                <div className="mt-3">
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/members`}>
+                      Membres
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

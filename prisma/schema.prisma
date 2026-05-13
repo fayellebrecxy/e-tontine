@@ -13,23 +13,30 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["public", "auth"]
 }
 
 enum RoleGroupe {
   ADMIN
   MEMBRE
+
+  @@schema("public")
 }
 
 enum StatutAdhesion {
   ACTIF
   INACTIF
   EN_ATTENTE
+
+  @@schema("public")
 }
 
 enum StatutVisuel {
   VERT
   ORANGE
   ROUGE
+
+  @@schema("public")
 }
 
 enum TypeRegle {
@@ -37,6 +44,8 @@ enum TypeRegle {
   FREQUENCE
   PENALITE_RETARD
   PENALITE_MOTIF
+
+  @@schema("public")
 }
 
 // --- MODELES ---
@@ -52,9 +61,11 @@ model User {
   date_mise_a_jour DateTime @updatedAt
 
   // Relations
-  memberships MembreGroupe[]
+  memberships        MembreGroupe[]
+  invitations_creees InvitationGroupe[] @relation("user_invitations_creees")
 
   @@map("users")
+  @@schema("public")
 }
 
 model Groupes {
@@ -68,11 +79,30 @@ model Groupes {
 
   // Relations
 
-  cycles  CycleTontine[]
-  membres MembreGroupe[]
-  regles  ReglesGroupe[]
+  cycles      CycleTontine[]
+  membres     MembreGroupe[]
+  regles      ReglesGroupe[]
+  invitations InvitationGroupe[]
 
   @@map("groupes")
+  @@schema("public")
+}
+
+model InvitationGroupe {
+  id_invitation   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String    @unique
+  date_creation   DateTime  @default(now())
+  date_revocation DateTime?
+
+  id_groupe String  @db.Uuid
+  groupe    Groupes @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+
+  id_user_createur String? @db.Uuid
+  createur         User?   @relation("user_invitations_creees", fields: [id_user_createur], references: [id_user], onDelete: SetNull)
+
+  @@index([id_groupe])
+  @@map("invitations_groupe")
+  @@schema("public")
 }
 
 model MembreGroupe {
@@ -94,6 +124,7 @@ model MembreGroupe {
   @@index([id_groupe])
   @@index([id_user])
   @@map("membres_groupe")
+  @@schema("public")
 }
 
 model ReglesGroupe {
@@ -110,6 +141,7 @@ model ReglesGroupe {
 
   @@index([id_groupe])
   @@map("regles_groupe")
+  @@schema("public")
 }
 
 model CycleTontine {
@@ -126,6 +158,7 @@ model CycleTontine {
 
   @@index([id_groupe])
   @@map("cycles_tontine")
+  @@schema("public")
 }
 
 model Cotisations {
@@ -146,6 +179,7 @@ model Cotisations {
   @@index([id_cycle])
   @@index([id_membre_groupe])
   @@map("cotisations")
+  @@schema("public")
 }
 
 model Penalite {
@@ -166,4 +200,5 @@ model Penalite {
   @@index([id_membre_groupe])
   @@index([id_cotisation])
   @@map("penalites")
+  @@schema("public")
 }

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { AuthCard } from "@/components/auth/auth-card";
 import { RegisterForm } from "@/components/auth/register-form";
 
@@ -8,7 +10,9 @@ export default function RegisterPage() {
         title="Créer un compte"
         description="Ton compte donne accès à tes groupes de tontine."
       >
-        <RegisterForm />
+        <Suspense fallback={null}>
+          <RegisterForm />
+        </Suspense>
       </AuthCard>
     </div>
   );
