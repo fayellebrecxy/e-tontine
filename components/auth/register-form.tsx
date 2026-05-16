@@ -27,6 +27,7 @@ export function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const nextParam = encodeURIComponent(next);
   const form = useForm<Values>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { nom: "", prenom: "", telephone: "", email: "", password: "" },
@@ -127,7 +128,7 @@ export function RegisterForm() {
 
         <p className="text-sm text-muted-foreground">
           Déjà un compte ?{" "}
-          <Link href="/auth/login" className="text-foreground underline underline-offset-4">
+          <Link href={`/auth/login?next=${nextParam}`} className="text-foreground underline underline-offset-4">
             Se connecter
           </Link>
           .

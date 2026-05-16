@@ -44,7 +44,8 @@
 
 ### Supabase & multi-schema
 - En Supabase, certaines contraintes référencent `auth.*` (ex: `public.users` → `auth.users`).
-- Le datasource Prisma doit donc déclarer `schemas = ["public", "auth"]` et les modèles/enums doivent être annotés en `@@schema("public")`.
+- Le datasource Prisma doit rester sur `schemas = ["public"]` pour éviter que Prisma tente de modifier des tables Supabase gérées (`auth.*`, ex: `auth.identities`) et échoue avec `must be owner of table ...`.
+- Si vous devez créer/ajuster une contrainte vers `auth.users`, faites-le via SQL (migration Supabase), pas via des modèles Prisma sur le schéma `auth`.
 - Les migrations Prisma doivent utiliser une URL **directe** joignable (`DIRECT_URL`). Si `DIRECT_URL` est inaccessible (P1001), corriger la connectivité/allowlist avant `prisma migrate dev`.
 
 ### Résolution P1001 (host direct IPv6)

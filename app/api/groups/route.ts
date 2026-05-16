@@ -4,12 +4,22 @@ import crypto from "crypto";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createGroupSchema, normalizeName } from "@/lib/validations";
+import { createGroupSchema, normalizeEmail, normalizeName, normalizePhone } from "@/lib/validations";
 import { Prisma } from "@/lib/generated/prisma/client";
 
 function generateInviteCode() {
   // 16 bytes => 22 chars base64url-ish (no + / =)
   return crypto.randomBytes(16).toString("base64url");
+}
+
+function firstNonEmptyString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -37,9 +47,58 @@ export async function POST(request: NextRequest) {
     where: { id_user: authUser.id },
     select: { id_user: true },
   });
-
   if (!existing) {
-    return NextResponse.json({ ok: false, error: "User not found." }, { status: 404 });
+    const meta = authUser.user_metadata ?? {};
+    const fullName =
+      firstNonEmptyString(meta.full_name, meta.name, meta.display_name)?.trim() ?? null;
+    const [fullNamePrenom, ...fullNameNomParts] = fullName ? fullName.split(/\s+/) : [];
+
+    const prenom = normalizeName(
+      firstNonEmptyString(meta.prenom, meta.first_name, fullNamePrenom) ?? "",
+    );
+    const nom = normalizeName(
+      firstNonEmptyString(meta.nom, meta.last_name, meta.family_name, fullNameNomParts.join(" ")) ??
+        "",
+    );
+    const email = authUser.email ? normalizeEmail(authUser.email) : null;
+    const telephoneRaw = firstNonEmptyString(authUser.phone, meta.telephone, meta.phone);
+    const telephone = telephoneRaw ? normalizePhone(telephoneRaw) : null;
+
+    if (!email || !telephone || !nom || !prenom) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Votre profil utilisateur est incomplet. Veuillez compléter vos informations (nom, prénom, téléphone) avant de créer un groupe.",
+        },
+        { status: 409 },
+      );
+    }
+
+    try {
+      await prisma.user.create({
+        data: {
+          id_user: authUser.id,
+          email,
+          nom,
+          prenom,
+          telephone,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "Impossible de créer le profil utilisateur (email ou téléphone déjà utilisé).",
+          },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json({ ok: false, error: "Internal server error." }, { status: 500 });
+    }
   }
 
   const nom = normalizeName(parsedBody.data.nom);

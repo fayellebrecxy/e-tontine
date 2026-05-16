@@ -1,23 +1,27 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { normalizeNextPath } from "@/lib/auth/navigation";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const response = await updateSession(request);
+  const { response, userId } = await updateSession(request);
 
   const pathname = request.nextUrl.pathname;
+  const next = `${pathname}${request.nextUrl.search}`;
+  const normalizedNext = normalizeNextPath(request.nextUrl.searchParams.get("next"));
+  const isAuthRoute =
+    pathname === "/auth/login" || pathname === "/auth/register" || pathname === "/auth/reset-password";
   const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/account");
 
-  if (!isProtected) return response;
+  if (isAuthRoute && userId) {
+    return NextResponse.redirect(new URL(normalizedNext, request.url));
+  }
 
-  // NOTE: real auth gating happens in pages too (server-side redirect).
-  // Middleware keeps sessions fresh and blocks obvious unauthenticated navigation.
-  const hasSbCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-"));
-  if (!hasSbCookie) {
+  if (isProtected && !userId) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/auth/login";
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", next);
     return NextResponse.redirect(loginUrl);
   }
 

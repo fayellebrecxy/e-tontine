@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeNextPath as normalizeSafeNextPath } from "@/lib/auth/navigation";
 
 export const signInSchema = z.object({
   email: z.string().email("Please enter a valid email."),
@@ -88,11 +89,7 @@ export const joinInvitationSchema = z
   .strict();
 
 export function normalizeNextPath(next?: string | null) {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return next;
+  return normalizeSafeNextPath(next);
 }
 
 export function normalizeEmail(email: string) {

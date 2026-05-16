@@ -27,6 +27,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const nextParam = encodeURIComponent(next);
 
   const form = useForm<Values>({
     resolver: zodResolver(signInSchema),
@@ -89,13 +90,19 @@ export function LoginForm() {
 
         <p className="text-sm text-muted-foreground">
           Pas encore de compte ?{" "}
-          <Link href="/auth/register" className="text-foreground underline underline-offset-4">
+          <Link
+            href={`/auth/register?next=${nextParam}`}
+            className="text-foreground underline underline-offset-4"
+          >
             Créer un compte
           </Link>
           .
         </p>
         <p className="text-sm text-muted-foreground">
-          <Link href="/auth/reset-password" className="text-foreground underline underline-offset-4">
+          <Link
+            href={`/auth/reset-password?next=${nextParam}`}
+            className="text-foreground underline underline-offset-4"
+          >
             Mot de passe oublié ?
           </Link>
         </p>

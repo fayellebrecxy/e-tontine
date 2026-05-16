@@ -9,11 +9,6 @@ import { Prisma } from "@/lib/generated/prisma/client";
 export async function POST(request: NextRequest, ctx: { params: Promise<{ code: string }> }) {
   const { code } = await ctx.params;
 
-  const parsedBody = joinInvitationSchema.safeParse(await request.json().catch(() => null));
-  if (!parsedBody.success) {
-    return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
-  }
-
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
@@ -32,6 +27,11 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
   if (!email) {
     return NextResponse.json({ ok: false, error: "Missing email in auth user." }, { status: 400 });
   }
+
+  const currentDbUser = await prisma.user.findUnique({
+    where: { id_user: authUser.id },
+    select: { nom: true, prenom: true, telephone: true, photo_de_profil: true },
+  });
 
   const invitation = await prisma.invitationGroupe.findFirst({
     where: { code, date_revocation: null },
@@ -60,11 +60,45 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
     return NextResponse.json({ ok: false, error: "Invalid invitation code." }, { status: 404 });
   }
 
-  const nom = normalizeName(parsedBody.data.nom);
-  const prenom = normalizeName(parsedBody.data.prenom);
-  const telephone = normalizePhone(parsedBody.data.telephone);
-  const photo_de_profil =
-    parsedBody.data.photo_de_profil === undefined ? undefined : parsedBody.data.photo_de_profil;
+  const rawBody = await request.json().catch(() => null);
+  const profileComplete = Boolean(
+    currentDbUser?.nom.trim() && currentDbUser.prenom.trim() && currentDbUser.telephone.trim(),
+  );
+
+  let nom: string;
+  let prenom: string;
+  let telephone: string;
+  let photo_de_profil: string | null | undefined;
+
+  if (rawBody === null) {
+    if (!profileComplete || !currentDbUser) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "PROFILE_INCOMPLETE",
+          error:
+            "Profil incomplet. Renseignez nom, prénom et téléphone pour rejoindre ce groupe.",
+        },
+        { status: 409 },
+      );
+    }
+
+    nom = normalizeName(currentDbUser.nom);
+    prenom = normalizeName(currentDbUser.prenom);
+    telephone = normalizePhone(currentDbUser.telephone);
+    photo_de_profil = currentDbUser.photo_de_profil;
+  } else {
+    const parsedBody = joinInvitationSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
+    }
+
+    nom = normalizeName(parsedBody.data.nom);
+    prenom = normalizeName(parsedBody.data.prenom);
+    telephone = normalizePhone(parsedBody.data.telephone);
+    photo_de_profil =
+      parsedBody.data.photo_de_profil === undefined ? undefined : parsedBody.data.photo_de_profil;
+  }
 
   const existingPhone = await prisma.user.findUnique({
     where: { telephone },
@@ -98,6 +132,30 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
       },
     });
 
+    const existingMembership = await prisma.membreGroupe.findUnique({
+      where: { id_user_id_groupe: { id_user: authUser.id, id_groupe: groupId } },
+      select: {
+        id_membre_groupe: true,
+        role: true,
+        statut_adhesion: true,
+        statut_visuel: true,
+        date_adhesion: true,
+        id_groupe: true,
+      },
+    });
+
+    if (existingMembership) {
+      return NextResponse.json(
+        { ok: true, already_member: true, groupe: group, membership: existingMembership },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
+      );
+    }
+
     const membership = await prisma.membreGroupe.create({
       data: {
         id_user: authUser.id,
@@ -126,9 +184,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
     );
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      // Unique violation: likely membership already exists or user unique fields collision
       return NextResponse.json(
-        { ok: false, error: "Vous êtes déjà membre du groupe, ou données déjà utilisées." },
+        { ok: false, error: "Données déjà utilisées ou conflit d’unicité." },
         { status: 409 },
       );
     }

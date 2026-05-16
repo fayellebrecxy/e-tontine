@@ -13,9 +13,7 @@ export async function updateSession(request: NextRequest) {
   const publishableKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !publishableKey) {
-    return response;
-  }
+  if (!url || !publishableKey) return { response, userId: null as string | null };
 
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
@@ -30,8 +28,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Refresh session if needed
-  await supabase.auth.getUser();
+  // Refresh session if needed and expose auth state to middleware callers.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return response;
+  return { response, userId: user?.id ?? null };
 }

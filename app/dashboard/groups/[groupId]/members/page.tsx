@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { GenerateInvitationCard } from "@/components/groups/generate-invitation-card";
 import { Button } from "@/components/ui/button";
 
 export default async function GroupMembersPage({
@@ -21,7 +22,7 @@ export default async function GroupMembersPage({
 
   const viewerMembership = await prisma.membreGroupe.findUnique({
     where: { id_user_id_groupe: { id_user: user.id, id_groupe: groupId } },
-    select: { id_membre_groupe: true, groupe: { select: { nom: true } } },
+    select: { id_membre_groupe: true, role: true, groupe: { select: { nom: true } } },
   });
 
   if (!viewerMembership) {
@@ -56,6 +57,8 @@ export default async function GroupMembersPage({
           <Link href="/dashboard">Retour</Link>
         </Button>
       </div>
+
+      {viewerMembership.role === "ADMIN" ? <GenerateInvitationCard groupId={groupId} /> : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {members.map((m) => (
