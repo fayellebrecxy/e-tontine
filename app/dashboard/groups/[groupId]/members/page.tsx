@@ -53,9 +53,16 @@ export default async function GroupMembersPage({
           <h1 className="text-2xl font-semibold tracking-tight">Membres</h1>
           <p className="text-muted-foreground">Groupe: {viewerMembership.groupe.nom}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard">Retour</Link>
-        </Button>
+        <div className="flex gap-2">
+          {viewerMembership.role === "ADMIN" ? (
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/groups/${groupId}/settings`}>Parametres</Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline">
+            <Link href="/dashboard">Retour</Link>
+          </Button>
+        </div>
       </div>
 
       {viewerMembership.role === "ADMIN" ? <GenerateInvitationCard groupId={groupId} /> : null}

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { normalizeNextPath as normalizeSafeNextPath } from "@/lib/auth/navigation";
 
 export const signInSchema = z.object({
   email: z.string().email("Please enter a valid email."),
@@ -30,6 +29,45 @@ export const updatePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const createGroupSchema = z
+  .object({
+    nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64),
+    description: z.string().trim().max(512).optional(),
+    devise: z.string().trim().min(1).max(8).optional(),
+    regles: z
+      .array(
+        z.object({
+          type_regle: z.enum(["COTISATION", "FREQUENCE", "PENALITE_RETARD", "PENALITE_MOTIF"]),
+          nom_regle: z.string().trim().min(1).max(128).optional(),
+          valeur: z.string().trim().min(1).max(256),
+          est_active: z.boolean().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .strict();
+
+export const updateGroupSchema = z
+  .object({
+    nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64).optional(),
+    description: z.string().trim().max(512).optional().nullable(),
+    devise: z.string().trim().min(1).max(8).optional(),
+  })
+  .strict();
+
+export const joinInvitationSchema = z
+  .object({
+    nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64),
+    prenom: z.string().trim().min(2, "Le prénom doit contenir au moins 2 caractères.").max(64),
+    telephone: z
+      .string()
+      .trim()
+      .min(8, "Le numéro de téléphone doit contenir au moins 8 caractères.")
+      .max(24, "Le numéro de téléphone est trop long."),
+    photo_de_profil: z.string().trim().min(1).max(1024).nullable().optional(),
+  })
+  .strict();
+
 export const updateMeSchema = z
   .object({
     nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64).optional(),
@@ -49,47 +87,12 @@ export const updateMeSchema = z
   })
   .strict();
 
-export const createGroupSchema = z
-  .object({
-    nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64),
-    description: z.string().trim().min(1).max(512).optional(),
-    devise: z.string().trim().min(1).max(8).optional(),
-    regles: z
-      .array(
-        z
-          .object({
-            type_regle: z.enum([
-              "COTISATION",
-              "FREQUENCE",
-              "PENALITE_RETARD",
-              "PENALITE_MOTIF",
-            ]),
-            nom_regle: z.string().trim().min(1).max(64).optional(),
-            valeur: z.string().trim().min(1).max(256),
-            est_active: z.boolean().optional(),
-          })
-          .strict(),
-      )
-      .max(20)
-      .optional(),
-  })
-  .strict();
-
-export const joinInvitationSchema = z
-  .object({
-    nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64),
-    prenom: z.string().trim().min(2, "Le prénom doit contenir au moins 2 caractères.").max(64),
-    telephone: z
-      .string()
-      .trim()
-      .min(8, "Le numéro de téléphone doit contenir au moins 8 caractères.")
-      .max(24, "Le numéro de téléphone est trop long."),
-    photo_de_profil: z.string().trim().min(1).max(1024).nullable().optional(),
-  })
-  .strict();
-
 export function normalizeNextPath(next?: string | null) {
-  return normalizeSafeNextPath(next);
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return next;
 }
 
 export function normalizeEmail(email: string) {

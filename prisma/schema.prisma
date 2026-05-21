@@ -64,6 +64,7 @@ model User {
   // Relations
   memberships        MembreGroupe[]
   invitations_creees InvitationGroupe[] @relation("user_invitations_creees")
+  notifications      NotificationGroupe[]
 
   @@map("users")
   @@schema("public")
@@ -84,6 +85,7 @@ model Groupes {
   membres     MembreGroupe[]
   regles      ReglesGroupe[]
   invitations InvitationGroupe[]
+  notifications NotificationGroupe[]
 
   @@map("groupes")
   @@schema("public")
@@ -201,5 +203,24 @@ model Penalite {
   @@index([id_membre_groupe])
   @@index([id_cotisation])
   @@map("penalites")
+  @@schema("public")
+}
+
+model NotificationGroupe {
+  id_notification  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type_notification String
+  message           String
+  date_creation     DateTime @default(now())
+  date_lecture      DateTime?
+
+  id_user String @db.Uuid
+  user    User   @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  id_groupe String? @db.Uuid
+  groupe    Groupes? @relation(fields: [id_groupe], references: [id_groupe], onDelete: SetNull)
+
+  @@index([id_user])
+  @@index([id_groupe])
+  @@map("notifications_groupe")
   @@schema("public")
 }
