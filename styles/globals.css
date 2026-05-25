@@ -73,3 +73,29 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@layer components {
+  .menu-item {
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition;
+  }
+
+  .menu-item-active {
+    @apply bg-brand-50 text-brand-600;
+  }
+
+  .menu-item-inactive {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+
+  .menu-dropdown-item {
+    @apply block rounded-lg px-3 py-2 text-sm font-medium transition;
+  }
+
+  .menu-dropdown-item-active {
+    @apply bg-brand-50 text-brand-600;
+  }
+
+  .menu-dropdown-item-inactive {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+}

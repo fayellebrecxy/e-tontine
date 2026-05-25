@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./../styles/globals.css";
 
+import { AppShell } from "@/components/layout/app-shell";
+import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: {
@@ -19,11 +20,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={outfit.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <SiteHeader />
-          <main className="mx-auto max-w-5xl px-4 py-10">{children}</main>
-          <Toaster />
+          <SidebarProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>

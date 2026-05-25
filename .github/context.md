@@ -21,11 +21,22 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Le role est porte par MembreGroupe, pas par User.
 - A la creation d'un groupe, l'utilisateur devient ADMIN et membre.
 - Les membres voient la liste des membres du groupe.
+- Admin peut modifier/supprimer un groupe via PATCH/DELETE /api/groups/:groupId.
+- Suppression d'un groupe supprime ses membres (cascade) sans supprimer les users.
 
 ## Invitations
 - Invitation par code unique via invitations_groupe.
 - Groupes.lien_invitation conserve le code courant.
 - Join via POST /api/invitations/:code/join (upsert user + create membre).
+
+## Notifications in-app
+- Table notifications_groupe: id_user, id_groupe (nullable), type_notification, message, dates.
+- Notif envoyee a tous les membres lors d'une mise a jour ou suppression de groupe.
+- Bloc "Notifications" affiche sur le dashboard (dernieres 5).
+
+## UI admin groupe
+- Page settings admin: /dashboard/groups/[groupId]/settings.
+- Formulaire de mise a jour + suppression du groupe.
 
 ## API conventions
 - NextResponse.json() avec { ok: true } ou { ok: false, error }.
