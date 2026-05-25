@@ -80,6 +80,15 @@ export const updateMemberStatusSchema = z
   })
   .strict();
 
+export const createCycleSchema = z
+  .object({
+    nom_cycle: z.string().trim().min(2, "Le nom du cycle est requis.").max(128),
+    duree_tour_de_gain: z.number().int().positive(),
+    montant_cotisation: z.number().positive(),
+    participants: z.array(z.string().uuid()).min(1),
+  })
+  .strict();
+
 export const updateMeSchema = z
   .object({
     nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64).optional(),

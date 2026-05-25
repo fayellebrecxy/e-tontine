@@ -64,6 +64,7 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
   - 2026-05-13 api-groups_creation_et_liste
   - 2026-05-13 api-invitations_join_membres
   - 2026-05-25 api-groups_roles_membres
+  - 2026-05-25 api-groups_cycles
 
 ## Mise a jour de ce fichier
 - Ajouter une entree a chaque nouvelle fonctionnalite ou changement metier.
