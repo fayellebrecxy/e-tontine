@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Settings, Trash2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { GroupNav } from "@/components/groups/group-nav";
 
 type GroupItem = {
   id_groupe: string;
@@ -107,6 +108,10 @@ export function GroupShell({
 
         <aside className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <GroupNav groupId={groupId} />
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Actions</h2>
             <div className="mt-3 flex flex-col gap-2">
               <Button asChild variant="outline" className="justify-start">
@@ -142,7 +147,11 @@ export function GroupShell({
                       <span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-600">
                         ADMIN
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">
+                        MEMBRE
+                      </span>
+                    )}
                   </div>
                 ))
               ) : (

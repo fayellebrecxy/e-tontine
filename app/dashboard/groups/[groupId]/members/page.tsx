@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GenerateInvitationCard } from "@/components/groups/generate-invitation-card";
+import { MembersTable } from "@/components/groups/members-table";
 import { Button } from "@/components/ui/button";
 
 export default async function GroupMembersPage({
@@ -67,20 +68,12 @@ export default async function GroupMembersPage({
 
       {viewerMembership.role === "ADMIN" ? <GenerateInvitationCard groupId={groupId} /> : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {members.map((m) => (
-          <div key={m.id_membre_groupe} className="rounded-md border bg-card p-4 text-card-foreground">
-            <p className="font-medium">
-              {m.user.prenom} {m.user.nom}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {m.role} · {m.statut_adhesion} · {m.statut_visuel}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">{m.user.email}</p>
-            <p className="text-sm text-muted-foreground">{m.user.telephone}</p>
-          </div>
-        ))}
-      </div>
+      <MembersTable
+        groupId={groupId}
+        currentUserId={user.id}
+        canManage={viewerMembership.role === "ADMIN"}
+        members={members}
+      />
     </div>
   );
 }

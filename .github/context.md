@@ -23,6 +23,8 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Les membres voient la liste des membres du groupe.
 - Admin peut modifier/supprimer un groupe via PATCH/DELETE /api/groups/:groupId.
 - Suppression d'un groupe supprime ses membres (cascade) sans supprimer les users.
+- Admin peut attribuer le role ADMIN/MEMBRE aux membres via PATCH /api/groups/:groupId/members/:memberId.
+- Un groupe doit garder au moins un admin; auto-declassement interdit.
 
 ## Invitations
 - Invitation par code unique via invitations_groupe.
@@ -33,6 +35,7 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Table notifications_groupe: id_user, id_groupe (nullable), type_notification, message, dates.
 - Notif envoyee a tous les membres lors d'une mise a jour ou suppression de groupe.
 - Bloc "Notifications" affiche sur le dashboard (dernieres 5).
+- Notification envoyee au membre lors d'un changement de role.
 
 ## UI admin groupe
 - Page settings admin: /dashboard/groups/[groupId]/settings.
@@ -56,6 +59,7 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
   - 2026-05-12 api-users-me_patch-profil
   - 2026-05-13 api-groups_creation_et_liste
   - 2026-05-13 api-invitations_join_membres
+  - 2026-05-25 api-groups_roles_membres
 
 ## Mise a jour de ce fichier
 - Ajouter une entree a chaque nouvelle fonctionnalite ou changement metier.

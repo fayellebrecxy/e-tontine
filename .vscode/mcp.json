@@ -1,0 +1,14 @@
+{
+  "registries": {
+    "@acme": "https://acme.com/r/{name}.json"
+  },
+  "servers": {
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    }
+  }
+}
