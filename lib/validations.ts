@@ -74,6 +74,12 @@ export const updateMemberRoleSchema = z
   })
   .strict();
 
+export const updateMemberStatusSchema = z
+  .object({
+    statut_adhesion: z.enum(["ACTIF"]),
+  })
+  .strict();
+
 export const updateMeSchema = z
   .object({
     nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64).optional(),

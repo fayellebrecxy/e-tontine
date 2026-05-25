@@ -19,8 +19,8 @@ export default async function GroupInvitationsPage({
     redirect(`/auth/login?next=${encodeURIComponent(`/dashboard/groups/${groupId}/invitations`)}`);
   }
 
-  const membership = await prisma.membreGroupe.findUnique({
-    where: { id_user_id_groupe: { id_user: user.id, id_groupe: groupId } },
+  const membership = await prisma.membreGroupe.findFirst({
+    where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { role: true, groupe: { select: { nom: true } } },
   });
 

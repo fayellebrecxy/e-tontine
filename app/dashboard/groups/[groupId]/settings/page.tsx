@@ -18,8 +18,8 @@ export default async function GroupSettingsPage({
     redirect(`/auth/login?next=${encodeURIComponent(`/dashboard/groups/${groupId}/settings`)}`);
   }
 
-  const membership = await prisma.membreGroupe.findUnique({
-    where: { id_user_id_groupe: { id_user: user.id, id_groupe: groupId } },
+  const membership = await prisma.membreGroupe.findFirst({
+    where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { role: true },
   });
 

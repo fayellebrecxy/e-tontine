@@ -59,10 +59,24 @@ export function JoinInvitationForm({ code }: Props) {
         body: JSON.stringify(payload),
       });
 
-      const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
+      const body = (await res.json().catch(() => null)) as
+        | null
+        | { ok?: boolean; error?: string; pending?: boolean; already_member?: boolean };
 
-      if (!res.ok) {
+      if (!res.ok || !body?.ok) {
         toast.error(body?.error ?? "Erreur lors de l’adhésion au groupe.");
+        return;
+      }
+
+      if (body.pending) {
+        toast.success("Demande envoyee. Un admin doit valider votre retour.");
+        return;
+      }
+
+      if (body.already_member) {
+        toast.info("Vous etes deja membre du groupe.");
+        router.push("/dashboard");
+        router.refresh();
         return;
       }
 

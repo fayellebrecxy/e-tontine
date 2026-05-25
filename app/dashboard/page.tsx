@@ -72,11 +72,19 @@ export default async function DashboardPage() {
                 </p>
 
                 <div className="mt-3">
-                  <Button asChild size="sm" variant="outline">
-                    <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/members`}>
-                      Membres
-                    </Link>
-                  </Button>
+                  {membership.statut_adhesion === "ACTIF" ? (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/members`}>
+                        Membres
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/groups/${membership.groupe.id_groupe}`}>
+                        Voir la fiche
+                      </Link>
+                    </Button>
+                  )}
                   {membership.role === "ADMIN" ? (
                     <Button asChild size="sm" variant="ghost" className="ml-2">
                       <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/settings`}>

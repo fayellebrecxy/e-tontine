@@ -41,7 +41,8 @@ Routes:
    - vérifie l’auth
    - résout le groupe via `InvitationGroupe.code` (fallback via `Groupes.lien_invitation`)
    - upsert le `User` Prisma (selon l’ID Supabase)
-   - crée `MembreGroupe` (role `MEMBRE`) dans le groupe
+  - crée `MembreGroupe` (role `MEMBRE`) dans le groupe
+  - si un ancien membre est `INACTIF`, passe le statut à `EN_ATTENTE` et notifie les admins
 
 ## UML — Mise à jour attendue
 

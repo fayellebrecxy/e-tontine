@@ -25,11 +25,15 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Suppression d'un groupe supprime ses membres (cascade) sans supprimer les users.
 - Admin peut attribuer le role ADMIN/MEMBRE aux membres via PATCH /api/groups/:groupId/members/:memberId.
 - Un groupe doit garder au moins un admin; auto-declassement interdit.
+- Exclusion: statut_adhesion passe a INACTIF + date_depart.
+- Reintegration: un membre exclu demande a revenir -> statut_adhesion EN_ATTENTE, validation admin requise.
+- Les membres INACTIF ont un acces limite a la fiche du groupe.
 
 ## Invitations
 - Invitation par code unique via invitations_groupe.
 - Groupes.lien_invitation conserve le code courant.
 - Join via POST /api/invitations/:code/join (upsert user + create membre).
+- Si membre INACTIF: join met EN_ATTENTE et notifie les admins.
 
 ## Notifications in-app
 - Table notifications_groupe: id_user, id_groupe (nullable), type_notification, message, dates.

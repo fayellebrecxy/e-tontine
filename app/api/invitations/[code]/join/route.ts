@@ -145,8 +145,65 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
     });
 
     if (existingMembership) {
+      if (existingMembership.statut_adhesion === "ACTIF") {
       return NextResponse.json(
-        { ok: true, already_member: true, groupe: group, membership: existingMembership },
+          { ok: true, already_member: true, groupe: group, membership: existingMembership },
+          {
+            status: 200,
+            headers: {
+              "Cache-Control": "no-store",
+            },
+          },
+        );
+      }
+
+      if (existingMembership.statut_adhesion === "EN_ATTENTE") {
+        return NextResponse.json(
+          { ok: true, pending: true, groupe: group, membership: existingMembership },
+          {
+            status: 200,
+            headers: {
+              "Cache-Control": "no-store",
+            },
+          },
+        );
+      }
+
+      const pendingMembership = await prisma.$transaction(async (tx) => {
+        const updated = await tx.membreGroupe.update({
+          where: { id_membre_groupe: existingMembership.id_membre_groupe },
+          data: { statut_adhesion: "EN_ATTENTE" },
+          select: {
+            id_membre_groupe: true,
+            role: true,
+            statut_adhesion: true,
+            statut_visuel: true,
+            date_adhesion: true,
+            id_groupe: true,
+          },
+        });
+
+        const admins = await tx.membreGroupe.findMany({
+          where: { id_groupe: groupId, role: "ADMIN", statut_adhesion: "ACTIF" },
+          select: { id_user: true },
+        });
+
+        if (admins.length) {
+          await tx.notificationGroupe.createMany({
+            data: admins.map((admin) => ({
+              id_user: admin.id_user,
+              id_groupe: groupId,
+              type_notification: "MEMBER_REJOIN_REQUEST",
+              message: "Un membre exclu demande a reintegrer le groupe.",
+            })),
+          });
+        }
+
+        return updated;
+      });
+
+      return NextResponse.json(
+        { ok: true, pending: true, groupe: group, membership: pendingMembership },
         {
           status: 200,
           headers: {

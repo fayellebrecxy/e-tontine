@@ -25,7 +25,7 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     let isMounted = true;
     const load = async () => {
-      const res = await fetch("/api/groups", { cache: "no-store" });
+      const res = await fetch("/api/groups?include_inactive=1", { cache: "no-store" });
       const body = (await res.json().catch(() => null)) as
         | null
         | { ok?: boolean; groups?: GroupApiItem[] };
@@ -62,7 +62,7 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
             groups.map((group) => (
               <Link
                 key={group.id_groupe}
-                href={`/dashboard/groups/${group.id_groupe}/members`}
+                href={`/dashboard/groups/${group.id_groupe}`}
                 className={`block rounded-lg px-3 py-2 text-sm font-medium transition ${
                   pathname.includes(group.id_groupe)
                     ? "bg-brand-50 text-brand-600"

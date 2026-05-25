@@ -24,8 +24,8 @@ export async function GET(
 
   const authUser = data.user;
 
-  const viewerMembership = await prisma.membreGroupe.findUnique({
-    where: { id_user_id_groupe: { id_user: authUser.id, id_groupe: groupId } },
+  const viewerMembership = await prisma.membreGroupe.findFirst({
+    where: { id_user: authUser.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { id_membre_groupe: true },
   });
 

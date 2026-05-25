@@ -5,6 +5,75 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { updateGroupSchema } from "@/lib/validations";
 
+export async function GET(
+  _request: NextRequest,
+  ctx: { params: Promise<{ groupId: string }> },
+) {
+  const { groupId } = await ctx.params;
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { ok: false, error: "Missing Supabase environment variables." },
+      { status: 500 },
+    );
+  }
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
+  }
+
+  const authUser = data.user;
+
+  const membership = await prisma.membreGroupe.findUnique({
+    where: { id_user_id_groupe: { id_user: authUser.id, id_groupe: groupId } },
+    select: {
+      id_membre_groupe: true,
+      role: true,
+      statut_adhesion: true,
+      statut_visuel: true,
+      date_adhesion: true,
+      date_depart: true,
+      groupe: {
+        select: {
+          id_groupe: true,
+          nom: true,
+          description: true,
+          devise: true,
+          date_de_creation: true,
+          date_mise_a_jour: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    return NextResponse.json({ ok: false, error: "Forbidden." }, { status: 403 });
+  }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      groupe: membership.groupe,
+      membership: {
+        id_membre_groupe: membership.id_membre_groupe,
+        role: membership.role,
+        statut_adhesion: membership.statut_adhesion,
+        statut_visuel: membership.statut_visuel,
+        date_adhesion: membership.date_adhesion,
+        date_depart: membership.date_depart,
+      },
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
+}
+
 async function getAdminUserId(groupId: string) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
@@ -27,8 +96,8 @@ async function getAdminUserId(groupId: string) {
 
   const authUser = data.user;
 
-  const membership = await prisma.membreGroupe.findUnique({
-    where: { id_user_id_groupe: { id_user: authUser.id, id_groupe: groupId } },
+  const membership = await prisma.membreGroupe.findFirst({
+    where: { id_user: authUser.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { role: true },
   });
 

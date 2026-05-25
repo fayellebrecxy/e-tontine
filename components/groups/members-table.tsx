@@ -1,16 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
+import { toast } from "sonner";
 
 import { MemberRoleActions } from "@/components/groups/member-role-actions";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export type MemberRow = {
   id_membre_groupe: string;
@@ -38,8 +35,11 @@ type MembersTableProps = {
 const PAGE_SIZE = 10;
 
 export function MembersTable({ groupId, currentUserId, canManage, members }: MembersTableProps) {
+  const router = useRouter();
   const [page, setPage] = React.useState(1);
   const [selected, setSelected] = React.useState<MemberRow | null>(null);
+  const [pendingRemoval, setPendingRemoval] = React.useState(false);
+  const [pendingApproval, setPendingApproval] = React.useState(false);
 
   const totalPages = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
   const pageStart = (page - 1) * PAGE_SIZE;
@@ -48,6 +48,54 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
   React.useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
+
+  const handleRemove = (memberId: string) => {
+    if (pendingRemoval) return;
+    setPendingRemoval(true);
+
+    fetch(`/api/groups/${groupId}/members/${memberId}`, {
+      method: "DELETE",
+    })
+      .then(async (res) => {
+        const body = (await res.json().catch(() => null)) as
+          | null
+          | { ok?: boolean; error?: string };
+
+        if (!res.ok) {
+          toast.error(body?.error ?? "Erreur lors de la suppression du membre.");
+          return;
+        }
+
+        toast.success("Membre retire du groupe.");
+        router.refresh();
+      })
+      .finally(() => setPendingRemoval(false));
+  };
+
+  const handleApprove = (memberId: string) => {
+    if (pendingApproval) return;
+    setPendingApproval(true);
+
+    fetch(`/api/groups/${groupId}/members/${memberId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statut_adhesion: "ACTIF" }),
+    })
+      .then(async (res) => {
+        const body = (await res.json().catch(() => null)) as
+          | null
+          | { ok?: boolean; error?: string };
+
+        if (!res.ok) {
+          toast.error(body?.error ?? "Erreur lors de la validation.");
+          return;
+        }
+
+        toast.success("Membre reintegre.");
+        router.refresh();
+      })
+      .finally(() => setPendingApproval(false));
+  };
 
   return (
     <div className="space-y-4">
@@ -66,6 +114,8 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {pageItems.map((member) => {
               const isSelf = member.user.id_user === currentUserId;
+              const canExclude = canManage && !isSelf && member.statut_adhesion !== "INACTIF";
+              const isPending = member.statut_adhesion === "EN_ATTENTE";
               return (
                 <tr key={member.id_membre_groupe} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                   <td className="px-4 py-3">
@@ -101,13 +151,34 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canManage ? (
-                        <MemberRoleActions
-                          groupId={groupId}
-                          memberId={member.id_membre_groupe}
-                          currentRole={member.role}
-                          isSelf={isSelf}
-                          canManage={canManage}
-                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <MemberRoleActions
+                            groupId={groupId}
+                            memberId={member.id_membre_groupe}
+                            currentRole={member.role}
+                            isSelf={isSelf}
+                            canManage={canManage}
+                          />
+                          {isPending ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={!canManage || isSelf || pendingApproval}
+                              onClick={() => handleApprove(member.id_membre_groupe)}
+                            >
+                              Valider
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            disabled={!canExclude || pendingRemoval}
+                            onClick={() => handleRemove(member.id_membre_groupe)}
+                          >
+                            Exclure
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                   </td>

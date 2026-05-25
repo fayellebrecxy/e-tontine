@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
   );
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
@@ -207,9 +207,12 @@ export async function GET() {
   }
 
   const authUser = data.user;
+  const includeInactive = request.nextUrl.searchParams.get("include_inactive") === "1";
 
   const memberships = await prisma.membreGroupe.findMany({
-    where: { id_user: authUser.id },
+    where: includeInactive
+      ? { id_user: authUser.id }
+      : { id_user: authUser.id, statut_adhesion: "ACTIF" },
     include: {
       groupe: true,
     },

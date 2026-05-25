@@ -23,7 +23,7 @@ export function QuickJoinInvitationCard({ code }: Props) {
 
       const body = (await res.json().catch(() => null)) as
         | null
-        | { ok?: boolean; error?: string; code?: string };
+        | { ok?: boolean; error?: string; code?: string; pending?: boolean; already_member?: boolean };
 
       if (!res.ok || !body?.ok) {
         if (res.status === 409 && body?.code === "PROFILE_INCOMPLETE") {
@@ -32,6 +32,18 @@ export function QuickJoinInvitationCard({ code }: Props) {
         }
 
         toast.error(body?.error ?? "Impossible de rejoindre le groupe.");
+        return;
+      }
+
+      if (body.pending) {
+        toast.success("Demande envoyee. Un admin doit valider votre retour.");
+        return;
+      }
+
+      if (body.already_member) {
+        toast.info("Vous etes deja membre du groupe.");
+        router.push("/dashboard");
+        router.refresh();
         return;
       }
 

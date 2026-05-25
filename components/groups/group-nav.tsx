@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Mail, Settings, ClipboardList, Coins } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Settings, ClipboardList, Coins } from "lucide-react";
 
 const items = [
+  { label: "Apercu", href: "", icon: LayoutDashboard },
   { label: "Membres", href: "members", icon: Users },
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Parametres", href: "settings", icon: Settings },
@@ -20,9 +21,13 @@ export function GroupNav({ groupId }: { groupId: string }) {
       <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Menu du groupe</h2>
       <nav className="space-y-1">
         {items.map((item) => {
-          const href = `/dashboard/groups/${groupId}/${item.href}`;
+          const href = item.href
+            ? `/dashboard/groups/${groupId}/${item.href}`
+            : `/dashboard/groups/${groupId}`;
           const Icon = item.icon;
-          const active = pathname.startsWith(href);
+          const active = item.href
+            ? pathname.startsWith(href)
+            : pathname === `/dashboard/groups/${groupId}`;
 
           return (
             <Link

@@ -44,8 +44,8 @@ async function getAdminUserId(groupId: string): Promise<AuthAdminResult> {
 
   const authUser = data.user;
 
-  const membership = await prisma.membreGroupe.findUnique({
-    where: { id_user_id_groupe: { id_user: authUser.id, id_groupe: groupId } },
+  const membership = await prisma.membreGroupe.findFirst({
+    where: { id_user: authUser.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { role: true },
   });
 
