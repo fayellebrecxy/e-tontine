@@ -131,7 +131,9 @@ export default async function GroupCyclesPage({
         </Button>
       </div>
 
-      <CreateCycleForm groupId={groupId} canManage={membership.role === "ADMIN"} />
+      {membership.role === "ADMIN" && (
+        <CreateCycleForm groupId={groupId} canManage={true} />
+      )}
 
       <div className="space-y-3">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">Cycles enregistres</h2>
@@ -176,6 +178,14 @@ export default async function GroupCyclesPage({
                     </p>
                     <p>Duree tour: {cycle.duree_tour_de_gain} jours</p>
                     <p>Beneficiaire actuel: {currentName}</p>
+                    <p>Ordre des bénéficiaires:</p>
+                    <ul className="list-decimal list-inside text-xs text-gray-500">
+                      {cycle.participants.map((p, idx) => (
+                        <li key={p.ordre}>
+                          {idx + 1}. {p.membre_groupe.user.prenom} {p.membre_groupe.user.nom}
+                        </li>
+                      ))}
+                    </ul>
                     {!isFinished ? (
                       <p>Fin du tour: {tourEnd.toLocaleDateString("fr-FR")}</p>
                     ) : null}

@@ -85,7 +85,10 @@ export const createCycleSchema = z
     nom_cycle: z.string().trim().min(2, "Le nom du cycle est requis.").max(128),
     duree_tour_de_gain: z.number().int().positive(),
     montant_cotisation: z.number().positive(),
-    participants: z.array(z.string().uuid()).min(1),
+  participants: z.array(z.string().uuid()).min(1),
+  penalty_active: z.boolean().default(false),
+  penalty_type: z.enum(["FIXE", "PERCENT", "PROGRESSIVE"]).default("FIXE"),
+  penalty_value: z.number().positive().default(0),
   })
   .strict();
 

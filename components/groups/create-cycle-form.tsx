@@ -37,6 +37,8 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
   const [nomCycle, setNomCycle] = React.useState("");
   const [dureeTour, setDureeTour] = React.useState("30");
   const [montant, setMontant] = React.useState("");
+  const [motifPenalite, setMotifPenalite] = React.useState("");
+  const [montantPenalite, setMontantPenalite] = React.useState("");
   const [order, setOrder] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -176,7 +178,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="duree-tour">Duree du tour (jours)</Label>
             <Input
@@ -188,18 +190,41 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
               disabled={!canManage}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="montant-cotisation">Montant de la cotisation</Label>
-            <Input
-              id="montant-cotisation"
-              type="number"
-              min={0}
-              step="0.01"
-              value={montant}
-              onChange={(event) => setMontant(event.target.value)}
-              disabled={!canManage}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="montant-cotisation">Montant de la cotisation</Label>
+              <Input
+                id="montant-cotisation"
+                type="number"
+                min={0}
+                step="0.01"
+                value={montant}
+                onChange={(event) => setMontant(event.target.value)}
+                disabled={!canManage}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="motif-penalite">Motif de la pénalité</Label>
+              <Input
+                id="motif-penalite"
+                value={motifPenalite}
+                onChange={(e) => setMotifPenalite(e.target.value)}
+                placeholder="Ex. Retard de paiement"
+                disabled={!canManage}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="montant-penalite">Montant de la pénalité</Label>
+              <Input
+                id="montant-penalite"
+                type="number"
+                min={0}
+                step="0.01"
+                value={montantPenalite}
+                onChange={(e) => setMontantPenalite(e.target.value)}
+                placeholder="Ex. 50"
+                disabled={!canManage}
+              />
+            </div>
         </div>
 
         <div className="space-y-2">
