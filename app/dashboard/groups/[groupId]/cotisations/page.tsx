@@ -1,8 +1,11 @@
-export default function GroupCotisationsPage() {
-  return (
-    <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Cotisations</h1>
-      <p className="mt-2 text-sm text-gray-500">Bientot disponible.</p>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+export default async function GroupCotisationsPage({
+  params,
+}: {
+  params: Promise<{ groupId: string }>;
+}) {
+  const { groupId } = await params;
+
+  redirect(`/dashboard/groups/${groupId}/cycles`);
 }

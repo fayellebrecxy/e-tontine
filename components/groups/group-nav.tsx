@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Mail, Settings, ClipboardList, Coins } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Settings, ClipboardList, Repeat } from "lucide-react";
 
 const items = [
   { label: "Apercu", href: "", icon: LayoutDashboard },
@@ -10,7 +10,7 @@ const items = [
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Parametres", href: "settings", icon: Settings },
   { label: "Regles", href: "regles", icon: ClipboardList },
-  { label: "Cotisations", href: "cotisations", icon: Coins },
+  { label: "Cycles", href: "cycles", icon: Repeat },
 ];
 
 export function GroupNav({ groupId }: { groupId: string }) {

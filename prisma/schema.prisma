@@ -121,6 +121,7 @@ model MembreGroupe {
   id_groupe   String        @db.Uuid
   groupe      Groupes       @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
   cotisations Cotisations[]
+  cycles_participations CycleParticipant[]
   penalites   Penalite[]
 
   @@unique([id_user, id_groupe])
@@ -153,14 +154,34 @@ model CycleTontine {
   date_debut         DateTime @default(now())
   date_fin           DateTime
   duree_tour_de_gain Int
+  montant_cotisation Decimal  @db.Decimal(15, 2)
   ordre_beneficiaire String?
 
   id_groupe   String        @db.Uuid
   groupe      Groupes       @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  participants CycleParticipant[]
   cotisations Cotisations[]
 
   @@index([id_groupe])
   @@map("cycles_tontine")
+  @@schema("public")
+}
+
+model CycleParticipant {
+  id_cycle_participant String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordre                Int
+  date_ajout            DateTime @default(now())
+
+  id_cycle String      @db.Uuid
+  cycle    CycleTontine @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+
+  id_membre_groupe String       @db.Uuid
+  membre_groupe    MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@unique([id_cycle, id_membre_groupe])
+  @@index([id_cycle])
+  @@index([id_membre_groupe])
+  @@map("cycles_participants")
   @@schema("public")
 }
 

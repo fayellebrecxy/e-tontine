@@ -29,6 +29,12 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Reintegration: un membre exclu demande a revenir -> statut_adhesion EN_ATTENTE, validation admin requise.
 - Les membres INACTIF ont un acces limite a la fiche du groupe.
 
+## Cycles de tontine
+- Les cycles sont reserves aux membres ACTIF du groupe.
+- L'admin definit l'ordre des beneficiaires (manuel ou tirage).
+- Chaque versement est historise par membre (date + montant).
+- Le retard est evalue par tour (fin du tour courant).
+
 ## Invitations
 - Invitation par code unique via invitations_groupe.
 - Groupes.lien_invitation conserve le code courant.

@@ -48,16 +48,24 @@ export async function POST(
 
   const { nom_cycle, duree_tour_de_gain, montant_cotisation, participants } = parsedBody.data;
 
+  const uniqueParticipants = Array.from(new Set(participants));
+  if (uniqueParticipants.length !== participants.length) {
+    return NextResponse.json(
+      { ok: false, error: "Duplicate participants are not allowed." },
+      { status: 400 },
+    );
+  }
+
   const members = await prisma.membreGroupe.findMany({
     where: {
       id_groupe: groupId,
-      id_membre_groupe: { in: participants },
+      id_membre_groupe: { in: uniqueParticipants },
       statut_adhesion: "ACTIF",
     },
     select: { id_membre_groupe: true },
   });
 
-  if (members.length !== participants.length) {
+  if (members.length !== uniqueParticipants.length) {
     return NextResponse.json(
       { ok: false, error: "Some participants are invalid or inactive." },
       { status: 409 },
@@ -65,7 +73,7 @@ export async function POST(
   }
 
   const dateDebut = new Date();
-  const dateFin = addDays(dateDebut, duree_tour_de_gain * participants.length);
+  const dateFin = addDays(dateDebut, duree_tour_de_gain * uniqueParticipants.length);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -76,6 +84,8 @@ export async function POST(
           date_debut: dateDebut,
           date_fin: dateFin,
           duree_tour_de_gain,
+          montant_cotisation,
+          ordre_beneficiaire: JSON.stringify(uniqueParticipants),
         },
         select: {
           id_cycle: true,
@@ -83,16 +93,15 @@ export async function POST(
           date_debut: true,
           date_fin: true,
           duree_tour_de_gain: true,
+          montant_cotisation: true,
         },
       });
 
-      await tx.cotisations.createMany({
-        data: members.map((member) => ({
-          id_membre_groupe: member.id_membre_groupe,
+      await tx.cycleParticipant.createMany({
+        data: uniqueParticipants.map((memberId, index) => ({
           id_cycle: cycle.id_cycle,
-          date_debut: dateDebut,
-          date_de_paiement: dateDebut,
-          montant: montant_cotisation,
+          id_membre_groupe: memberId,
+          ordre: index + 1,
         })),
       });
 
@@ -106,4 +115,82 @@ export async function POST(
   } catch (err) {
     return NextResponse.json({ ok: false, error: "Internal server error." }, { status: 500 });
   }
+}
+
+export async function GET(
+  _request: NextRequest,
+  ctx: { params: Promise<{ groupId: string }> },
+) {
+  const { groupId } = await ctx.params;
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { ok: false, error: "Missing Supabase environment variables." },
+      { status: 500 },
+    );
+  }
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
+  }
+
+  const authUser = data.user;
+
+  const membership = await prisma.membreGroupe.findFirst({
+    where: { id_user: authUser.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
+    select: { id_membre_groupe: true, role: true },
+  });
+
+  if (!membership) {
+    return NextResponse.json({ ok: false, error: "Forbidden." }, { status: 403 });
+  }
+
+  const cycles =
+    membership.role === "ADMIN"
+      ? await prisma.cycleTontine.findMany({
+          where: { id_groupe: groupId },
+          orderBy: { date_debut: "desc" },
+          select: {
+            id_cycle: true,
+            nom_cycle: true,
+            date_debut: true,
+            date_fin: true,
+            duree_tour_de_gain: true,
+            montant_cotisation: true,
+            _count: { select: { participants: true } },
+          },
+        })
+      : await prisma.cycleParticipant.findMany({
+          where: { id_membre_groupe: membership.id_membre_groupe },
+          orderBy: { cycle: { date_debut: "desc" } },
+          select: {
+            cycle: {
+              select: {
+                id_cycle: true,
+                nom_cycle: true,
+                date_debut: true,
+                date_fin: true,
+                duree_tour_de_gain: true,
+                montant_cotisation: true,
+                _count: { select: { participants: true } },
+              },
+            },
+          },
+        });
+
+  const normalized = Array.isArray(cycles)
+    ? cycles.map((item) => ("cycle" in item ? item.cycle : item))
+    : [];
+
+  return NextResponse.json(
+    { ok: true, cycles: normalized },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }
