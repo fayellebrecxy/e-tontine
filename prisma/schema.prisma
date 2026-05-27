@@ -49,6 +49,14 @@ enum TypeRegle {
   @@schema("public")
 }
 
+enum ModePenalite {
+  FIXE
+  POURCENTAGE
+  PROGRESSIVE
+
+  @@schema("public")
+}
+
 // --- MODELES ---
 
 model User {
@@ -63,7 +71,7 @@ model User {
 
   // Relations
   memberships        MembreGroupe[]
-  invitations_creees InvitationGroupe[] @relation("user_invitations_creees")
+  invitations_creees InvitationGroupe[]   @relation("user_invitations_creees")
   notifications      NotificationGroupe[]
 
   @@map("users")
@@ -81,10 +89,10 @@ model Groupes {
 
   // Relations
 
-  cycles      CycleTontine[]
-  membres     MembreGroupe[]
-  regles      ReglesGroupe[]
-  invitations InvitationGroupe[]
+  cycles        CycleTontine[]
+  membres       MembreGroupe[]
+  regles        ReglesGroupe[]
+  invitations   InvitationGroupe[]
   notifications NotificationGroupe[]
 
   @@map("groupes")
@@ -116,13 +124,13 @@ model MembreGroupe {
   date_depart      DateTime?
   statut_visuel    StatutVisuel   @default(VERT)
 
-  id_user     String        @db.Uuid
-  user        User          @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
-  id_groupe   String        @db.Uuid
-  groupe      Groupes       @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  cotisations Cotisations[]
+  id_user               String             @db.Uuid
+  user                  User               @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  id_groupe             String             @db.Uuid
+  groupe                Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  cotisations           Cotisations[]
   cycles_participations CycleParticipant[]
-  penalites   Penalite[]
+  penalites             Penalite[]
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -149,18 +157,21 @@ model ReglesGroupe {
 }
 
 model CycleTontine {
-  id_cycle           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_cycle           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nom_cycle          String
-  date_debut         DateTime @default(now())
+  date_debut         DateTime      @default(now())
   date_fin           DateTime
   duree_tour_de_gain Int
-  montant_cotisation Decimal  @db.Decimal(15, 2)
+  montant_cotisation Decimal       @db.Decimal(15, 2)
   ordre_beneficiaire String?
+  penalites_activees Boolean       @default(false)
+  mode_penalite      ModePenalite?
+  valeur_penalite    Decimal?      @db.Decimal(15, 2)
 
-  id_groupe   String        @db.Uuid
-  groupe      Groupes       @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  id_groupe    String             @db.Uuid
+  groupe       Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
   participants CycleParticipant[]
-  cotisations Cotisations[]
+  cotisations  Cotisations[]
 
   @@index([id_groupe])
   @@map("cycles_tontine")
@@ -170,9 +181,9 @@ model CycleTontine {
 model CycleParticipant {
   id_cycle_participant String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ordre                Int
-  date_ajout            DateTime @default(now())
+  date_ajout           DateTime @default(now())
 
-  id_cycle String      @db.Uuid
+  id_cycle String       @db.Uuid
   cycle    CycleTontine @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
 
   id_membre_groupe String       @db.Uuid
@@ -186,12 +197,14 @@ model CycleParticipant {
 }
 
 model Cotisations {
-  id_cotisation      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_cotisation      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   date_debut         DateTime
-  montant            Decimal  @db.Decimal(15, 2)
+  montant            Decimal   @db.Decimal(15, 2)
   date_de_paiement   DateTime
-  penalite_appliquee Boolean  @default(false)
-  montant_penalite   Decimal? @db.Decimal(15, 2)
+  numero_tour        Int?
+  date_echeance      DateTime?
+  penalite_appliquee Boolean   @default(false)
+  montant_penalite   Decimal?  @db.Decimal(15, 2)
 
   id_membre_groupe String       @db.Uuid
   membre_groupe    MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe])
@@ -207,13 +220,17 @@ model Cotisations {
 }
 
 model Penalite {
-  id_penalite              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  montant_base             Decimal  @db.Decimal(15, 2)
+  id_penalite              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  montant_base             Decimal       @db.Decimal(15, 2)
   motif                    String
-  taux_augmentation_heure  Decimal  @db.Decimal(5, 2)
+  taux_augmentation_heure  Decimal       @db.Decimal(5, 2)
   seuil_heure_augmentation Int
   date_application         DateTime
-  montant_final            Decimal  @db.Decimal(15, 2)
+  montant_final            Decimal       @db.Decimal(15, 2)
+  mode_penalite            ModePenalite?
+  valeur_configuree        Decimal?      @db.Decimal(15, 2)
+  jours_retard             Int?
+  date_echeance            DateTime?
 
   // Relations
   id_membre_groupe String       @db.Uuid
@@ -228,16 +245,16 @@ model Penalite {
 }
 
 model NotificationGroupe {
-  id_notification  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_notification   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type_notification String
   message           String
-  date_creation     DateTime @default(now())
+  date_creation     DateTime  @default(now())
   date_lecture      DateTime?
 
   id_user String @db.Uuid
   user    User   @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
 
-  id_groupe String? @db.Uuid
+  id_groupe String?  @db.Uuid
   groupe    Groupes? @relation(fields: [id_groupe], references: [id_groupe], onDelete: SetNull)
 
   @@index([id_user])

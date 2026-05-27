@@ -39,65 +39,48 @@ export default async function GroupCyclesPage({
 
   const membership = await prisma.membreGroupe.findFirst({
     where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
-    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } } },
+    select: {
+      id_membre_groupe: true,
+      role: true,
+      groupe: {
+        select: {
+          devise: true,
+          cycles: {
+            orderBy: { date_debut: "desc" },
+            select: {
+              id_cycle: true,
+              nom_cycle: true,
+              date_debut: true,
+              date_fin: true,
+              duree_tour_de_gain: true,
+              montant_cotisation: true,
+              participants: {
+                orderBy: { ordre: "asc" },
+                select: {
+                  id_membre_groupe: true,
+                  ordre: true,
+                  membre_groupe: {
+                    select: { user: { select: { nom: true, prenom: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!membership) {
     redirect("/dashboard");
   }
 
-  const cycles =
+  const normalized =
     membership.role === "ADMIN"
-      ? await prisma.cycleTontine.findMany({
-          where: { id_groupe: groupId },
-          orderBy: { date_debut: "desc" },
-          select: {
-            id_cycle: true,
-            nom_cycle: true,
-            date_debut: true,
-            date_fin: true,
-            duree_tour_de_gain: true,
-            montant_cotisation: true,
-            participants: {
-              orderBy: { ordre: "asc" },
-              select: {
-                ordre: true,
-                membre_groupe: {
-                  select: { user: { select: { nom: true, prenom: true } } },
-                },
-              },
-            },
-          },
-        })
-      : await prisma.cycleParticipant.findMany({
-          where: { id_membre_groupe: membership.id_membre_groupe },
-          orderBy: { cycle: { date_debut: "desc" } },
-          select: {
-            cycle: {
-              select: {
-                id_cycle: true,
-                nom_cycle: true,
-                date_debut: true,
-                date_fin: true,
-                duree_tour_de_gain: true,
-                montant_cotisation: true,
-                participants: {
-                  orderBy: { ordre: "asc" },
-                  select: {
-                    ordre: true,
-                    membre_groupe: {
-                      select: { user: { select: { nom: true, prenom: true } } },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        });
-
-  const normalized = Array.isArray(cycles)
-    ? cycles.map((item) => ("cycle" in item ? item.cycle : item))
-    : [];
+      ? membership.groupe.cycles
+      : membership.groupe.cycles.filter((c) =>
+          c.participants.some((p) => p.id_membre_groupe === membership.id_membre_groupe),
+        );
 
   const now = new Date();
   const filtered = normalized.filter((cycle) => {

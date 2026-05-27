@@ -11,10 +11,7 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
-export async function POST(
-  request: NextRequest,
-  ctx: { params: Promise<{ groupId: string }> },
-) {
+export async function POST(request: NextRequest, ctx: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await ctx.params;
 
   const supabase = await createSupabaseServerClient();
@@ -46,7 +43,15 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
   }
 
-  const { nom_cycle, duree_tour_de_gain, montant_cotisation, participants } = parsedBody.data;
+  const {
+    nom_cycle,
+    duree_tour_de_gain,
+    montant_cotisation,
+    participants,
+    penalty_active,
+    penalty_type,
+    penalty_value,
+  } = parsedBody.data;
 
   const uniqueParticipants = Array.from(new Set(participants));
   if (uniqueParticipants.length !== participants.length) {
@@ -86,6 +91,9 @@ export async function POST(
           duree_tour_de_gain,
           montant_cotisation,
           ordre_beneficiaire: JSON.stringify(uniqueParticipants),
+          penalites_activees: penalty_active,
+          mode_penalite: penalty_active ? penalty_type : null,
+          valeur_penalite: penalty_active ? penalty_value : null,
         },
         select: {
           id_cycle: true,
@@ -94,6 +102,9 @@ export async function POST(
           date_fin: true,
           duree_tour_de_gain: true,
           montant_cotisation: true,
+          penalites_activees: true,
+          mode_penalite: true,
+          valeur_penalite: true,
         },
       });
 
@@ -117,10 +128,7 @@ export async function POST(
   }
 }
 
-export async function GET(
-  _request: NextRequest,
-  ctx: { params: Promise<{ groupId: string }> },
-) {
+export async function GET(_request: NextRequest, ctx: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await ctx.params;
 
   const supabase = await createSupabaseServerClient();
@@ -159,6 +167,9 @@ export async function GET(
             date_fin: true,
             duree_tour_de_gain: true,
             montant_cotisation: true,
+            penalites_activees: true,
+            mode_penalite: true,
+            valeur_penalite: true,
             _count: { select: { participants: true } },
           },
         })
@@ -174,6 +185,9 @@ export async function GET(
                 date_fin: true,
                 duree_tour_de_gain: true,
                 montant_cotisation: true,
+                penalites_activees: true,
+                mode_penalite: true,
+                valeur_penalite: true,
                 _count: { select: { participants: true } },
               },
             },

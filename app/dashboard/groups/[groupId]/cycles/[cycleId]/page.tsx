@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
 import { Button } from "@/components/ui/button";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
+import { EditCycleForm } from "@/components/groups/edit-cycle-form";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -26,6 +28,10 @@ type PaymentItem = {
   id_membre_groupe: string;
   montant: number;
   date_de_paiement: Date;
+  numero_tour: number | null;
+  date_echeance: Date | null;
+  penalite_appliquee: boolean;
+  montant_penalite: number | null;
 };
 
 export default async function GroupCycleDetailPage({
@@ -39,7 +45,9 @@ export default async function GroupCycleDetailPage({
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
   if (!user) {
-    redirect(`/auth/login?next=${encodeURIComponent(`/dashboard/groups/${groupId}/cycles/${cycleId}`)}`);
+    redirect(
+      `/auth/login?next=${encodeURIComponent(`/dashboard/groups/${groupId}/cycles/${cycleId}`)}`,
+    );
   }
 
   const membership = await prisma.membreGroupe.findFirst({
@@ -60,6 +68,9 @@ export default async function GroupCycleDetailPage({
       date_fin: true,
       duree_tour_de_gain: true,
       montant_cotisation: true,
+      penalites_activees: true,
+      mode_penalite: true,
+      valeur_penalite: true,
       participants: {
         orderBy: { ordre: "asc" },
         select: {
@@ -99,6 +110,8 @@ export default async function GroupCycleDetailPage({
     }
   }
 
+  await applyAutomaticOverduePenalties(cycleId);
+
   const payments = await prisma.cotisations.findMany({
     where:
       membership.role === "ADMIN"
@@ -110,6 +123,10 @@ export default async function GroupCycleDetailPage({
       id_membre_groupe: true,
       montant: true,
       date_de_paiement: true,
+      numero_tour: true,
+      date_echeance: true,
+      penalite_appliquee: true,
+      montant_penalite: true,
     },
   });
 
@@ -121,6 +138,10 @@ export default async function GroupCycleDetailPage({
       id_membre_groupe: payment.id_membre_groupe,
       montant: Number(payment.montant),
       date_de_paiement: payment.date_de_paiement,
+      numero_tour: payment.numero_tour,
+      date_echeance: payment.date_echeance,
+      penalite_appliquee: payment.penalite_appliquee,
+      montant_penalite: payment.montant_penalite ? Number(payment.montant_penalite) : null,
     });
     paymentsByMember.set(payment.id_membre_groupe, entry);
   });
@@ -143,6 +164,66 @@ export default async function GroupCycleDetailPage({
     nom: participant.membre_groupe.user.nom,
     prenom: participant.membre_groupe.user.prenom,
   }));
+  const toursForForm = cycle.participants.map((participant) => ({
+    numero: participant.ordre,
+    beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
+    dateEcheance: addDays(
+      cycle.date_debut,
+      cycle.duree_tour_de_gain * (participant.ordre - 1),
+    ).toLocaleDateString("fr-FR"),
+  }));
+  const participantsStats = cycle.participants.map((participant) => {
+    const member = participant.membre_groupe;
+    const paymentsList = paymentsByMember.get(member.id_membre_groupe) ?? [];
+    
+    // Calcul par tour pour une précision maximale
+    const tourDetails = Array.from({ length: totalTours }, (_, i) => {
+      const tourNum = i + 1;
+      const dueDate = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tourNum - 1));
+      const tourPayments = paymentsList.filter(p => p.numero_tour === tourNum);
+      const paidAmount = tourPayments.reduce((acc, p) => acc + p.montant, 0);
+      const penaltiesAmount = tourPayments.reduce((acc, p) => acc + (p.montant_penalite || 0), 0);
+      
+      const isOverdue = now > dueDate && paidAmount < montantFixe;
+      const daysLate = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      
+      return {
+        tourNum,
+        dueDate,
+        paidAmount,
+        penaltiesAmount,
+        isOverdue,
+        daysLate,
+        isComplete: paidAmount >= montantFixe
+      };
+    });
+
+    const totalPaid = tourDetails.reduce((acc, t) => acc + t.paidAmount, 0);
+    const totalPenalties = tourDetails.reduce((acc, t) => acc + t.penaltiesAmount, 0);
+    const totalDaysLate = tourDetails.reduce((acc, t) => acc + t.daysLate, 0);
+    const hasActivePenalty = tourDetails.some(t => t.penaltiesAmount > 0);
+    const isLate = tourDetails.some(t => t.isOverdue);
+    const isIncomplete = tourDetails.some(t => t.tourNum <= currentIndex + 1 && !t.isComplete);
+
+    return {
+      participant,
+      totalPaid,
+      totalPenalties,
+      totalDaysLate,
+      hasActivePenalty,
+      isLate,
+      isIncomplete,
+      tourDetails
+    };
+  });
+
+  const globalStats = {
+    totalPenalties: participantsStats.reduce((acc, p) => acc + p.totalPenalties, 0),
+    totalLateMembers: participantsStats.filter(p => p.isLate).length,
+    totalDaysLate: participantsStats.reduce((acc, p) => acc + p.totalDaysLate, 0),
+    totalExpected: montantFixe * totalTours * totalTours, // Simplification: chaque membre paie à chaque tour
+    totalCollected: participantsStats.reduce((acc, p) => acc + p.totalPaid, 0),
+  };
 
   return (
     <div className="space-y-6">
@@ -150,7 +231,7 @@ export default async function GroupCycleDetailPage({
         <div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{cycle.nom_cycle}</h1>
           <p className="text-sm text-muted-foreground">
-            {cycle.date_debut.toLocaleDateString("fr-FR")} - {" "}
+            {cycle.date_debut.toLocaleDateString("fr-FR")} -{" "}
             {cycle.date_fin.toLocaleDateString("fr-FR")}
           </p>
         </div>
@@ -164,6 +245,35 @@ export default async function GroupCycleDetailPage({
         </div>
       </div>
 
+      {/* Statistiques Globales (Admin) */}
+      {membership.role === "ADMIN" && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Retards actuels</p>
+            <p className="mt-1 text-2xl font-bold text-rose-600">{globalStats.totalLateMembers}</p>
+            <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours cumulés</p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Pénalités générées</p>
+            <p className="mt-1 text-2xl font-bold text-amber-600">
+              {globalStats.totalPenalties.toLocaleString("fr-FR")} {membership.groupe.devise}
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Collecté</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-600">
+              {globalStats.totalCollected.toLocaleString("fr-FR")} {membership.groupe.devise}
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Progression financière</p>
+            <p className="mt-1 text-2xl font-bold text-brand-600">
+              {Math.round((globalStats.totalCollected / (montantFixe * totalTours * totalTours)) * 100 || 0)}%
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -171,7 +281,9 @@ export default async function GroupCycleDetailPage({
             <p className="text-lg font-semibold text-brand-600">{currentName}</p>
           </div>
           {!cycleTermine ? (
-            <p className="text-xs text-gray-500">Fin du tour: {tourEnd.toLocaleDateString("fr-FR")}</p>
+            <p className="text-xs text-gray-500">
+              Fin du tour: {tourEnd.toLocaleDateString("fr-FR")}
+            </p>
           ) : null}
         </div>
         <div className="mt-3">
@@ -190,69 +302,151 @@ export default async function GroupCycleDetailPage({
       </div>
 
       {membership.role === "ADMIN" ? (
-        <CyclePaymentForm groupId={groupId} cycleId={cycleId} participants={participantsForForm} />
+        <EditCycleForm
+          groupId={groupId}
+          cycleId={cycleId}
+          canManage={true}
+          initialCycle={{
+            nom_cycle: cycle.nom_cycle,
+            date_debut: cycle.date_debut.toISOString(),
+            date_fin: cycle.date_fin.toISOString(),
+            duree_tour_de_gain: cycle.duree_tour_de_gain,
+            montant_cotisation: Number(cycle.montant_cotisation),
+            penalites_activees: cycle.penalites_activees,
+            mode_penalite: cycle.mode_penalite,
+            valeur_penalite: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : null,
+          }}
+          initialOrder={cycle.participants.map((participant) => participant.id_membre_groupe)}
+        />
+      ) : null}
+
+      {membership.role === "ADMIN" ? (
+        <CyclePaymentForm
+          groupId={groupId}
+          cycleId={cycleId}
+          participants={participantsForForm}
+          tours={toursForForm}
+          defaultTour={defaultTour}
+        />
       ) : null}
 
       <div className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Participants</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Situation des participants</h2>
         <div className="grid gap-3">
-          {cycle.participants.map((participant) => {
+          {participantsStats.map(({ participant, totalPaid, totalPenalties, totalDaysLate, hasActivePenalty, isLate, isIncomplete, tourDetails }) => {
             const member = participant.membre_groupe;
-            if (membership.role !== "ADMIN" && member.id_membre_groupe !== membership.id_membre_groupe) {
+            if (
+              membership.role !== "ADMIN" &&
+              member.id_membre_groupe !== membership.id_membre_groupe
+            ) {
               return null;
             }
 
-            const paymentsList = paymentsByMember.get(member.id_membre_groupe) ?? [];
-            const totalPaid = paymentsList.reduce((acc, item) => acc + item.montant, 0);
-            const remaining = Math.max(0, montantFixe - totalPaid);
-            const advance = Math.max(0, totalPaid - montantFixe);
-            const progressPercent = Math.min((totalPaid / montantFixe) * 100, 100);
-            const isLate = !cycleTermine && new Date() > tourEnd && totalPaid < montantFixe;
+            const montantInitial = montantFixe * totalTours;
+            const totalDu = montantInitial + totalPenalties;
+            const progressPercent = Math.min((totalPaid / montantInitial) * 100, 100);
 
             return (
-              <div key={member.id_membre_groupe} className="rounded-xl border border-gray-200 bg-white p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {member.user.prenom} {member.user.nom}
-                    </p>
-                    <p className="text-xs text-gray-500">{member.user.email}</p>
+              <div
+                key={member.id_membre_groupe}
+                className="rounded-xl border border-gray-200 bg-white p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold uppercase">
+                      {member.user.prenom[0]}{member.user.nom[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {member.user.prenom} {member.user.nom}
+                      </p>
+                      <p className="text-xs text-gray-500">{member.user.email}</p>
+                    </div>
                   </div>
-                  <div className="text-right text-xs text-gray-500">
-                    <p>Verse: {totalPaid.toLocaleString("fr-FR")}</p>
-                    <p>Restant: {remaining.toLocaleString("fr-FR")}</p>
-                    {advance > 0 ? <p>Avance: {advance.toLocaleString("fr-FR")}</p> : null}
-                    {isLate ? <p className="font-semibold text-rose-600">En retard</p> : null}
+                  <div className="flex flex-wrap gap-2">
+                    {isLate && (
+                      <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/10">
+                        En retard ({totalDaysLate}j)
+                      </span>
+                    )}
+                    {hasActivePenalty && (
+                      <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/10">
+                        Pénalité appliquée
+                      </span>
+                    )}
+                    {isIncomplete && (
+                      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/10">
+                        Paiement incomplet
+                      </span>
+                    )}
+                    {!isIncomplete && !isLate && totalPaid >= montantInitial && (
+                      <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
+                        À jour
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="mt-3">
-                  <div className="h-2 w-full rounded-full bg-gray-100">
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase">Cotisation initiale</p>
+                    <p className="text-sm font-semibold">{montantInitial.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase">Pénalités</p>
+                    <p className="text-sm font-semibold text-amber-600">+{totalPenalties.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase">Total à payer</p>
+                    <p className="text-sm font-bold text-gray-900">{totalDu.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase">Total versé</p>
+                    <p className="text-sm font-bold text-emerald-600">{totalPaid.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="text-gray-500 font-medium">Progression de la cotisation</span>
+                    <span className="text-gray-900 font-bold">{Math.round(progressPercent)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-gray-100">
                     <div
-                      className="h-2 rounded-full bg-emerald-500"
+                      className="h-1.5 rounded-full bg-emerald-500 transition-all"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {Math.min(totalPaid, montantFixe).toLocaleString("fr-FR")} / {" "}
-                    {montantFixe.toLocaleString("fr-FR")} {membership.groupe.devise}
-                  </p>
                 </div>
 
-                <div className="mt-3">
-                  <p className="text-xs font-semibold text-gray-900">Historique des versements</p>
-                  {paymentsList.length ? (
-                    <div className="mt-2 space-y-1 text-xs text-gray-500">
-                      {paymentsList.map((payment) => (
-                        <div key={payment.id_cotisation} className="flex justify-between">
-                          <span>{payment.date_de_paiement.toLocaleDateString("fr-FR")}</span>
-                          <span>{payment.montant.toLocaleString("fr-FR")}</span>
+                <div className="mt-4 border-t border-gray-50 pt-4">
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-center justify-between list-none text-xs font-semibold text-gray-900">
+                      <span>Détail par tour</span>
+                      <span className="text-brand-600 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      {tourDetails.map((tour) => (
+                        <div key={tour.tourNum} className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-gray-50">
+                          <div className="space-y-0.5">
+                            <p className="font-bold text-gray-900">Tour {tour.tourNum}</p>
+                            <p className="text-gray-500">Échéance : {tour.dueDate.toLocaleDateString("fr-FR")}</p>
+                          </div>
+                          <div className="text-right space-y-0.5">
+                            <p className="font-medium">
+                              {tour.paidAmount.toLocaleString("fr-FR")} / {montantFixe.toLocaleString("fr-FR")}
+                            </p>
+                            {tour.penaltiesAmount > 0 && (
+                              <p className="text-amber-600 font-bold">Pén. : +{tour.penaltiesAmount.toLocaleString("fr-FR")}</p>
+                            )}
+                            {tour.isOverdue && (
+                              <p className="text-rose-600 font-bold">Retard: {tour.daysLate}j</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="mt-2 text-xs text-gray-500">Aucun versement.</p>
-                  )}
+                  </details>
                 </div>
               </div>
             );

@@ -8,33 +8,33 @@ export async function SiteHeader() {
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
   return (
-    <header className="border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="font-semibold tracking-tight">
-          Next.js Template
+    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-gray-800 dark:bg-gray-900/80">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 lg:px-6">
+        <Link href="/" className="text-base font-semibold text-gray-900 dark:text-white">
+          E-Tontine
         </Link>
         <nav className="flex items-center gap-2">
           {user ? (
             <>
-              <Button asChild variant="ghost">
+              <Button asChild variant="ghost" size="sm">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <Button asChild variant="ghost">
-                <Link href="/account">Account</Link>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/account">Compte</Link>
               </Button>
               <form action="/logout" method="post">
-                <Button type="submit" variant="outline">
-                  Log out
+                <Button type="submit" variant="outline" size="sm">
+                  Se deconnecter
                 </Button>
               </form>
             </>
           ) : (
             <>
-              <Button asChild variant="ghost">
-                <Link href="/auth/login">Log in</Link>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/auth/login">Se connecter</Link>
               </Button>
-              <Button asChild>
-                <Link href="/auth/register">Create account</Link>
+              <Button asChild size="sm">
+                <Link href="/auth/register">Creer un compte</Link>
               </Button>
             </>
           )}

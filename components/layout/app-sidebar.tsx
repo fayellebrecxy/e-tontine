@@ -110,10 +110,20 @@ export function AppSidebar() {
               >
                 Tous les groupes
               </Link>
+              <Link
+                href="/dashboard/groups/new"
+                className={`menu-dropdown-item ${
+                  pathname === "/dashboard/groups/new"
+                    ? "menu-dropdown-item-active"
+                    : "menu-dropdown-item-inactive"
+                }`}
+              >
+                Creer un groupe
+              </Link>
               {groups.map((group) => (
                 <Link
                   key={group.id_groupe}
-                  href={`/dashboard/groups/${group.id_groupe}/members`}
+                  href={`/dashboard/groups/${group.id_groupe}`}
                   className={`menu-dropdown-item ${
                     pathname.includes(group.id_groupe)
                       ? "menu-dropdown-item-active"

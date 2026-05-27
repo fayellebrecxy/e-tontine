@@ -5,6 +5,8 @@ import { Menu, Search } from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
+import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 export function AppHeader() {
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
@@ -43,6 +45,8 @@ export function AppHeader() {
             />
           </div>
           <nav className="flex items-center gap-2">
+            <JoinGroupDialog variant="ghost" className="hidden sm:flex" />
+            <NotificationCenter />
             <Button asChild variant="ghost" size="sm">
               <Link href="/dashboard">Dashboard</Link>
             </Button>

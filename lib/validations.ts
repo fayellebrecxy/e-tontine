@@ -85,18 +85,98 @@ export const createCycleSchema = z
     nom_cycle: z.string().trim().min(2, "Le nom du cycle est requis.").max(128),
     duree_tour_de_gain: z.number().int().positive(),
     montant_cotisation: z.number().positive(),
-  participants: z.array(z.string().uuid()).min(1),
-  penalty_active: z.boolean().default(false),
-  penalty_type: z.enum(["FIXE", "PERCENT", "PROGRESSIVE"]).default("FIXE"),
-  penalty_value: z.number().positive().default(0),
+    participants: z.array(z.string().uuid()).min(1),
+    penalty_active: z.boolean().default(false),
+    penalty_type: z.enum(["FIXE", "POURCENTAGE", "PROGRESSIVE"]).optional(),
+    penalty_value: z.number().nonnegative().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (!data.penalty_active) return;
+
+    if (!data.penalty_type) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Le mode de penalite est requis.",
+        path: ["penalty_type"],
+      });
+    }
+
+    if (!data.penalty_value || data.penalty_value <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La valeur de la penalite doit etre positive.",
+        path: ["penalty_value"],
+      });
+    }
+  });
+
+export const updateCycleSchema = z
+  .object({
+    nom_cycle: z.string().trim().min(2, "Le nom du cycle est requis.").max(128),
+    date_debut: z.string(),
+    date_fin: z.string(),
+    duree_tour_de_gain: z.number().int().positive(),
+    montant_cotisation: z.number().positive(),
+    participants: z.array(z.string().uuid()).min(1),
+    penalty_active: z.boolean().default(false),
+    penalty_type: z.enum(["FIXE", "POURCENTAGE", "PROGRESSIVE"]).nullable().optional(),
+    penalty_value: z.number().nonnegative().nullable().optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const start = new Date(data.date_debut);
+    const end = new Date(data.date_fin);
+
+    if (Number.isNaN(start.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La date de debut est invalide.",
+        path: ["date_debut"],
+      });
+    }
+
+    if (Number.isNaN(end.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La date de fin est invalide.",
+        path: ["date_fin"],
+      });
+    }
+
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end <= start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La date de fin doit etre apres la date de debut.",
+        path: ["date_fin"],
+      });
+    }
+
+    if (!data.penalty_active) return;
+
+    if (!data.penalty_type) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Le mode de penalite est requis.",
+        path: ["penalty_type"],
+      });
+    }
+
+    if (!data.penalty_value || data.penalty_value <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La valeur de la penalite doit etre positive.",
+        path: ["penalty_value"],
+      });
+    }
+  });
 
 export const createCyclePaymentSchema = z
   .object({
     id_membre_groupe: z.string().uuid(),
     montant: z.number().positive(),
     date_paiement: z.string().optional(),
+    numero_tour: z.number().int().positive().optional(),
   })
   .strict();
 

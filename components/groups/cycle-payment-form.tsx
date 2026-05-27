@@ -15,15 +15,30 @@ type ParticipantItem = {
   prenom: string;
 };
 
+type TourItem = {
+  numero: number;
+  beneficiaire: string;
+  dateEcheance: string;
+};
+
 type CyclePaymentFormProps = {
   groupId: string;
   cycleId: string;
   participants: ParticipantItem[];
+  tours: TourItem[];
+  defaultTour: number;
 };
 
-export function CyclePaymentForm({ groupId, cycleId, participants }: CyclePaymentFormProps) {
+export function CyclePaymentForm({
+  groupId,
+  cycleId,
+  participants,
+  tours,
+  defaultTour,
+}: CyclePaymentFormProps) {
   const router = useRouter();
   const [selected, setSelected] = React.useState(participants[0]?.id_membre_groupe ?? "");
+  const [numeroTour, setNumeroTour] = React.useState(String(defaultTour));
   const [montant, setMontant] = React.useState("");
   const [datePaiement, setDatePaiement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -47,13 +62,12 @@ export function CyclePaymentForm({ groupId, cycleId, participants }: CyclePaymen
       body: JSON.stringify({
         id_membre_groupe: selected,
         montant: montantValue,
+        numero_tour: Number(numeroTour),
         ...(datePaiement ? { date_paiement: datePaiement } : {}),
       }),
     });
 
-    const body = (await res.json().catch(() => null)) as
-      | null
-      | { ok?: boolean; error?: string };
+    const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
 
     if (!res.ok || !body?.ok) {
       toast.error(body?.error ?? "Impossible d'enregistrer le versement.");
@@ -84,6 +98,20 @@ export function CyclePaymentForm({ groupId, cycleId, participants }: CyclePaymen
             {participants.map((member) => (
               <option key={member.id_membre_groupe} value={member.id_membre_groupe}>
                 {member.prenom} {member.nom}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label>Tour concerne</Label>
+          <select
+            className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+            value={numeroTour}
+            onChange={(event) => setNumeroTour(event.target.value)}
+          >
+            {tours.map((tour) => (
+              <option key={tour.numero} value={tour.numero}>
+                Tour {tour.numero} - {tour.beneficiaire} - echeance {tour.dateEcheance}
               </option>
             ))}
           </select>

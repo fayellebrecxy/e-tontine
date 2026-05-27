@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -55,9 +56,12 @@ export default async function DashboardPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium">Mes groupes</h2>
-          <Button asChild size="sm">
-            <Link href="/dashboard/groups/new">Créer un groupe</Link>
-          </Button>
+          <div className="flex gap-2">
+            <JoinGroupDialog variant="outline" />
+            <Button asChild>
+              <Link href="/dashboard/groups/new">Créer un groupe</Link>
+            </Button>
+          </div>
         </div>
         {dbUser?.memberships.length ? (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -72,19 +76,11 @@ export default async function DashboardPage() {
                 </p>
 
                 <div className="mt-3">
-                  {membership.statut_adhesion === "ACTIF" ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/members`}>
-                        Membres
-                      </Link>
-                    </Button>
-                  ) : (
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/dashboard/groups/${membership.groupe.id_groupe}`}>
-                        Voir la fiche
+                        Ouvrir le groupe
                       </Link>
                     </Button>
-                  )}
                   {membership.role === "ADMIN" ? (
                     <Button asChild size="sm" variant="ghost" className="ml-2">
                       <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/settings`}>

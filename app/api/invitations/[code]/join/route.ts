@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { joinInvitationSchema, normalizeEmail, normalizeName, normalizePhone } from "@/lib/validations";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { createNotification, notifyGroupAdmins } from "@/lib/notifications";
 
 export async function POST(request: NextRequest, ctx: { params: Promise<{ code: string }> }) {
   const { code } = await ctx.params;
@@ -228,6 +229,21 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ code: 
         date_adhesion: true,
         id_groupe: true,
       },
+    });
+
+    // Envoyer une notification au nouvel utilisateur
+    await createNotification({
+      userId: authUser.id,
+      groupId,
+      type: "INVITATION_RECU",
+      message: `Bienvenue dans le groupe "${group.nom}" ! Votre adhésion a été confirmée.`,
+    });
+
+    // Informer les admins
+    await notifyGroupAdmins({
+      groupId,
+      type: "NOUVEAU_MEMBRE",
+      message: `${prenom} ${nom} a rejoint le groupe "${group.nom}".`,
     });
 
     return NextResponse.json(

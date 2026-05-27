@@ -21,6 +21,7 @@ export default async function GroupOverviewPage({
   const membership = await prisma.membreGroupe.findUnique({
     where: { id_user_id_groupe: { id_user: user.id, id_groupe: groupId } },
     select: {
+      id_membre_groupe: true,
       role: true,
       statut_adhesion: true,
       groupe: {
@@ -29,6 +30,24 @@ export default async function GroupOverviewPage({
           description: true,
           devise: true,
           date_de_creation: true,
+          cycles: {
+            where: {
+              id_groupe: groupId,
+            },
+            orderBy: { date_debut: "desc" },
+            select: {
+              id_cycle: true,
+              nom_cycle: true,
+              date_debut: true,
+              date_fin: true,
+              duree_tour_de_gain: true,
+              participants: {
+                select: {
+                  id_membre_groupe: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -38,40 +57,14 @@ export default async function GroupOverviewPage({
     redirect("/dashboard");
   }
 
-  const cycles =
+  const normalizedCycles =
     membership.statut_adhesion === "ACTIF"
       ? membership.role === "ADMIN"
-        ? await prisma.cycleTontine.findMany({
-            where: { id_groupe: groupId },
-            orderBy: { date_debut: "desc" },
-            select: {
-              id_cycle: true,
-              nom_cycle: true,
-              date_debut: true,
-              date_fin: true,
-              duree_tour_de_gain: true,
-            },
-          })
-        : await prisma.cycleParticipant.findMany({
-            where: { id_membre_groupe: membership.id_membre_groupe },
-            orderBy: { cycle: { date_debut: "desc" } },
-            select: {
-              cycle: {
-                select: {
-                  id_cycle: true,
-                  nom_cycle: true,
-                  date_debut: true,
-                  date_fin: true,
-                  duree_tour_de_gain: true,
-                },
-              },
-            },
-          })
+        ? membership.groupe.cycles
+        : membership.groupe.cycles.filter((c) =>
+            c.participants.some((p) => p.id_membre_groupe === membership.id_membre_groupe),
+          )
       : [];
-
-  const normalizedCycles = Array.isArray(cycles)
-    ? cycles.map((item) => ("cycle" in item ? item.cycle : item))
-    : [];
 
   return (
     <div className="space-y-6">

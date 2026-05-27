@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Trash2, Users } from "lucide-react";
+import { Settings, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GroupNav } from "@/components/groups/group-nav";
@@ -164,13 +164,7 @@ export function GroupShell({
                     <Button asChild variant="outline" className="justify-start">
                       <Link href={`/dashboard/groups/${groupId}/settings`}>
                         <Settings className="mr-2 h-4 w-4" />
-                        Mettre a jour
-                      </Link>
-                    </Button>
-                    <Button asChild variant="destructive" className="justify-start">
-                      <Link href={`/dashboard/groups/${groupId}/settings`}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Supprimer
+                        Parametres du groupe
                       </Link>
                     </Button>
                   </div>

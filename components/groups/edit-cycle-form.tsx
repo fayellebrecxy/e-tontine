@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,28 @@ import { Label } from "@/components/ui/label";
 
 type MemberItem = {
   id_membre_groupe: string;
-  role: "ADMIN" | "MEMBRE";
   statut_adhesion: string;
   user: {
     nom: string;
     prenom: string;
-    email: string;
-    telephone: string;
   };
+};
+
+type EditCycleFormProps = {
+  groupId: string;
+  cycleId: string;
+  canManage: boolean;
+  initialCycle: {
+    nom_cycle: string;
+    date_debut: string;
+    date_fin: string;
+    duree_tour_de_gain: number;
+    montant_cotisation: number;
+    penalites_activees: boolean;
+    mode_penalite: "FIXE" | "POURCENTAGE" | "PROGRESSIVE" | null;
+    valeur_penalite: number | null;
+  };
+  initialOrder: string[];
 };
 
 type MembersApiBody = {
@@ -25,24 +40,35 @@ type MembersApiBody = {
   members?: MemberItem[];
 };
 
-type CreateCycleFormProps = {
-  groupId: string;
-  canManage: boolean;
-};
+function toDateInputValue(date: string) {
+  return new Date(date).toISOString().slice(0, 10);
+}
 
-export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
+export function EditCycleForm({
+  groupId,
+  cycleId,
+  canManage,
+  initialCycle,
+  initialOrder,
+}: EditCycleFormProps) {
+  const router = useRouter();
   const [members, setMembers] = React.useState<MemberItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
-  const [nomCycle, setNomCycle] = React.useState("");
-  const [dureeTour, setDureeTour] = React.useState("30");
-  const [montant, setMontant] = React.useState("");
-  const [penaltyActive, setPenaltyActive] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [nomCycle, setNomCycle] = React.useState(initialCycle.nom_cycle);
+  const [dateDebut, setDateDebut] = React.useState(toDateInputValue(initialCycle.date_debut));
+  const [dateFin, setDateFin] = React.useState(toDateInputValue(initialCycle.date_fin));
+  const [dureeTour, setDureeTour] = React.useState(String(initialCycle.duree_tour_de_gain));
+  const [montant, setMontant] = React.useState(String(initialCycle.montant_cotisation));
+  const [penaltyActive, setPenaltyActive] = React.useState(initialCycle.penalites_activees);
   const [penaltyType, setPenaltyType] = React.useState<"FIXE" | "POURCENTAGE" | "PROGRESSIVE">(
-    "FIXE",
+    initialCycle.mode_penalite ?? "FIXE",
   );
-  const [penaltyValue, setPenaltyValue] = React.useState("");
-  const [order, setOrder] = React.useState<string[]>([]);
+  const [penaltyValue, setPenaltyValue] = React.useState(
+    initialCycle.valeur_penalite ? String(initialCycle.valeur_penalite) : "",
+  );
+  const [order, setOrder] = React.useState<string[]>(initialOrder);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -56,7 +82,14 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
       if (res.ok && body?.ok && body.members) {
         const actifs = body.members.filter((member) => member.statut_adhesion === "ACTIF");
         setMembers(actifs);
-        setOrder(actifs.map((member) => member.id_membre_groupe));
+        setOrder((current) => {
+          const activeIds = new Set(actifs.map((member) => member.id_membre_groupe));
+          const preserved = current.filter((id) => activeIds.has(id));
+          const missing = actifs
+            .map((member) => member.id_membre_groupe)
+            .filter((id) => !preserved.includes(id));
+          return [...preserved, ...missing];
+        });
       }
 
       setLoading(false);
@@ -75,15 +108,6 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
     );
   };
 
-  const toggleAll = () => {
-    setOrder((current) => {
-      if (current.length === members.length) {
-        return [];
-      }
-      return members.map((member) => member.id_membre_groupe);
-    });
-  };
-
   const moveInOrder = (id: string, direction: -1 | 1) => {
     setOrder((current) => {
       const index = current.indexOf(id);
@@ -97,25 +121,25 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
     });
   };
 
-  const shuffleOrder = () => {
-    setOrder((current) => {
-      const next = [...current];
-      for (let i = next.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [next[i], next[j]] = [next[j], next[i]];
-      }
-      return next;
-    });
-  };
-
   const submit = async () => {
-    if (!canManage) return;
+    if (!canManage || submitting) return;
 
     const duree = Number(dureeTour);
     const montantValue = Number(montant);
+    const penaltyValueNumber = Number(penaltyValue);
 
     if (!nomCycle.trim() || nomCycle.trim().length < 2) {
       toast.error("Le nom du cycle est requis.");
+      return;
+    }
+
+    if (!dateDebut || !dateFin) {
+      toast.error("Les dates de debut et de fin sont requises.");
+      return;
+    }
+
+    if (new Date(dateFin) <= new Date(dateDebut)) {
+      toast.error("La date de fin doit etre apres la date de debut.");
       return;
     }
 
@@ -134,63 +158,126 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
       return;
     }
 
-    const penaltyValueNumber = Number(penaltyValue);
     if (penaltyActive && (!Number.isFinite(penaltyValueNumber) || penaltyValueNumber <= 0)) {
       toast.error("La valeur de la penalite est requise.");
       return;
     }
 
-    setSubmitting(true);
-    const res = await fetch(`/api/groups/${groupId}/cycles`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nom_cycle: nomCycle.trim(),
-        duree_tour_de_gain: duree,
-        montant_cotisation: montantValue,
-        participants: order,
-        penalty_active: penaltyActive,
-        penalty_type: penaltyActive ? penaltyType : undefined,
-        penalty_value: penaltyActive ? penaltyValueNumber : undefined,
-      }),
-    });
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nom_cycle: nomCycle.trim(),
+          date_debut: dateDebut,
+          date_fin: dateFin,
+          duree_tour_de_gain: duree,
+          montant_cotisation: montantValue,
+          participants: order,
+          penalty_active: penaltyActive,
+          penalty_type: penaltyActive ? penaltyType : null,
+          penalty_value: penaltyActive ? penaltyValueNumber : null,
+        }),
+      });
 
-    const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
+      const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
 
-    if (!res.ok || !body?.ok) {
-      toast.error(body?.error ?? "Impossible de demarrer le cycle.");
+      if (!res.ok || !body?.ok) {
+        toast.error(body?.error ?? "Impossible de mettre a jour le cycle.");
+        return;
+      }
+
+      toast.success("Cycle mis a jour.");
+      router.refresh();
+    } catch {
+      toast.error("Erreur reseau. Reessayez.");
+    } finally {
       setSubmitting(false);
+    }
+  };
+
+  const deleteCycle = async () => {
+    if (!canManage || deleting || submitting) return;
+
+    const confirmed = window.confirm(
+      "Supprimer ce cycle et toutes ses donnees associees (participants, cotisations, penalites) ?",
+    );
+    if (!confirmed) return;
+
+    const confirmationText = window.prompt('Tapez "SUPPRIMER" pour confirmer.');
+    if (confirmationText !== "SUPPRIMER") {
+      toast.error("Suppression annulee.");
       return;
     }
 
-    toast.success("Cycle demarre.");
-    setSubmitting(false);
+    try {
+      setDeleting(true);
+      const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}`, {
+        method: "DELETE",
+      });
+
+      const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
+
+      if (!res.ok || !body?.ok) {
+        toast.error(body?.error ?? "Impossible de supprimer le cycle.");
+        return;
+      }
+
+      toast.success("Cycle supprime.");
+      router.push(`/dashboard/groups/${groupId}/cycles`);
+      router.refresh();
+    } catch {
+      toast.error("Erreur reseau. Reessayez.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Demarrer un cycle</CardTitle>
+        <CardTitle>Modifier le cycle</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!canManage ? <p className="text-sm text-muted-foreground">Admin uniquement.</p> : null}
-
         <div className="space-y-2">
-          <Label htmlFor="nom-cycle">Nom du cycle</Label>
+          <Label htmlFor="edit-nom-cycle">Nom du cycle</Label>
           <Input
-            id="nom-cycle"
+            id="edit-nom-cycle"
             value={nomCycle}
             onChange={(event) => setNomCycle(event.target.value)}
-            placeholder="Cycle Mai"
             disabled={!canManage}
           />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="duree-tour">Duree du tour (jours)</Label>
+            <Label htmlFor="edit-date-debut">Date de debut</Label>
             <Input
-              id="duree-tour"
+              id="edit-date-debut"
+              type="date"
+              value={dateDebut}
+              onChange={(event) => setDateDebut(event.target.value)}
+              disabled={!canManage}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-date-fin">Date de fin</Label>
+            <Input
+              id="edit-date-fin"
+              type="date"
+              value={dateFin}
+              onChange={(event) => setDateFin(event.target.value)}
+              disabled={!canManage}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="edit-duree-tour">Duree du tour (jours)</Label>
+            <Input
+              id="edit-duree-tour"
               type="number"
               min={1}
               value={dureeTour}
@@ -199,9 +286,9 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="montant-cotisation">Montant de la cotisation</Label>
+            <Label htmlFor="edit-montant-cotisation">Montant de la cotisation</Label>
             <Input
-              id="montant-cotisation"
+              id="edit-montant-cotisation"
               type="number"
               min={0}
               step="0.01"
@@ -226,9 +313,9 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
           {penaltyActive ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="mode-penalite">Mode de calcul</Label>
+                <Label htmlFor="edit-mode-penalite">Mode de calcul</Label>
                 <select
-                  id="mode-penalite"
+                  id="edit-mode-penalite"
                   value={penaltyType}
                   onChange={(event) =>
                     setPenaltyType(event.target.value as "FIXE" | "POURCENTAGE" | "PROGRESSIVE")
@@ -242,23 +329,16 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valeur-penalite">
+                <Label htmlFor="edit-valeur-penalite">
                   {penaltyType === "POURCENTAGE" ? "Pourcentage" : "Montant"}
                 </Label>
                 <Input
-                  id="valeur-penalite"
+                  id="edit-valeur-penalite"
                   type="number"
                   min={0}
                   step="0.01"
                   value={penaltyValue}
                   onChange={(event) => setPenaltyValue(event.target.value)}
-                  placeholder={
-                    penaltyType === "FIXE"
-                      ? "Ex. 1000"
-                      : penaltyType === "POURCENTAGE"
-                        ? "Ex. 5"
-                        : "Ex. 100"
-                  }
                   disabled={!canManage}
                 />
               </div>
@@ -267,18 +347,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Participants actifs</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={toggleAll}
-              disabled={!canManage}
-            >
-              {order.length === members.length ? "Tout deselectionner" : "Tout selectionner"}
-            </Button>
-          </div>
+          <Label>Participants actifs</Label>
           {loading ? (
             <p className="text-xs text-muted-foreground">Chargement...</p>
           ) : members.length ? (
@@ -313,18 +382,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
 
         {order.length ? (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Ordre des beneficiaires</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={shuffleOrder}
-                disabled={!canManage}
-              >
-                Tirage au sort
-              </Button>
-            </div>
+            <Label>Ordre des beneficiaires</Label>
             <div className="space-y-2">
               {order.map((id, index) => {
                 const member = members.find((item) => item.id_membre_groupe === id);
@@ -335,11 +393,10 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
                     key={id}
                     className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm"
                   >
-                    <div className="min-w-0">
+                    <div>
                       <p className="font-medium text-gray-900">
                         {index + 1}. {member.user.prenom} {member.user.nom}
                       </p>
-                      <p className="text-xs text-gray-500">{member.user.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -368,9 +425,19 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
           </div>
         ) : null}
 
-        <Button type="button" onClick={submit} disabled={!canManage || submitting}>
-          {submitting ? "Demarrage..." : "Demarrer le cycle"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={submit} disabled={!canManage || loading || submitting}>
+            {submitting ? "Mise a jour..." : "Mettre a jour"}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={deleteCycle}
+            disabled={!canManage || loading || submitting || deleting}
+          >
+            {deleting ? "Suppression..." : "Supprimer le cycle"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

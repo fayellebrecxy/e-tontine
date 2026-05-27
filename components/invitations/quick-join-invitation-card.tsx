@@ -27,7 +27,8 @@ export function QuickJoinInvitationCard({ code }: Props) {
 
       if (!res.ok || !body?.ok) {
         if (res.status === 409 && body?.code === "PROFILE_INCOMPLETE") {
-          toast.error("Votre profil est incomplet. Merci de remplir le formulaire ci-dessous.");
+          toast.error("Votre profil est incomplet. Merci de remplir le formulaire.");
+          router.refresh();
           return;
         }
 
