@@ -20,6 +20,8 @@ function computeCurrentIndex(dateDebut: Date, dureeTour: number) {
   return Math.floor(days / dureeTour);
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function GroupCyclesPage({
   params,
   searchParams,
@@ -147,11 +149,22 @@ export default async function GroupCyclesPage({
                         {cycle.date_fin.toLocaleDateString("fr-FR")}
                       </p>
                     </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`}>
-                        Voir details
-                      </Link>
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isFinished ? (
+                        <span className="inline-flex items-center rounded-md bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                          🟢 Terminé
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md bg-brand-100 px-2.5 py-1 text-[10px] font-bold text-brand-700 ring-1 ring-inset ring-brand-600/20">
+                          🔵 En cours
+                        </span>
+                      )}
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`}>
+                          Voir détails
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="mt-3 space-y-2 text-xs text-gray-500">

@@ -66,7 +66,7 @@ export function GenerateInvitationCard({ groupId }: Props) {
       }
 
       setInviteLink(body.invitation.lien);
-      toast.success("Lien d’invitation réinitialisé.");
+      toast.success("✅ Nouveau lien d’invitation généré avec succès.");
     });
   };
 
@@ -75,7 +75,7 @@ export function GenerateInvitationCard({ groupId }: Props) {
 
     try {
       await navigator.clipboard.writeText(inviteLink);
-      toast.success("Lien copié.");
+      toast.success("📋 Lien copié dans le presse-papiers !");
     } catch {
       toast.error("Impossible de copier le lien.");
     }

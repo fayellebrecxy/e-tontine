@@ -188,7 +188,7 @@ export function EditCycleForm({
         return;
       }
 
-      toast.success("Cycle mis a jour.");
+      toast.success(`✅ Cycle "${nomCycle.trim()}" mis à jour avec succès.`);
       router.refresh();
     } catch {
       toast.error("Erreur reseau. Reessayez.");
@@ -224,7 +224,7 @@ export function EditCycleForm({
         return;
       }
 
-      toast.success("Cycle supprime.");
+      toast.success(`🗑️ Cycle "${initialCycle.nom_cycle}" supprimé avec succès.`);
       router.push(`/dashboard/groups/${groupId}/cycles`);
       router.refresh();
     } catch {

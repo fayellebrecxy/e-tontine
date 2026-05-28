@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ type CreateCycleFormProps = {
 };
 
 export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
+  const router = useRouter();
   const [members, setMembers] = React.useState<MemberItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
@@ -163,8 +165,13 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
       return;
     }
 
-    toast.success("Cycle demarre.");
+    toast.success(`✅ Cycle "${nomCycle.trim()}" demarre avec succes.`);
     setSubmitting(false);
+    router.refresh();
+    // Réinitialiser le formulaire
+    setNomCycle("");
+    setMontant("");
+    setOrder(members.map((m) => m.id_membre_groupe));
   };
 
   return (

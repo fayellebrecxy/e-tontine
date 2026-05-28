@@ -67,7 +67,7 @@ export function CreateGroupForm() {
         return;
       }
 
-      toast.success("Groupe créé.");
+      toast.success(`✅ Groupe "${values.nom}" créé avec succès.`);
       router.push("/dashboard");
       router.refresh();
     });

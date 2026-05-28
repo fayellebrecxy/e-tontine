@@ -62,8 +62,24 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
   const configuredValue = Number(cycle.valeur_penalite);
   if (configuredValue <= 0 || montantCotisation <= 0) return;
 
+  // 1. Identifier tous les tours qui ont déjà expiré
+  const overdueTours: number[] = [];
+  for (let tour = 1; tour <= totalTours; tour += 1) {
+    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tour - 1));
+    if (now > dateEcheance) {
+      overdueTours.push(tour);
+    }
+  }
+
+  if (overdueTours.length === 0) return;
+
+  // 2. Récupérer toutes les cotisations pour les tours expirés et les participants actifs
   const cotisations = await prisma.cotisations.findMany({
-    where: { id_cycle: cycleId, id_membre_groupe: { in: activeParticipants } },
+    where: {
+      id_cycle: cycleId,
+      id_membre_groupe: { in: activeParticipants },
+      numero_tour: { in: overdueTours },
+    },
     select: {
       id_cotisation: true,
       id_membre_groupe: true,
@@ -90,9 +106,8 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
 
   await prisma.$transaction(async (tx) => {
     for (const memberId of activeParticipants) {
-      for (let tour = 1; tour <= totalTours; tour += 1) {
+      for (const tour of overdueTours) {
         const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tour - 1));
-        if (now <= dateEcheance) continue;
 
         const key = `${memberId}:${tour}`;
         const records = byMemberAndTour.get(key) ?? [];
@@ -179,5 +194,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
         });
       }
     }
+  }, {
+    timeout: 15000, // Augmenter le timeout à 15 secondes pour les cycles avec beaucoup de membres/tours
   });
 }

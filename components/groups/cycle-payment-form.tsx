@@ -75,7 +75,7 @@ export function CyclePaymentForm({
       return;
     }
 
-    toast.success("Versement enregistre.");
+    toast.success(`✅ Versement de ${montantValue.toLocaleString("fr-FR")} enregistre avec succes.`);
     setMontant("");
     setDatePaiement("");
     setSubmitting(false);

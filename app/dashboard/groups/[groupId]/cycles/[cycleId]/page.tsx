@@ -34,6 +34,8 @@ type PaymentItem = {
   montant_penalite: number | null;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function GroupCycleDetailPage({
   params,
 }: {
@@ -147,6 +149,7 @@ export default async function GroupCycleDetailPage({
   });
 
   const montantFixe = Number(cycle.montant_cotisation);
+  const now = new Date();
   const currentIndex = computeCurrentIndex(cycle.date_debut, cycle.duree_tour_de_gain);
   const totalTours = cycle.participants.length;
   const cycleTermine = currentIndex >= totalTours;
@@ -158,6 +161,8 @@ export default async function GroupCycleDetailPage({
     cycle.date_debut,
     cycle.duree_tour_de_gain * Math.min(currentIndex + 1, totalTours),
   );
+
+  const defaultTour = Math.min(currentIndex + 1, totalTours);
 
   const participantsForForm = cycle.participants.map((participant) => ({
     id_membre_groupe: participant.id_membre_groupe,
@@ -365,23 +370,23 @@ export default async function GroupCycleDetailPage({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {isLate && (
-                      <span className="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/10">
-                        En retard ({totalDaysLate}j)
+                      <span className="inline-flex items-center rounded-md bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                        🔴 En retard ({totalDaysLate}j)
                       </span>
                     )}
                     {hasActivePenalty && (
-                      <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/10">
-                        Pénalité appliquée
+                      <span className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                        ⚠️ Pénalité appliquée
                       </span>
                     )}
                     {isIncomplete && (
-                      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/10">
-                        Paiement incomplet
+                      <span className="inline-flex items-center rounded-md bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 ring-1 ring-inset ring-orange-600/20">
+                        🟠 Paiement incomplet
                       </span>
                     )}
                     {!isIncomplete && !isLate && totalPaid >= montantInitial && (
-                      <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
-                        À jour
+                      <span className="inline-flex items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        🟢 À jour
                       </span>
                     )}
                   </div>

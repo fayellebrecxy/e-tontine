@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCycleSchema } from "@/lib/validations";
 
+import { createNotification } from "@/lib/notifications";
+
 function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -118,6 +120,23 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ groupI
 
       return cycle;
     });
+
+    // Envoyer des notifications aux participants
+    const participantsData = await prisma.membreGroupe.findMany({
+      where: { id_membre_groupe: { in: uniqueParticipants } },
+      select: { id_user: true },
+    });
+
+    const notifications = participantsData.map((p) =>
+      createNotification({
+        userId: p.id_user,
+        groupId,
+        type: "NOUVEAU_CYCLE",
+        message: `Un nouveau cycle "${nom_cycle}" a été créé dans votre groupe.`,
+      })
+    );
+
+    await Promise.all(notifications);
 
     return NextResponse.json(
       { ok: true, cycle: result, participants: members.length },

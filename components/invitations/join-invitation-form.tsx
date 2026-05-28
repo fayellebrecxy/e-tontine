@@ -69,18 +69,18 @@ export function JoinInvitationForm({ code }: Props) {
       }
 
       if (body.pending) {
-        toast.success("Demande envoyee. Un admin doit valider votre retour.");
+        toast.success("✅ Demande envoyée. Un admin doit valider votre retour.");
         return;
       }
 
       if (body.already_member) {
-        toast.info("Vous etes deja membre du groupe.");
+        toast.info("ℹ️ Vous êtes déjà membre du groupe.");
         router.push("/dashboard");
         router.refresh();
         return;
       }
 
-      toast.success("Vous avez rejoint le groupe.");
+      toast.success("✅ Félicitations ! Vous avez rejoint le groupe avec succès.");
       router.push("/dashboard");
       router.refresh();
     });

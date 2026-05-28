@@ -33,7 +33,7 @@ export function CloseCycleButton({ groupId, cycleId }: CloseCycleButtonProps) {
       return;
     }
 
-    toast.success("Cycle cloture.");
+    toast.success("✅ Cycle clôturé avec succès.");
     setPending(false);
     router.refresh();
   };

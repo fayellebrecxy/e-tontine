@@ -1,11 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
 }
 
@@ -13,8 +7,193 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-  // Keep Prisma scoped to app-owned objects. Supabase manages auth.* tables.
   schemas   = ["public"]
+}
+
+model User {
+  id_user            String               @id @db.Uuid
+  nom                String
+  prenom             String
+  email              String               @unique
+  telephone          String               @unique
+  photo_de_profil    String?
+  date_creation      DateTime             @default(now())
+  date_mise_a_jour   DateTime             @updatedAt
+  invitations_creees InvitationGroupe[]   @relation("user_invitations_creees")
+  memberships        MembreGroupe[]
+  notifications      NotificationGroupe[]
+
+  @@map("users")
+  @@schema("public")
+}
+
+model Groupes {
+  id_groupe        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom              String
+  description      String?
+  devise           String               @default("XAF")
+  lien_invitation  String?              @unique
+  date_de_creation DateTime             @default(now())
+  date_mise_a_jour DateTime             @updatedAt
+  cycles           CycleTontine[]
+  invitations      InvitationGroupe[]
+  membres          MembreGroupe[]
+  notifications    NotificationGroupe[]
+  regles           ReglesGroupe[]
+
+  @@map("groupes")
+  @@schema("public")
+}
+
+model InvitationGroupe {
+  id_invitation    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String    @unique
+  date_creation    DateTime  @default(now())
+  date_revocation  DateTime?
+  id_groupe        String    @db.Uuid
+  id_user_createur String?   @db.Uuid
+  groupe           Groupes   @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  createur         User?     @relation("user_invitations_creees", fields: [id_user_createur], references: [id_user])
+
+  @@index([id_groupe])
+  @@map("invitations_groupe")
+  @@schema("public")
+}
+
+model MembreGroupe {
+  id_membre_groupe      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role                  RoleGroupe         @default(MEMBRE)
+  statut_adhesion       StatutAdhesion     @default(ACTIF)
+  date_adhesion         DateTime           @default(now())
+  date_depart           DateTime?
+  statut_visuel         StatutVisuel       @default(VERT)
+  id_user               String             @db.Uuid
+  id_groupe             String             @db.Uuid
+  cotisations           Cotisations[]
+  cycles_participations CycleParticipant[]
+  groupe                Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  user                  User               @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  penalites             Penalite[]
+
+  @@unique([id_user, id_groupe])
+  @@index([id_groupe])
+  @@index([id_user])
+  @@map("membres_groupe")
+  @@schema("public")
+}
+
+model ReglesGroupe {
+  id_regle            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type_regle          TypeRegle
+  nom_regle           String
+  valeur              String
+  est_active          Boolean   @default(true)
+  date_debut_validite DateTime  @default(now())
+  date_fin_validite   DateTime?
+  id_groupe           String    @db.Uuid
+  groupe              Groupes   @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+
+  @@index([id_groupe])
+  @@map("regles_groupe")
+  @@schema("public")
+}
+
+model CycleTontine {
+  id_cycle           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom_cycle          String
+  date_debut         DateTime           @default(now())
+  date_fin           DateTime
+  duree_tour_de_gain Int
+  ordre_beneficiaire String?
+  id_groupe          String             @db.Uuid
+  montant_cotisation Decimal            @db.Decimal(15, 2)
+  penalites_activees Boolean            @default(false)
+  mode_penalite      ModePenalite?
+  valeur_penalite    Decimal?           @db.Decimal(15, 2)
+  cotisations        Cotisations[]
+  participants       CycleParticipant[]
+  groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+
+  @@index([id_groupe])
+  @@map("cycles_tontine")
+  @@schema("public")
+}
+
+model CycleParticipant {
+  id_cycle_participant String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordre                Int
+  date_ajout           DateTime     @default(now())
+  id_cycle             String       @db.Uuid
+  id_membre_groupe     String       @db.Uuid
+  cycle                CycleTontine @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+  membre_groupe        MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@unique([id_cycle, id_membre_groupe])
+  @@index([id_cycle])
+  @@index([id_membre_groupe])
+  @@map("cycles_participants")
+  @@schema("public")
+}
+
+model Cotisations {
+  id_cotisation      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date_debut         DateTime
+  montant            Decimal      @db.Decimal(15, 2)
+  date_de_paiement   DateTime
+  penalite_appliquee Boolean      @default(false)
+  montant_penalite   Decimal?     @db.Decimal(15, 2)
+  id_membre_groupe   String       @db.Uuid
+  id_cycle           String       @db.Uuid
+  numero_tour        Int?
+  date_echeance      DateTime?
+  cycle              CycleTontine @relation(fields: [id_cycle], references: [id_cycle])
+  membre_groupe      MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe])
+  penalites          Penalite[]
+
+  @@index([id_cycle])
+  @@index([id_membre_groupe])
+  @@map("cotisations")
+  @@schema("public")
+}
+
+model Penalite {
+  id_penalite              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  montant_base             Decimal       @db.Decimal(15, 2)
+  motif                    String
+  taux_augmentation_heure  Decimal       @db.Decimal(5, 2)
+  seuil_heure_augmentation Int
+  date_application         DateTime
+  montant_final            Decimal       @db.Decimal(15, 2)
+  id_membre_groupe         String        @db.Uuid
+  id_cotisation            String        @db.Uuid
+  mode_penalite            ModePenalite?
+  valeur_configuree        Decimal?      @db.Decimal(15, 2)
+  jours_retard             Int?
+  date_echeance            DateTime?
+  cotisations              Cotisations   @relation(fields: [id_cotisation], references: [id_cotisation])
+  membre_groupe            MembreGroupe  @relation(fields: [id_membre_groupe], references: [id_membre_groupe])
+
+  @@index([id_membre_groupe])
+  @@index([id_cotisation])
+  @@map("penalites")
+  @@schema("public")
+}
+
+model NotificationGroupe {
+  id_notification   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type_notification String
+  message           String
+  date_creation     DateTime  @default(now())
+  date_lecture      DateTime?
+  id_user           String    @db.Uuid
+  id_groupe         String?   @db.Uuid
+  groupe            Groupes?  @relation(fields: [id_groupe], references: [id_groupe])
+  user              User      @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@index([id_user])
+  @@index([id_groupe])
+  @@map("notifications_groupe")
+  @@schema("public")
 }
 
 enum RoleGroupe {
@@ -54,211 +233,5 @@ enum ModePenalite {
   POURCENTAGE
   PROGRESSIVE
 
-  @@schema("public")
-}
-
-// --- MODELES ---
-
-model User {
-  id_user          String   @id @db.Uuid
-  nom              String
-  prenom           String
-  email            String   @unique
-  telephone        String   @unique
-  photo_de_profil  String?
-  date_creation    DateTime @default(now())
-  date_mise_a_jour DateTime @updatedAt
-
-  // Relations
-  memberships        MembreGroupe[]
-  invitations_creees InvitationGroupe[]   @relation("user_invitations_creees")
-  notifications      NotificationGroupe[]
-
-  @@map("users")
-  @@schema("public")
-}
-
-model Groupes {
-  id_groupe        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom              String
-  description      String?
-  devise           String   @default("XAF")
-  lien_invitation  String?  @unique
-  date_de_creation DateTime @default(now())
-  date_mise_a_jour DateTime @updatedAt
-
-  // Relations
-
-  cycles        CycleTontine[]
-  membres       MembreGroupe[]
-  regles        ReglesGroupe[]
-  invitations   InvitationGroupe[]
-  notifications NotificationGroupe[]
-
-  @@map("groupes")
-  @@schema("public")
-}
-
-model InvitationGroupe {
-  id_invitation   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code            String    @unique
-  date_creation   DateTime  @default(now())
-  date_revocation DateTime?
-
-  id_groupe String  @db.Uuid
-  groupe    Groupes @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-
-  id_user_createur String? @db.Uuid
-  createur         User?   @relation("user_invitations_creees", fields: [id_user_createur], references: [id_user], onDelete: SetNull)
-
-  @@index([id_groupe])
-  @@map("invitations_groupe")
-  @@schema("public")
-}
-
-model MembreGroupe {
-  id_membre_groupe String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  role             RoleGroupe     @default(MEMBRE)
-  statut_adhesion  StatutAdhesion @default(ACTIF)
-  date_adhesion    DateTime       @default(now())
-  date_depart      DateTime?
-  statut_visuel    StatutVisuel   @default(VERT)
-
-  id_user               String             @db.Uuid
-  user                  User               @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
-  id_groupe             String             @db.Uuid
-  groupe                Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  cotisations           Cotisations[]
-  cycles_participations CycleParticipant[]
-  penalites             Penalite[]
-
-  @@unique([id_user, id_groupe])
-  @@index([id_groupe])
-  @@index([id_user])
-  @@map("membres_groupe")
-  @@schema("public")
-}
-
-model ReglesGroupe {
-  id_regle            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type_regle          TypeRegle
-  nom_regle           String
-  valeur              String
-  est_active          Boolean   @default(true)
-  date_debut_validite DateTime  @default(now())
-  date_fin_validite   DateTime?
-
-  id_groupe String  @db.Uuid
-  groupe    Groupes @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-
-  @@index([id_groupe])
-  @@map("regles_groupe")
-  @@schema("public")
-}
-
-model CycleTontine {
-  id_cycle           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom_cycle          String
-  date_debut         DateTime      @default(now())
-  date_fin           DateTime
-  duree_tour_de_gain Int
-  montant_cotisation Decimal       @db.Decimal(15, 2)
-  ordre_beneficiaire String?
-  penalites_activees Boolean       @default(false)
-  mode_penalite      ModePenalite?
-  valeur_penalite    Decimal?      @db.Decimal(15, 2)
-
-  id_groupe    String             @db.Uuid
-  groupe       Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  participants CycleParticipant[]
-  cotisations  Cotisations[]
-
-  @@index([id_groupe])
-  @@map("cycles_tontine")
-  @@schema("public")
-}
-
-model CycleParticipant {
-  id_cycle_participant String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ordre                Int
-  date_ajout           DateTime @default(now())
-
-  id_cycle String       @db.Uuid
-  cycle    CycleTontine @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
-
-  id_membre_groupe String       @db.Uuid
-  membre_groupe    MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
-
-  @@unique([id_cycle, id_membre_groupe])
-  @@index([id_cycle])
-  @@index([id_membre_groupe])
-  @@map("cycles_participants")
-  @@schema("public")
-}
-
-model Cotisations {
-  id_cotisation      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  date_debut         DateTime
-  montant            Decimal   @db.Decimal(15, 2)
-  date_de_paiement   DateTime
-  numero_tour        Int?
-  date_echeance      DateTime?
-  penalite_appliquee Boolean   @default(false)
-  montant_penalite   Decimal?  @db.Decimal(15, 2)
-
-  id_membre_groupe String       @db.Uuid
-  membre_groupe    MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe])
-  id_cycle         String       @db.Uuid
-  cycle            CycleTontine @relation(fields: [id_cycle], references: [id_cycle])
-
-  penalites Penalite[]
-
-  @@index([id_cycle])
-  @@index([id_membre_groupe])
-  @@map("cotisations")
-  @@schema("public")
-}
-
-model Penalite {
-  id_penalite              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  montant_base             Decimal       @db.Decimal(15, 2)
-  motif                    String
-  taux_augmentation_heure  Decimal       @db.Decimal(5, 2)
-  seuil_heure_augmentation Int
-  date_application         DateTime
-  montant_final            Decimal       @db.Decimal(15, 2)
-  mode_penalite            ModePenalite?
-  valeur_configuree        Decimal?      @db.Decimal(15, 2)
-  jours_retard             Int?
-  date_echeance            DateTime?
-
-  // Relations
-  id_membre_groupe String       @db.Uuid
-  membre_groupe    MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe])
-  id_cotisation    String       @db.Uuid
-  cotisations      Cotisations  @relation(fields: [id_cotisation], references: [id_cotisation])
-
-  @@index([id_membre_groupe])
-  @@index([id_cotisation])
-  @@map("penalites")
-  @@schema("public")
-}
-
-model NotificationGroupe {
-  id_notification   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type_notification String
-  message           String
-  date_creation     DateTime  @default(now())
-  date_lecture      DateTime?
-
-  id_user String @db.Uuid
-  user    User   @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
-
-  id_groupe String?  @db.Uuid
-  groupe    Groupes? @relation(fields: [id_groupe], references: [id_groupe], onDelete: SetNull)
-
-  @@index([id_user])
-  @@index([id_groupe])
-  @@map("notifications_groupe")
   @@schema("public")
 }

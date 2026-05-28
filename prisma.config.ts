@@ -9,11 +9,11 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
-  engine: "classic",
   datasource: {
     // NOTE: Some Supabase direct hosts are IPv6-only; in environments without IPv6 this causes P1001.
     // Prefer DATABASE_URL (pooler/IPv4) for CLI operations by default.
     // If your DIRECT_URL is reachable (and non-pgbouncer), you can temporarily set PRISMA_CLI_DATABASE_URL.
     url: process.env.PRISMA_CLI_DATABASE_URL ?? env("DATABASE_URL"),
+    directUrl: env("DIRECT_URL"),
   },
 });
