@@ -174,7 +174,7 @@ export default async function GroupCycleDetailPage({
     beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
     dateEcheance: addDays(
       cycle.date_debut,
-      cycle.duree_tour_de_gain * (participant.ordre - 1),
+      cycle.duree_tour_de_gain * participant.ordre,
     ).toLocaleDateString("fr-FR"),
   }));
   const participantsStats = cycle.participants.map((participant) => {
@@ -184,7 +184,7 @@ export default async function GroupCycleDetailPage({
     // Calcul par tour pour une précision maximale
     const tourDetails = Array.from({ length: totalTours }, (_, i) => {
       const tourNum = i + 1;
-      const dueDate = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tourNum - 1));
+      const dueDate = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tourNum);
       const tourPayments = paymentsList.filter(p => p.numero_tour === tourNum);
       const paidAmount = tourPayments.reduce((acc, p) => acc + p.montant, 0);
       const penaltiesAmount = tourPayments.reduce((acc, p) => acc + (p.montant_penalite || 0), 0);
@@ -236,8 +236,7 @@ export default async function GroupCycleDetailPage({
         <div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{cycle.nom_cycle}</h1>
           <p className="text-sm text-muted-foreground">
-            {cycle.date_debut.toLocaleDateString("fr-FR")} -{" "}
-            {cycle.date_fin.toLocaleDateString("fr-FR")}
+            Du {cycle.date_debut.toLocaleDateString("fr-FR")} au {cycle.date_fin.toLocaleDateString("fr-FR")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -254,9 +253,9 @@ export default async function GroupCycleDetailPage({
       {membership.role === "ADMIN" && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Retards actuels</p>
+            <p className="text-xs font-medium text-gray-500 uppercase">Membres en retard</p>
             <p className="mt-1 text-2xl font-bold text-rose-600">{globalStats.totalLateMembers}</p>
-            <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours cumulés</p>
+            <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours de retard cumulés</p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <p className="text-xs font-medium text-gray-500 uppercase">Pénalités générées</p>
@@ -282,16 +281,26 @@ export default async function GroupCycleDetailPage({
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-gray-900">Beneficiaire actuel</p>
+            <p className="text-xs font-medium text-gray-500 uppercase">Tour actuel — Bénéficiaire du pot</p>
             <p className="text-lg font-semibold text-brand-600">{currentName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {cycleTermine
+                ? "Tous les tours sont terminés. Le cycle est clos."
+                : `C'est au tour de ${currentName} de recevoir le pot collecté par tous les membres.`}
+            </p>
           </div>
           {!cycleTermine ? (
-            <p className="text-xs text-gray-500">
-              Fin du tour: {tourEnd.toLocaleDateString("fr-FR")}
-            </p>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Échéance du tour</p>
+              <p className="text-sm font-bold text-gray-900">{tourEnd.toLocaleDateString("fr-FR")}</p>
+            </div>
           ) : null}
         </div>
         <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>Progression du cycle</span>
+            <span>{Math.min(currentIndex, totalTours)} / {totalTours} tours complétés</span>
+          </div>
           <div className="h-2 w-full rounded-full bg-gray-100">
             <div
               className="h-2 rounded-full bg-brand-500"
@@ -300,9 +309,6 @@ export default async function GroupCycleDetailPage({
               }}
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500">
-            {Math.min(currentIndex, totalTours)} / {totalTours} tours completes
-          </p>
         </div>
       </div>
 
@@ -334,6 +340,15 @@ export default async function GroupCycleDetailPage({
           defaultTour={defaultTour}
         />
       ) : null}
+
+      {membership.role !== "ADMIN" && (
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-800">ℹ️ Votre espace membre</p>
+          <p className="text-xs text-blue-700 mt-1">
+            Vous voyez ici votre situation personnelle dans ce cycle. Seul l'administrateur peut enregistrer un paiement en votre nom. Contactez-le si vous avez effectué un versement qui n'apparaît pas.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">Situation des participants</h2>
@@ -394,7 +409,7 @@ export default async function GroupCycleDetailPage({
 
                 <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-gray-500 uppercase">Cotisation initiale</p>
+                    <p className="text-[10px] font-medium text-gray-500 uppercase">Cotisation totale (tous les tours)</p>
                     <p className="text-sm font-semibold">{montantInitial.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
                   </div>
                   <div className="space-y-1">

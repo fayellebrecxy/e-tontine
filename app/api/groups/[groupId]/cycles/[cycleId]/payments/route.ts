@@ -116,7 +116,7 @@ export async function POST(
       return NextResponse.json({ ok: false, error: "Invalid cycle round." }, { status: 400 });
     }
 
-    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (numeroTour - 1));
+    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * numeroTour);
     const joursRetard = Math.max(
       0,
       Math.ceil((datePaiement.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),

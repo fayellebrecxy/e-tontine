@@ -98,9 +98,12 @@ export default async function GroupCyclesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Cycles</h1>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Cycles de tontine</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gere les cycles de tontine pour ce groupe.
+          {membership.role === "ADMIN"
+            ? "Gérez les cycles de ce groupe : création, suivi des tours et enregistrement des versements."
+            : "Consultez les cycles auxquels vous participez et suivez votre progression."
+          }
         </p>
       </div>
 
@@ -109,7 +112,7 @@ export default async function GroupCyclesPage({
           <Link href={`/dashboard/groups/${groupId}/cycles?status=active`}>En cours</Link>
         </Button>
         <Button asChild variant={status === "closed" ? "default" : "outline"} size="sm">
-          <Link href={`/dashboard/groups/${groupId}/cycles?status=closed`}>Termines</Link>
+          <Link href={`/dashboard/groups/${groupId}/cycles?status=closed`}>Terminés</Link>
         </Button>
         <Button asChild variant={!status ? "default" : "outline"} size="sm">
           <Link href={`/dashboard/groups/${groupId}/cycles`}>Tous</Link>
@@ -121,7 +124,7 @@ export default async function GroupCyclesPage({
       )}
 
       <div className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Cycles enregistres</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Cycles enregistrés</h2>
         {filtered.length ? (
           <div className="grid gap-3">
             {filtered.map((cycle) => {
@@ -131,7 +134,7 @@ export default async function GroupCyclesPage({
               const current = !isFinished ? cycle.participants[index] : null;
               const currentName = current
                 ? `${current.membre_groupe.user.prenom} ${current.membre_groupe.user.nom}`
-                : "Cycle termine";
+                : "Cycle terminé";
               const progress = totalTours ? Math.min(index / totalTours, 1) : 0;
               const progressPercent = Math.round(progress * 100);
               const tourEnd = addDays(
@@ -168,13 +171,10 @@ export default async function GroupCyclesPage({
                   </div>
 
                   <div className="mt-3 space-y-2 text-xs text-gray-500">
-                    <p>
-                      Montant fixe: {Number(cycle.montant_cotisation).toLocaleString("fr-FR")} {" "}
-                      {membership.groupe.devise}
-                    </p>
-                    <p>Duree tour: {cycle.duree_tour_de_gain} jours</p>
-                    <p>Beneficiaire actuel: {currentName}</p>
-                    <p>Ordre des bénéficiaires:</p>
+                    <p>Cotisation par tour : <strong>{Number(cycle.montant_cotisation).toLocaleString("fr-FR")} {membership.groupe.devise}</strong></p>
+                    <p>Durée d'un tour : {cycle.duree_tour_de_gain} jours</p>
+                    <p>Bénéficiaire actuel : <strong>{currentName}</strong></p>
+                    <p>Ordre des bénéficiaires :</p>
                     <ul className="list-decimal list-inside text-xs text-gray-500">
                       {cycle.participants.map((p, idx) => (
                         <li key={p.ordre}>
@@ -183,7 +183,7 @@ export default async function GroupCyclesPage({
                       ))}
                     </ul>
                     {!isFinished ? (
-                      <p>Fin du tour: {tourEnd.toLocaleDateString("fr-FR")}</p>
+                      <p>Échéance du tour actuel : <strong>{tourEnd.toLocaleDateString("fr-FR")}</strong></p>
                     ) : null}
                   </div>
 
@@ -195,7 +195,7 @@ export default async function GroupCyclesPage({
                       />
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      {Math.min(index, totalTours)} / {totalTours} tours completes
+                      {Math.min(index, totalTours)} / {totalTours} tours complétés ({progressPercent} %)
                     </p>
                   </div>
                 </div>
@@ -203,7 +203,16 @@ export default async function GroupCyclesPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Aucun cycle pour le moment.</p>
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+            <p className="text-sm font-medium text-gray-700">
+              {status === "active" ? "Aucun cycle en cours." : status === "closed" ? "Aucun cycle terminé." : "Aucun cycle pour le moment."}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {membership.role === "ADMIN"
+                ? "Utilisez le formulaire ci-dessus pour démarrer un premier cycle."
+                : "Vous serez notifié(e) lorsqu'un cycle vous sera attribué par l'administrateur."}
+            </p>
+          </div>
         )}
       </div>
     </div>

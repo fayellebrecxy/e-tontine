@@ -117,28 +117,28 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
     const montantValue = Number(montant);
 
     if (!nomCycle.trim() || nomCycle.trim().length < 2) {
-      toast.error("Le nom du cycle est requis.");
+      toast.error("Le nom du cycle est requis (minimum 2 caractères).");
       return;
     }
 
     if (!Number.isInteger(duree) || duree <= 0) {
-      toast.error("La duree du tour doit etre un entier positif.");
+      toast.error("La durée du tour doit être un nombre entier positif (ex. : 30 jours).");
       return;
     }
 
     if (!Number.isFinite(montantValue) || montantValue <= 0) {
-      toast.error("Le montant de la cotisation est requis.");
+      toast.error("Le montant de la cotisation doit être un nombre positif.");
       return;
     }
 
     if (order.length === 0) {
-      toast.error("Selectionnez au moins un participant.");
+      toast.error("Sélectionnez au moins un participant pour ce cycle.");
       return;
     }
 
     const penaltyValueNumber = Number(penaltyValue);
     if (penaltyActive && (!Number.isFinite(penaltyValueNumber) || penaltyValueNumber <= 0)) {
-      toast.error("La valeur de la penalite est requise.");
+      toast.error("Veuillez saisir une valeur de pénalité valide et positive.");
       return;
     }
 
@@ -165,7 +165,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
       return;
     }
 
-    toast.success(`✅ Cycle "${nomCycle.trim()}" demarre avec succes.`);
+    toast.success(`✅ Cycle "${nomCycle.trim()}" démarré avec succès !`);
     setSubmitting(false);
     router.refresh();
     // Réinitialiser le formulaire
@@ -177,10 +177,15 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Demarrer un cycle</CardTitle>
+        <CardTitle>Démarrer un nouveau cycle</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!canManage ? <p className="text-sm text-muted-foreground">Admin uniquement.</p> : null}
+        {!canManage ? <p className="text-sm text-muted-foreground">Seul l'administrateur peut créer un cycle.</p> : null}
+        {canManage ? (
+          <p className="text-sm text-muted-foreground">
+            Un cycle définit une période de collecte où chaque membre cotise à chaque tour. Le pot est remis au bénéficiaire du tour en cours, selon l'ordre défini ci-dessous.
+          </p>
+        ) : null}
 
         <div className="space-y-2">
           <Label htmlFor="nom-cycle">Nom du cycle</Label>
@@ -188,14 +193,15 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
             id="nom-cycle"
             value={nomCycle}
             onChange={(event) => setNomCycle(event.target.value)}
-            placeholder="Cycle Mai"
+            placeholder="Ex. : Cycle Juin 2025"
             disabled={!canManage}
           />
+          <p className="text-xs text-muted-foreground">Donnez un nom clair pour identifier ce cycle facilement.</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="duree-tour">Duree du tour (jours)</Label>
+            <Label htmlFor="duree-tour">Durée d'un tour (en jours)</Label>
             <Input
               id="duree-tour"
               type="number"
@@ -204,6 +210,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
               onChange={(event) => setDureeTour(event.target.value)}
               disabled={!canManage}
             />
+            <p className="text-xs text-muted-foreground">Tous les membres cotisent pendant ce nombre de jours avant que le pot passe au suivant.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="montant-cotisation">Montant de la cotisation</Label>
@@ -216,12 +223,13 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
               onChange={(event) => setMontant(event.target.value)}
               disabled={!canManage}
             />
+            <p className="text-xs text-muted-foreground">Montant que chaque membre doit verser à chaque tour.</p>
           </div>
         </div>
 
         <div className="space-y-3 rounded-lg border border-gray-200 p-3">
           <label className="flex items-center justify-between gap-3 text-sm font-medium text-gray-900">
-            <span>Activer les penalites de retard</span>
+            <span>Activer les pénalités de retard</span>
             <input
               type="checkbox"
               checked={penaltyActive}
@@ -243,14 +251,14 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
                   disabled={!canManage}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 >
-                  <option value="FIXE">Montant fixe</option>
-                  <option value="POURCENTAGE">Pourcentage de la cotisation</option>
-                  <option value="PROGRESSIVE">Montant par jour de retard</option>
+                  <option value="FIXE">Montant fixe (ex. : 500 XAF appliqué une fois)</option>
+                  <option value="POURCENTAGE">Pourcentage de la cotisation (ex. : 5%)</option>
+                  <option value="PROGRESSIVE">Montant par jour de retard (ex. : 100 XAF/jour)</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="valeur-penalite">
-                  {penaltyType === "POURCENTAGE" ? "Pourcentage" : "Montant"}
+                  {penaltyType === "POURCENTAGE" ? "Taux (en %)" : penaltyType === "PROGRESSIVE" ? "Montant par jour (XAF)" : "Montant fixe (XAF)"}
                 </Label>
                 <Input
                   id="valeur-penalite"
@@ -275,7 +283,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Participants actifs</Label>
+            <Label>Participants du cycle</Label>
             <Button
               type="button"
               variant="outline"
@@ -283,7 +291,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
               onClick={toggleAll}
               disabled={!canManage}
             >
-              {order.length === members.length ? "Tout deselectionner" : "Tout selectionner"}
+              {order.length === members.length ? "Tout désélectionner" : "Tout sélectionner"}
             </Button>
           </div>
           {loading ? (
@@ -314,14 +322,14 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
             <p className="text-xs text-muted-foreground">Aucun membre actif.</p>
           )}
           <p className="text-xs text-muted-foreground">
-            {order.length} selectionnes / {members.length} actifs
+            {order.length} sélectionné(s) sur {members.length} membre(s) actif(s). Seuls les membres sélectionnés participeront à ce cycle.
           </p>
         </div>
 
         {order.length ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Ordre des beneficiaires</Label>
+              <Label>Ordre de bénéfice (qui reçoit le pot en premier ?)</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -329,7 +337,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
                 onClick={shuffleOrder}
                 disabled={!canManage}
               >
-                Tirage au sort
+                🎲 Tirage au sort
               </Button>
             </div>
             <div className="space-y-2">
@@ -375,8 +383,11 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
           </div>
         ) : null}
 
+        <p className="text-xs text-muted-foreground">
+          ⚠️ Une fois démarré, le cycle commence immédiatement. La date de fin est calculée automatiquement selon la durée et le nombre de participants.
+        </p>
         <Button type="button" onClick={submit} disabled={!canManage || submitting}>
-          {submitting ? "Demarrage..." : "Demarrer le cycle"}
+          {submitting ? "Démarrage en cours…" : "🚀 Démarrer le cycle"}
         </Button>
       </CardContent>
     </Card>

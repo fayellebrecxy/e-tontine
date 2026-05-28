@@ -46,12 +46,12 @@ export function CyclePaymentForm({
   const submit = async () => {
     const montantValue = Number(montant);
     if (!selected) {
-      toast.error("Selectionnez un membre.");
+      toast.error("Veuillez sélectionner un membre.");
       return;
     }
 
     if (!Number.isFinite(montantValue) || montantValue <= 0) {
-      toast.error("Montant invalide.");
+      toast.error("Veuillez saisir un montant valide et positif.");
       return;
     }
 
@@ -75,7 +75,7 @@ export function CyclePaymentForm({
       return;
     }
 
-    toast.success(`✅ Versement de ${montantValue.toLocaleString("fr-FR")} enregistre avec succes.`);
+    toast.success(`✅ Versement de ${montantValue.toLocaleString("fr-FR")} enregistré avec succès.`);
     setMontant("");
     setDatePaiement("");
     setSubmitting(false);
@@ -85,11 +85,14 @@ export function CyclePaymentForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Enregistrer un versement</CardTitle>
+        <CardTitle>Enregistrer un versement (Admin)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Sélectionnez le membre qui a payé, le tour concerné, puis saisissez le montant reçu. Une pénalité sera calculée automatiquement si le paiement est en retard.
+        </p>
         <div className="space-y-2">
-          <Label>Membre</Label>
+          <Label>Membre qui a versé</Label>
           <select
             className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
             value={selected}
@@ -103,7 +106,8 @@ export function CyclePaymentForm({
           </select>
         </div>
         <div className="space-y-2">
-          <Label>Tour concerne</Label>
+          <Label>Tour concerné</Label>
+          <p className="text-xs text-muted-foreground">Chaque tour correspond à un bénéficiaire. Le tour en cours est pré-sélectionné.</p>
           <select
             className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
             value={numeroTour}
@@ -111,14 +115,14 @@ export function CyclePaymentForm({
           >
             {tours.map((tour) => (
               <option key={tour.numero} value={tour.numero}>
-                Tour {tour.numero} - {tour.beneficiaire} - echeance {tour.dateEcheance}
+                Tour {tour.numero} — Bénéficiaire : {tour.beneficiaire} — Échéance : {tour.dateEcheance}
               </option>
             ))}
           </select>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Montant verse</Label>
+            <Label>Montant versé</Label>
             <Input
               type="number"
               min={0}
@@ -128,7 +132,8 @@ export function CyclePaymentForm({
             />
           </div>
           <div className="space-y-2">
-            <Label>Date de versement</Label>
+            <Label>Date du versement</Label>
+              <p className="text-xs text-muted-foreground">Laissez vide pour utiliser la date d'aujourd'hui.</p>
             <Input
               type="date"
               value={datePaiement}
@@ -137,7 +142,7 @@ export function CyclePaymentForm({
           </div>
         </div>
         <Button type="button" onClick={submit} disabled={submitting}>
-          {submitting ? "Enregistrement..." : "Ajouter le versement"}
+          {submitting ? "Enregistrement…" : "✅ Enregistrer le versement"}
         </Button>
       </CardContent>
     </Card>

@@ -17,6 +17,12 @@ export function CloseCycleButton({ groupId, cycleId }: CloseCycleButtonProps) {
 
   const closeCycle = async () => {
     if (pending) return;
+
+    const confirmed = window.confirm(
+      "Êtes-vous sûr de vouloir clôturer ce cycle ?\n\nCette action mettra fin au cycle immédiatement. Les paiements déjà enregistrés seront conservés.",
+    );
+    if (!confirmed) return;
+
     setPending(true);
 
     const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}`, {
@@ -40,7 +46,7 @@ export function CloseCycleButton({ groupId, cycleId }: CloseCycleButtonProps) {
 
   return (
     <Button type="button" variant="destructive" size="sm" onClick={closeCycle} disabled={pending}>
-      {pending ? "Cloture..." : "Cloturer le cycle"}
+      {pending ? "Clôture en cours…" : "Clôturer le cycle"}
     </Button>
   );
 }

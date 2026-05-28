@@ -65,7 +65,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
   // 1. Identifier tous les tours qui ont déjà expiré
   const overdueTours: number[] = [];
   for (let tour = 1; tour <= totalTours; tour += 1) {
-    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tour - 1));
+    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tour);
     if (now > dateEcheance) {
       overdueTours.push(tour);
     }
@@ -107,7 +107,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
   await prisma.$transaction(async (tx) => {
     for (const memberId of activeParticipants) {
       for (const tour of overdueTours) {
-        const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * (tour - 1));
+        const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tour);
 
         const key = `${memberId}:${tour}`;
         const records = byMemberAndTour.get(key) ?? [];
