@@ -199,6 +199,18 @@ export const updateMeSchema = z
   })
   .strict();
 
+export const createVersementSchema = z
+  .object({
+    numero_tour: z.number().int().positive("Le numéro de tour est requis."),
+    montant_verse: z.number().positive("Le montant versé doit être positif."),
+    mode_versement: z.enum(["VIREMENT", "ESPECES", "MOBILE_MONEY", "CHEQUE"]).optional(),
+    reference_externe: z.string().trim().max(256).optional(),
+    date_versement: z.string().optional(),
+  })
+  .strict();
+
+export type CreateVersementInput = z.infer<typeof createVersementSchema>;
+
 export function normalizeNextPath(next?: string | null) {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
     return "/dashboard";

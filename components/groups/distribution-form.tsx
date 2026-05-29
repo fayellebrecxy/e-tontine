@@ -1,0 +1,231 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+type TourItem = {
+  numero: number;
+  beneficiaire: string;
+  idBeneficiaire: string;
+  dateEcheance: string;
+  potCollecte: number;
+  dejaVerse: boolean;
+};
+
+type DistributionFormProps = {
+  groupId: string;
+  cycleId: string;
+  tours: TourItem[];
+  defaultTour: number;
+  devise: string;
+};
+
+const MODES_VERSEMENT = [
+  { value: "", label: "— Non précisé —" },
+  { value: "VIREMENT", label: "Virement bancaire" },
+  { value: "ESPECES", label: "Espèces" },
+  { value: "MOBILE_MONEY", label: "Mobile Money" },
+  { value: "CHEQUE", label: "Chèque" },
+];
+
+export function DistributionForm({
+  groupId,
+  cycleId,
+  tours,
+  defaultTour,
+  devise,
+}: DistributionFormProps) {
+  const router = useRouter();
+
+  const toursDisponibles = tours.filter((t) => !t.dejaVerse);
+
+  const [numeroTour, setNumeroTour] = React.useState(
+    String(toursDisponibles.find((t) => t.numero === defaultTour)?.numero ?? toursDisponibles[0]?.numero ?? defaultTour),
+  );
+  const [montantVerse, setMontantVerse] = React.useState("");
+  const [modeVersement, setModeVersement] = React.useState("");
+  const [referenceExterne, setReferenceExterne] = React.useState("");
+  const [dateVersement, setDateVersement] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const tourSelectionne = tours.find((t) => t.numero === Number(numeroTour));
+
+  // Pré-remplir le montant avec le pot collecté quand le tour change
+  React.useEffect(() => {
+    if (tourSelectionne && tourSelectionne.potCollecte > 0) {
+      setMontantVerse(String(tourSelectionne.potCollecte));
+    } else {
+      setMontantVerse("");
+    }
+  }, [numeroTour, tourSelectionne]);
+
+  const submit = async () => {
+    const montantValue = Number(montantVerse);
+
+    if (!Number.isFinite(montantValue) || montantValue <= 0) {
+      toast.error("Veuillez saisir un montant valide et positif.");
+      return;
+    }
+
+    if (tourSelectionne?.dejaVerse) {
+      toast.error(`Le tour ${numeroTour} a déjà été soldé.`);
+      return;
+    }
+
+    setSubmitting(true);
+
+    const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}/distributions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        numero_tour: Number(numeroTour),
+        montant_verse: montantValue,
+        ...(modeVersement ? { mode_versement: modeVersement } : {}),
+        ...(referenceExterne.trim() ? { reference_externe: referenceExterne.trim() } : {}),
+        ...(dateVersement ? { date_versement: dateVersement } : {}),
+      }),
+    });
+
+    const body = (await res.json().catch(() => null)) as null | { ok?: boolean; error?: string };
+
+    if (!res.ok || !body?.ok) {
+      toast.error(body?.error ?? "Impossible d'enregistrer le versement.");
+      setSubmitting(false);
+      return;
+    }
+
+    toast.success(
+      `💰 Pot du tour ${numeroTour} versé à ${tourSelectionne?.beneficiaire ?? "—"} avec succès !`,
+    );
+    setMontantVerse("");
+    setReferenceExterne("");
+    setDateVersement("");
+    setModeVersement("");
+    setSubmitting(false);
+    router.refresh();
+  };
+
+  if (toursDisponibles.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>💰 Verser le pot au bénéficiaire</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-emerald-700 font-medium">
+            ✅ Tous les tours de ce cycle ont été soldés.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>💰 Verser le pot au bénéficiaire</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Enregistrez le versement du pot collecté au bénéficiaire du tour sélectionné. Le montant
+          est pré-rempli avec le pot réel collecté (cotisations + pénalités).
+        </p>
+
+        {/* Sélection du tour */}
+        <div className="space-y-2">
+          <Label>Tour à solder</Label>
+          <select
+            className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+            value={numeroTour}
+            onChange={(e) => setNumeroTour(e.target.value)}
+          >
+            {tours.map((tour) => (
+              <option key={tour.numero} value={tour.numero} disabled={tour.dejaVerse}>
+                Tour {tour.numero} — {tour.beneficiaire} — Échéance : {tour.dateEcheance}
+                {tour.dejaVerse ? " ✅ Soldé" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Info bénéficiaire */}
+        {tourSelectionne && (
+          <div className="rounded-lg border border-brand-100 bg-brand-50 p-3 space-y-1">
+            <p className="text-xs font-semibold text-brand-700 uppercase">Bénéficiaire du tour</p>
+            <p className="text-sm font-bold text-brand-900">{tourSelectionne.beneficiaire}</p>
+            {tourSelectionne.potCollecte > 0 && (
+              <p className="text-xs text-brand-600">
+                Pot collecté : <strong>{tourSelectionne.potCollecte.toLocaleString("fr-FR")} {devise}</strong>
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Montant versé */}
+          <div className="space-y-2">
+            <Label>Montant versé ({devise})</Label>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="Ex : 150000"
+              value={montantVerse}
+              onChange={(e) => setMontantVerse(e.target.value)}
+            />
+          </div>
+
+          {/* Date du versement */}
+          <div className="space-y-2">
+            <Label>Date du versement</Label>
+            <p className="text-xs text-muted-foreground">Laissez vide pour aujourd'hui.</p>
+            <Input
+              type="date"
+              value={dateVersement}
+              onChange={(e) => setDateVersement(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Mode de versement */}
+          <div className="space-y-2">
+            <Label>Mode de versement</Label>
+            <select
+              className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+              value={modeVersement}
+              onChange={(e) => setModeVersement(e.target.value)}
+            >
+              {MODES_VERSEMENT.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Référence externe */}
+          <div className="space-y-2">
+            <Label>Référence externe (optionnel)</Label>
+            <Input
+              type="text"
+              placeholder="Ex : TXN-123456789"
+              value={referenceExterne}
+              onChange={(e) => setReferenceExterne(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <Button type="button" onClick={submit} disabled={submitting} className="w-full sm:w-auto">
+          {submitting ? "Enregistrement…" : "💰 Verser le pot au bénéficiaire"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

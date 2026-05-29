@@ -74,6 +74,8 @@ model MembreGroupe {
   groupe                Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
   user                  User               @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   penalites             Penalite[]
+  versements_recus      Versement[]        @relation("versements_recus")
+  versements_effectues  Versement[]        @relation("versements_effectues")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -112,6 +114,7 @@ model CycleTontine {
   valeur_penalite    Decimal?           @db.Decimal(15, 2)
   cotisations        Cotisations[]
   participants       CycleParticipant[]
+  versements         Versement[]
   groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
 
   @@index([id_groupe])
@@ -179,6 +182,26 @@ model Penalite {
   @@schema("public")
 }
 
+model Versement {
+  id_versement      String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_cycle          String         @db.Uuid
+  id_beneficiaire   String         @db.Uuid
+  numero_tour       Int
+  montant_verse     Decimal        @db.Decimal(15, 2)
+  date_versement    DateTime       @default(now())
+  mode_versement    ModeVersement?
+  reference_externe String?
+  id_admin_valideur String         @db.Uuid
+  cycle             CycleTontine   @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+  beneficiaire      MembreGroupe   @relation("versements_recus", fields: [id_beneficiaire], references: [id_membre_groupe])
+  valideur          MembreGroupe   @relation("versements_effectues", fields: [id_admin_valideur], references: [id_membre_groupe])
+
+  @@index([id_cycle])
+  @@index([id_beneficiaire])
+  @@map("versements")
+  @@schema("public")
+}
+
 model NotificationGroupe {
   id_notification   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type_notification String
@@ -224,6 +247,15 @@ enum TypeRegle {
   FREQUENCE
   PENALITE_RETARD
   PENALITE_MOTIF
+
+  @@schema("public")
+}
+
+enum ModeVersement {
+  VIREMENT
+  ESPECES
+  MOBILE_MONEY
+  CHEQUE
 
   @@schema("public")
 }

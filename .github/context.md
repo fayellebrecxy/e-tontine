@@ -35,6 +35,15 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
 - Chaque versement est historise par membre (date + montant).
 - Le retard est evalue par tour (fin du tour courant).
 
+## Versements aux beneficiaires (Distributions)
+- Table versements: sorties d'argent du pot vers les beneficiaires des tours.
+- Enum ModeVersement: VIREMENT, ESPECES, MOBILE_MONEY, CHEQUE.
+- POST /api/groups/:groupId/cycles/:cycleId/distributions: admin enregistre un versement par tour (unicite par tour verifiee).
+- GET /api/groups/:groupId/cycles/:cycleId/distributions: historique accessible a tous les membres actifs.
+- Logique metier dans lib/cycle-distributions.ts: calculerPotTour, getBeneficiaireTour, getTresorerieCycle, etc.
+- Page cycle admin affiche: bloc tresorerie (collecte/distribue/solde), formulaire DistributionForm, tableau DistributionHistory.
+- Notifications envoyees au beneficiaire et a tous les membres actifs lors d'un versement.
+
 ## Invitations
 - Invitation par code unique via invitations_groupe.
 - Groupes.lien_invitation conserve le code courant.
@@ -71,6 +80,7 @@ Application de tontine avec groupes, roles par groupe, invitations, et suivi des
   - 2026-05-13 api-invitations_join_membres
   - 2026-05-25 api-groups_roles_membres
   - 2026-05-25 api-groups_cycles
+  - 2026-05-29 api-groups_versements
 
 ## Mise a jour de ce fichier
 - Ajouter une entree a chaque nouvelle fonctionnalite ou changement metier.

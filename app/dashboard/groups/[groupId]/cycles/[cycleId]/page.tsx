@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
 import { EditCycleForm } from "@/components/groups/edit-cycle-form";
+import { DistributionForm } from "@/components/groups/distribution-form";
+import { DistributionHistory } from "@/components/groups/distribution-history";
+import { calculerPotTour, getVersementsCycle, getTresorerieCycle } from "@/lib/cycle-distributions";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -222,6 +225,49 @@ export default async function GroupCycleDetailPage({
     };
   });
 
+  // Récupérer les versements et la trésorerie (admin uniquement)
+  const [versementsCycle, tresorerie] = membership.role === "ADMIN"
+    ? await Promise.all([
+        getVersementsCycle(cycleId),
+        getTresorerieCycle(cycleId),
+      ])
+    : [[], { totalCollecte: 0, totalDistribue: 0, soldeDisponible: 0, toursVerses: 0 }];
+
+  // Calculer le pot collecté par tour pour le formulaire de distribution
+  const potsParTour = membership.role === "ADMIN"
+    ? await Promise.all(
+        cycle.participants.map((p) =>
+          calculerPotTour(cycleId, p.ordre).then((pot) => ({ numero: p.ordre, pot }))
+        ),
+      )
+    : [];
+
+  const versementsParTour = new Map(versementsCycle.map((v) => [v.numero_tour, v]));
+
+  const toursForDistribution = cycle.participants.map((participant) => {
+    const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
+    return {
+      numero: participant.ordre,
+      beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
+      idBeneficiaire: participant.id_membre_groupe,
+      dateEcheance: addDays(
+        cycle.date_debut,
+        cycle.duree_tour_de_gain * participant.ordre,
+      ).toLocaleDateString("fr-FR"),
+      potCollecte: potInfo?.pot.potTotal ?? 0,
+      dejaVerse: versementsParTour.has(participant.ordre),
+    };
+  });
+
+  const toursForHistory = cycle.participants.map((participant) => {
+    const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
+    return {
+      numero: participant.ordre,
+      beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
+      potCollecte: potInfo?.pot.potTotal ?? 0,
+    };
+  });
+
   const globalStats = {
     totalPenalties: participantsStats.reduce((acc, p) => acc + p.totalPenalties, 0),
     totalLateMembers: participantsStats.filter(p => p.isLate).length,
@@ -249,7 +295,32 @@ export default async function GroupCycleDetailPage({
         </div>
       </div>
 
-      {/* Statistiques Globales (Admin) */}
+      {/* Trésorerie (Admin) */}
+      {membership.role === "ADMIN" && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Total collecté</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-600">
+              {tresorerie.totalCollecte.toLocaleString("fr-FR")} {membership.groupe.devise}
+            </p>
+            <p className="text-xs text-gray-400">Cotisations + pénalités</p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Total distribué</p>
+            <p className="mt-1 text-2xl font-bold text-brand-600">
+              {tresorerie.totalDistribue.toLocaleString("fr-FR")} {membership.groupe.devise}
+            </p>
+            <p className="text-xs text-gray-400">{tresorerie.toursVerses} tour(s) soldé(s)</p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-medium text-gray-500 uppercase">Solde disponible</p>
+            <p className={`mt-1 text-2xl font-bold ${tresorerie.soldeDisponible >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {tresorerie.soldeDisponible.toLocaleString("fr-FR")} {membership.groupe.devise}
+            </p>
+          </div>
+        </div>
+      )}
+
       {membership.role === "ADMIN" && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -332,6 +403,16 @@ export default async function GroupCycleDetailPage({
       ) : null}
 
       {membership.role === "ADMIN" ? (
+        <DistributionForm
+          groupId={groupId}
+          cycleId={cycleId}
+          tours={toursForDistribution}
+          defaultTour={defaultTour}
+          devise={membership.groupe.devise}
+        />
+      ) : null}
+
+      {membership.role === "ADMIN" ? (
         <CyclePaymentForm
           groupId={groupId}
           cycleId={cycleId}
@@ -348,6 +429,18 @@ export default async function GroupCycleDetailPage({
             Vous voyez ici votre situation personnelle dans ce cycle. Seul l'administrateur peut enregistrer un paiement en votre nom. Contactez-le si vous avez effectué un versement qui n'apparaît pas.
           </p>
         </div>
+      )}
+
+      {membership.role === "ADMIN" && (
+        <DistributionHistory
+          versements={versementsCycle.map((v) => ({
+            ...v,
+            montant_verse: Number(v.montant_verse),
+          }))}
+          tours={toursForHistory}
+          totalTours={totalTours}
+          devise={membership.groupe.devise}
+        />
       )}
 
       <div className="space-y-3">
