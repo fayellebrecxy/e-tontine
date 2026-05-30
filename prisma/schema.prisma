@@ -28,20 +28,94 @@ model User {
 }
 
 model Groupes {
-  id_groupe        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom              String
-  description      String?
-  devise           String               @default("XAF")
-  lien_invitation  String?              @unique
-  date_de_creation DateTime             @default(now())
-  date_mise_a_jour DateTime             @updatedAt
-  cycles           CycleTontine[]
-  invitations      InvitationGroupe[]
-  membres          MembreGroupe[]
-  notifications    NotificationGroupe[]
-  regles           ReglesGroupe[]
+  id_groupe            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom                  String
+  description          String?
+  devise               String               @default("XAF")
+  lien_invitation      String?              @unique
+  date_de_creation     DateTime             @default(now())
+  date_mise_a_jour     DateTime             @updatedAt
+  cycles               CycleTontine[]
+  invitations          InvitationGroupe[]
+  membres              MembreGroupe[]
+  notifications        NotificationGroupe[]
+  regles               ReglesGroupe[]
+  rubriques_cotisation RubriqueCotisation[]
+  retraits             Retrait[]
 
   @@map("groupes")
+  @@schema("public")
+}
+
+model RubriqueCotisation {
+  id_rubrique       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom               String
+  type_montant      TypeMontant        @default(FIXE)
+  montant_fixe      Decimal?           @db.Decimal(15, 2)
+  duree             String? // Exemple: "mensuel", "hebdomadaire", ou durée en jours
+  est_obligatoire   Boolean            @default(true)
+  id_groupe         String             @db.Uuid
+  groupe            Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  membres_concernes MembreRubrique[]
+  paiements         PaiementRubrique[]
+  retraits          Retrait[]
+  date_limite       DateTime?
+  date_creation     DateTime           @default(now())
+
+  @@index([id_groupe])
+  @@map("rubriques_cotisation")
+  @@schema("public")
+}
+
+model MembreRubrique {
+  id_membre_rubrique String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_rubrique        String             @db.Uuid
+  id_membre_groupe   String             @db.Uuid
+  rubrique           RubriqueCotisation @relation(fields: [id_rubrique], references: [id_rubrique], onDelete: Cascade)
+  membre             MembreGroupe       @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@unique([id_rubrique, id_membre_groupe])
+  @@map("membres_rubrique")
+  @@schema("public")
+}
+
+model PaiementRubrique {
+  id_paiement      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_rubrique      String             @db.Uuid
+  id_membre_groupe String             @db.Uuid
+  montant_paye     Decimal            @db.Decimal(15, 2)
+  date_paiement    DateTime           @default(now())
+  note             String? // Pour préciser si c'est une avance ou le reste
+  rubrique         RubriqueCotisation @relation(fields: [id_rubrique], references: [id_rubrique], onDelete: Cascade)
+  membre           MembreGroupe       @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@index([id_rubrique])
+  @@index([id_membre_groupe])
+  @@map("paiements_rubrique")
+  @@schema("public")
+}
+
+model Retrait {
+  id_retrait        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  montant           Decimal             @db.Decimal(15, 2)
+  motif             String
+  date_retrait      DateTime            @default(now())
+  id_groupe         String              @db.Uuid
+  id_admin_valideur String              @db.Uuid
+  id_rubrique       String?             @db.Uuid
+  groupe            Groupes             @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  valideur          MembreGroupe        @relation("retraits_valides", fields: [id_admin_valideur], references: [id_membre_groupe])
+  rubrique          RubriqueCotisation? @relation(fields: [id_rubrique], references: [id_rubrique], onDelete: SetNull)
+
+  @@index([id_groupe])
+  @@map("retraits")
+  @@schema("public")
+}
+
+enum TypeMontant {
+  FIXE
+  VARIABLE
+
   @@schema("public")
 }
 
@@ -76,6 +150,9 @@ model MembreGroupe {
   penalites             Penalite[]
   versements_recus      Versement[]        @relation("versements_recus")
   versements_effectues  Versement[]        @relation("versements_effectues")
+  membres_rubriques     MembreRubrique[]
+  paiements_rubriques   PaiementRubrique[]
+  retraits_valides      Retrait[]          @relation("retraits_valides")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])

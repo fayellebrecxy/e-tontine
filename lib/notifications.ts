@@ -6,7 +6,8 @@ export type NotificationType =
   | "INVITATION_RECU"
   | "NOUVEAU_MEMBRE"
   | "RAPPEL_ECHEANCE"
-  | "NOUVEAU_CYCLE";
+  | "NOUVEAU_CYCLE"
+  | "NOUVELLE_RUBRIQUE";
 
 export async function createNotification({
   userId,
