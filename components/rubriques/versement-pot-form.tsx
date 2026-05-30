@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -63,16 +63,16 @@ export function VersementPotForm({ groupId, adminId, cycles, onClose }: Props) {
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Enregistrer un versement du pot</DialogTitle>
-          <DialogDescription>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent className="sm:max-w-[500px]">
+        <SheetHeader>
+          <SheetTitle>Enregistrer un versement du pot</SheetTitle>
+          <SheetDescription>
             Enregistrez le versement du pot de la tontine au bénéficiaire.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-6">
           <div className="space-y-2">
             <Label>Cycle de tontine</Label>
             <Select
@@ -162,18 +162,19 @@ export function VersementPotForm({ groupId, adminId, cycles, onClose }: Props) {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Annuler
-          </Button>
+        <SheetFooter className="flex-col gap-2 sm:flex-col">
           <Button
             onClick={handleSubmit}
+            className="w-full"
             disabled={loading || !formData.cycleId || !formData.beneficiaireId || !formData.montant}
           >
             {loading ? "Enregistrement..." : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" className="w-full" onClick={onClose}>
+            Annuler
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -60,16 +60,16 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Créer une rubrique de cotisation</DialogTitle>
-          <DialogDescription>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent className="sm:max-w-[500px]">
+        <SheetHeader>
+          <SheetTitle>Créer une rubrique de cotisation</SheetTitle>
+          <SheetDescription>
             Étape {step} sur 3
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="py-4">
+        <div className="py-6">
           {step === 1 && (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -134,7 +134,7 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
                   onChange={(e) => setFormData({ ...formData, dateLimite: e.target.value })}
                 />
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 pt-2">
                 <Checkbox
                   id="obligatoire"
                   checked={formData.estObligatoire}
@@ -150,7 +150,7 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
           {step === 3 && (
             <div className="space-y-4">
               <Label>Membres concernés</Label>
-              <div className="max-h-[200px] overflow-y-auto space-y-2 border rounded-md p-2">
+              <div className="max-h-[300px] overflow-y-auto space-y-2 border rounded-md p-3">
                 {members.map((member) => (
                   <div key={member.id_membre_groupe} className="flex items-center space-x-2">
                     <Checkbox
@@ -172,7 +172,7 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
                         }
                       }}
                     />
-                    <Label htmlFor={`member-${member.id_membre_groupe}`}>
+                    <Label htmlFor={`member-${member.id_membre_groupe}`} className="cursor-pointer">
                       {member.user.prenom} {member.user.nom}
                     </Label>
                   </div>
@@ -182,23 +182,26 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
           )}
         </div>
 
-        <DialogFooter>
-          {step > 1 && (
-            <Button variant="outline" onClick={prevStep}>
-              Précédent
-            </Button>
-          )}
+        <SheetFooter className="flex-col gap-2 sm:flex-col">
           {step < 3 ? (
-            <Button onClick={nextStep} disabled={!formData.nom}>
+            <Button onClick={nextStep} className="w-full" disabled={!formData.nom}>
               Suivant
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button onClick={handleSubmit} className="w-full" disabled={loading}>
               {loading ? "Création..." : "Enregistrer"}
             </Button>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {step > 1 && (
+            <Button variant="outline" className="w-full" onClick={prevStep}>
+              Précédent
+            </Button>
+          )}
+          <Button variant="ghost" className="w-full" onClick={onClose}>
+            Annuler
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

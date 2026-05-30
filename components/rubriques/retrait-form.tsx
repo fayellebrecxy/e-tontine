@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,16 +55,16 @@ export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Enregistrer un retrait d'argent</DialogTitle>
-          <DialogDescription>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Enregistrer un retrait d'argent</SheetTitle>
+          <SheetDescription>
             Saisissez le montant et le motif du retrait.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-6">
           <div className="space-y-2">
             <Label>Source des fonds</Label>
             <Select
@@ -104,15 +104,15 @@ export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading || !formData.montant || !formData.motif}>
+        <SheetFooter className="flex-col gap-2 sm:flex-col">
+          <Button onClick={handleSubmit} className="w-full" disabled={loading || !formData.montant || !formData.motif}>
             {loading ? "Enregistrement..." : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" className="w-full" onClick={onClose}>
+            Annuler
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Settings, Users } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { GroupNav } from "@/components/groups/group-nav";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "./app-sidebar";
 
 type GroupItem = {
   id_groupe: string;
@@ -125,121 +125,63 @@ export function GroupShell({
   const isInactive = membership?.statut_adhesion === "INACTIF";
   const isPending = membership?.statut_adhesion === "EN_ATTENTE";
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase text-gray-400">Groupe</p>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+  if (!isActive) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             {group?.nom ?? "Chargement..."}
           </h1>
-          {group?.description ? (
-            <p className="mt-1 text-sm text-gray-500">{group.description}</p>
-          ) : null}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-          <Users className="h-4 w-4" />
-          {loading ? "..." : isActive ? `${members.length} membres` : "Acces limite"}
-          {group?.devise ? (
-            <span className="ml-2 rounded-full bg-gray-100 px-2 py-1 text-xs">{group.devise}</span>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <div className="min-w-0">{children}</div>
-
-        <aside className="space-y-4">
-          {isActive ? (
-            <>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                <GroupNav groupId={groupId} />
-              </div>
-
-              {membership?.role === "ADMIN" ? (
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Actions</h2>
-                  <div className="mt-3 flex flex-col gap-2">
-                    <Button asChild variant="outline" className="justify-start">
-                      <Link href={`/dashboard/groups/${groupId}/settings`}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Parametres du groupe
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Membres</h2>
-                <div className="mt-3 space-y-2">
-                  {loading ? (
-                    <p className="text-xs text-gray-500">Chargement...</p>
-                  ) : members.length ? (
-                    members.map((member) => (
-                      <div key={member.id_membre_groupe} className="flex items-center justify-between">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {member.user.prenom} {member.user.nom}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {member.role === "ADMIN" ? "Admin" : "Membre"}
-                          </p>
-                        </div>
-                        {member.role === "ADMIN" ? (
-                          <span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-600">
-                            ADMIN
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">
-                            MEMBRE
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-gray-500">Aucun membre.</p>
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <Button
-                    asChild
-                    variant={pathname.endsWith("/members") ? "default" : "outline"}
-                    className="w-full justify-start"
-                  >
-                    <Link href={`/dashboard/groups/${groupId}/members`}>
-                      <Users className="mr-2 h-4 w-4" />
-                      Voir les membres
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900">
-              <p className="font-semibold text-gray-900 dark:text-white">Acces limite</p>
-              {isInactive ? (
-                <p className="mt-2">Vous avez ete exclu de ce groupe.</p>
-              ) : null}
-              {isPending ? (
-                <p className="mt-2">Votre demande de reintegration est en attente.</p>
-              ) : null}
-              {isInactive ? (
-                <Button
-                  type="button"
-                  className="mt-4 w-full"
-                  disabled={pendingRejoin}
-                  onClick={requestRejoin}
-                >
-                  Demander a reintegrer
-                </Button>
-              ) : null}
-            </div>
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            {isInactive ? (
+              <p>Vous avez été exclu de ce groupe.</p>
+            ) : isPending ? (
+              <p>Votre demande de réintégration est en attente.</p>
+            ) : (
+              <p>Accès limité.</p>
+            )}
+          </div>
+          {isInactive && (
+            <Button
+              type="button"
+              className="mt-6 w-full"
+              disabled={pendingRejoin}
+              onClick={requestRejoin}
+            >
+              Demander à réintégrer
+            </Button>
           )}
-        </aside>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <AppSidebar
+        groupId={groupId}
+        groupName={group?.nom ?? ""}
+        isAdmin={membership?.role === "ADMIN"}
+      />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex flex-1 items-center justify-between">
+            <h1 className="text-sm font-semibold truncate">
+              {group?.nom}
+            </h1>
+            {group?.devise && (
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium dark:bg-gray-800">
+                {group.devise}
+              </span>
+            )}
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

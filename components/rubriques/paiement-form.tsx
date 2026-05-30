@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,16 +55,16 @@ export function PaiementForm({ rubriqueId, groupId, members, onClose }: Props) {
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Enregistrer un paiement</DialogTitle>
-          <DialogDescription>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Enregistrer un paiement</SheetTitle>
+          <SheetDescription>
             Saisissez les détails du paiement (avance ou reste).
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-6">
           <div className="space-y-2">
             <Label>Membre</Label>
             <Select
@@ -103,15 +103,15 @@ export function PaiementForm({ rubriqueId, groupId, members, onClose }: Props) {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading || !formData.membreId || !formData.montant}>
+        <SheetFooter className="flex-col gap-2 sm:flex-col">
+          <Button onClick={handleSubmit} className="w-full" disabled={loading || !formData.membreId || !formData.montant}>
             {loading ? "Enregistrement..." : "Enregistrer"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" className="w-full" onClick={onClose}>
+            Annuler
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
