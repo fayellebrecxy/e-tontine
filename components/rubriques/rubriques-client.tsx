@@ -111,9 +111,9 @@ export function RubriquesClient({
   };
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] gap-6 overflow-hidden">
+    <div className="flex min-h-[28rem] flex-col gap-6 lg:flex-row lg:items-stretch">
       {/* Sidebar gauche : Liste des rubriques */}
-      <div className="flex w-64 flex-col gap-4 border-r pr-6 shrink-0">
+      <div className="flex w-full shrink-0 flex-col gap-4 border-b pb-6 lg:w-64 lg:border-b-0 lg:border-r lg:pr-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Rubriques</h2>
           {isAdmin && (
@@ -395,7 +395,7 @@ export function RubriquesClient({
         <VersementPotForm
           groupId={groupId}
           adminId={adminId}
-          activeCycles={activeCycles}
+          cycles={activeCycles}
           onClose={() => setShowVersementPot(false)}
         />
       )}

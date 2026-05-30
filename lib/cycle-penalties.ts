@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { ModePenalite } from "@/lib/generated/prisma/enums";
+import type { ModePenalite } from "@/lib/generated/prisma/client";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 

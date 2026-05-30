@@ -102,6 +102,10 @@ export async function PATCH(
     }
   }
 
+  if (!parsedRole.success) {
+    return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
+  }
+
   const { role } = parsedRole.data;
 
   try {
