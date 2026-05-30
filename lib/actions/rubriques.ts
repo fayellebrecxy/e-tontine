@@ -7,8 +7,7 @@ import { createNotification } from "@/lib/notifications";
 export async function createRubrique(formData: {
   groupId: string;
   nom: string;
-  typeMontant: "FIXE" | "VARIABLE";
-  montantFixe?: number;
+  montantFixe: number;
   duree?: string;
   dateLimite?: string;
   estObligatoire: boolean;
@@ -18,7 +17,6 @@ export async function createRubrique(formData: {
     data: {
       id_groupe: formData.groupId,
       nom: formData.nom,
-      type_montant: formData.typeMontant,
       montant_fixe: formData.montantFixe,
       duree: formData.duree,
       date_limite: formData.dateLimite ? new Date(formData.dateLimite) : undefined,
@@ -70,6 +68,55 @@ export async function enregistrerPaiement(data: {
   note?: string;
   groupId: string;
 }) {
+  if (!Number.isFinite(data.montant) || data.montant <= 0) {
+    return { ok: false as const, error: "Le montant doit être supérieur à 0." };
+  }
+
+  const rubrique = await prisma.rubriqueCotisation.findUnique({
+    where: { id_rubrique: data.rubriqueId },
+    select: {
+      montant_fixe: true,
+      nom: true,
+      membres_concernes: {
+        where: { id_membre_groupe: data.membreId },
+        select: { id_membre_rubrique: true },
+      },
+      paiements: {
+        where: { id_membre_groupe: data.membreId },
+        select: { montant_paye: true },
+      },
+    },
+  });
+
+  if (!rubrique) {
+    return { ok: false as const, error: "Rubrique introuvable." };
+  }
+
+  if (rubrique.membres_concernes.length === 0) {
+    return { ok: false as const, error: "Ce membre n'est pas concerné par cette rubrique." };
+  }
+
+  const due = Number(rubrique.montant_fixe);
+  const alreadyPaid = rubrique.paiements.reduce(
+    (acc, p) => acc + Number(p.montant_paye),
+    0
+  );
+  const remaining = Math.round((due - alreadyPaid) * 100) / 100;
+
+  if (remaining <= 0) {
+    return {
+      ok: false as const,
+      error: "Ce membre a déjà soldé sa cotisation pour cette rubrique.",
+    };
+  }
+
+  if (Math.round(data.montant * 100) / 100 > remaining) {
+    return {
+      ok: false as const,
+      error: `Le montant ne peut pas dépasser le reste à payer (${remaining.toLocaleString("fr-FR")} XAF).`,
+    };
+  }
+
   const paiement = await prisma.paiementRubrique.create({
     data: {
       id_rubrique: data.rubriqueId,

@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createRubrique } from "@/lib/actions/rubriques";
 
@@ -27,7 +26,6 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
   const [loading, setLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({
     nom: "",
-    typeMontant: "FIXE" as "FIXE" | "VARIABLE",
     montantFixe: "",
     duree: "",
     dateLimite: "",
@@ -44,8 +42,7 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
       await createRubrique({
         groupId,
         nom: formData.nom,
-        typeMontant: formData.typeMontant,
-        montantFixe: formData.montantFixe ? parseFloat(formData.montantFixe) : undefined,
+        montantFixe: parseFloat(formData.montantFixe),
         duree: formData.duree,
         dateLimite: formData.dateLimite || undefined,
         estObligatoire: formData.estObligatoire,
@@ -58,6 +55,10 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
       setLoading(false);
     }
   };
+
+  const canProceedFromStep1 = formData.nom.trim().length > 0;
+  const canProceedFromStep2 =
+    formData.montantFixe !== "" && parseFloat(formData.montantFixe) > 0;
 
   return (
     <Sheet open onOpenChange={onClose}>
@@ -81,41 +82,21 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Type de montant</Label>
-                <RadioGroup
-                  value={formData.typeMontant}
-                  onValueChange={(val: "FIXE" | "VARIABLE") =>
-                    setFormData({ ...formData, typeMontant: val })
-                  }
-                  className="flex flex-col space-y-1"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="FIXE" id="fixe" />
-                    <Label htmlFor="fixe">Fixe</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="VARIABLE" id="variable" />
-                    <Label htmlFor="variable">Variable</Label>
-                  </div>
-                </RadioGroup>
-              </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-4">
-              {formData.typeMontant === "FIXE" && (
-                <div className="space-y-2">
-                  <Label htmlFor="montant">Montant (XAF)</Label>
-                  <Input
-                    id="montant"
-                    type="number"
-                    value={formData.montantFixe}
-                    onChange={(e) => setFormData({ ...formData, montantFixe: e.target.value })}
-                  />
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="montant">Montant (XAF)</Label>
+                <Input
+                  id="montant"
+                  type="number"
+                  min="1"
+                  value={formData.montantFixe}
+                  onChange={(e) => setFormData({ ...formData, montantFixe: e.target.value })}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="duree">Durée / Fréquence (Optionnel)</Label>
                 <Input
@@ -184,11 +165,19 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
 
         <SheetFooter className="flex-col gap-2 sm:flex-col">
           {step < 3 ? (
-            <Button onClick={nextStep} className="w-full" disabled={!formData.nom}>
+            <Button
+              onClick={nextStep}
+              className="w-full"
+              disabled={step === 1 ? !canProceedFromStep1 : !canProceedFromStep2}
+            >
               Suivant
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+            <Button
+              onClick={handleSubmit}
+              className="w-full"
+              disabled={loading || formData.membresIds.length === 0}
+            >
               {loading ? "Création..." : "Enregistrer"}
             </Button>
           )}

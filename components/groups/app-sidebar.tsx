@@ -8,7 +8,6 @@ import {
   Users,
   Mail,
   Settings,
-  ClipboardList,
   Repeat,
   Landmark,
   ChevronRight,
@@ -41,7 +40,6 @@ const items = [
   { label: "Membres", href: "members", icon: Users },
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Rubriques", href: "rubriques", icon: Landmark },
-  { label: "Règles", href: "regles", icon: ClipboardList },
   { label: "Cycles", href: "cycles", icon: Repeat },
   { label: "Paramètres", href: "settings", icon: Settings },
 ];

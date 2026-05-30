@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Mail, Settings, ClipboardList, Repeat, Landmark } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Settings, Repeat, Landmark } from "lucide-react";
 
 const items = [
   { label: "Apercu", href: "", icon: LayoutDashboard },
   { label: "Membres", href: "members", icon: Users },
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Rubriques", href: "rubriques", icon: Landmark },
-  { label: "Regles", href: "regles", icon: ClipboardList },
   { label: "Cycles", href: "cycles", icon: Repeat },
   { label: "Parametres", href: "settings", icon: Settings },
 ];

@@ -39,7 +39,6 @@ model Groupes {
   invitations          InvitationGroupe[]
   membres              MembreGroupe[]
   notifications        NotificationGroupe[]
-  regles               ReglesGroupe[]
   rubriques_cotisation RubriqueCotisation[]
   retraits             Retrait[]
 
@@ -50,8 +49,7 @@ model Groupes {
 model RubriqueCotisation {
   id_rubrique       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nom               String
-  type_montant      TypeMontant        @default(FIXE)
-  montant_fixe      Decimal?           @db.Decimal(15, 2)
+  montant_fixe      Decimal            @db.Decimal(15, 2)
   duree             String? // Exemple: "mensuel", "hebdomadaire", ou durée en jours
   est_obligatoire   Boolean            @default(true)
   id_groupe         String             @db.Uuid
@@ -112,13 +110,6 @@ model Retrait {
   @@schema("public")
 }
 
-enum TypeMontant {
-  FIXE
-  VARIABLE
-
-  @@schema("public")
-}
-
 model InvitationGroupe {
   id_invitation    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   code             String    @unique
@@ -158,22 +149,6 @@ model MembreGroupe {
   @@index([id_groupe])
   @@index([id_user])
   @@map("membres_groupe")
-  @@schema("public")
-}
-
-model ReglesGroupe {
-  id_regle            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type_regle          TypeRegle
-  nom_regle           String
-  valeur              String
-  est_active          Boolean   @default(true)
-  date_debut_validite DateTime  @default(now())
-  date_fin_validite   DateTime?
-  id_groupe           String    @db.Uuid
-  groupe              Groupes   @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-
-  @@index([id_groupe])
-  @@map("regles_groupe")
   @@schema("public")
 }
 
@@ -315,15 +290,6 @@ enum StatutVisuel {
   VERT
   ORANGE
   ROUGE
-
-  @@schema("public")
-}
-
-enum TypeRegle {
-  COTISATION
-  FREQUENCE
-  PENALITE_RETARD
-  PENALITE_MOTIF
 
   @@schema("public")
 }

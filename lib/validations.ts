@@ -34,16 +34,6 @@ export const createGroupSchema = z
     nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères.").max(64),
     description: z.string().trim().max(512).optional(),
     devise: z.string().trim().min(1).max(8).optional(),
-    regles: z
-      .array(
-        z.object({
-          type_regle: z.enum(["COTISATION", "FREQUENCE", "PENALITE_RETARD", "PENALITE_MOTIF"]),
-          nom_regle: z.string().trim().min(1).max(128).optional(),
-          valeur: z.string().trim().min(1).max(256),
-          est_active: z.boolean().optional(),
-        }),
-      )
-      .optional(),
   })
   .strict();
 

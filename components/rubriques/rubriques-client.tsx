@@ -87,7 +87,7 @@ export function RubriquesClient({
     if (!selectedRubrique) return;
     const headers = ["Membre", "Montant Dû", "Montant Payé", "Reste à payer"];
     const rows = selectedRubrique.membres_concernes.map((mc: any) => {
-      const due = selectedRubrique.type_montant === "FIXE" ? parseFloat(selectedRubrique.montant_fixe) : 0;
+      const due = parseFloat(selectedRubrique.montant_fixe);
       const paid = selectedRubrique.paiements
         .filter((p: any) => p.id_membre_groupe === mc.id_membre_groupe)
         .reduce((acc: number, p: any) => acc + parseFloat(p.montant_paye), 0);
@@ -148,9 +148,7 @@ export function RubriquesClient({
                 )}
               </div>
               <span className="text-xs truncate">
-                {rubrique.type_montant === "FIXE"
-                  ? `${rubrique.montant_fixe} XAF`
-                  : "Variable"}
+                {rubrique.montant_fixe} XAF
               </span>
             </button>
           ))}
@@ -266,7 +264,7 @@ export function RubriquesClient({
                       {selectedRubrique.membres_concernes
                         .filter((mc: any) => !isAdmin ? mc.membre.id_membre_groupe === adminId : true)
                         .map((mc: any) => {
-                          const due = selectedRubrique.type_montant === "FIXE" ? parseFloat(selectedRubrique.montant_fixe) : 0;
+                          const due = parseFloat(selectedRubrique.montant_fixe);
                           const paid = selectedRubrique.paiements
                             .filter((p: any) => p.id_membre_groupe === mc.id_membre_groupe)
                             .reduce((acc: number, p: any) => acc + parseFloat(p.montant_paye), 0);
@@ -280,7 +278,7 @@ export function RubriquesClient({
                                   <Badge variant="outline" className="ml-2 text-[10px] h-4">Vous</Badge>
                                 )}
                               </TableCell>
-                              <TableCell>{due > 0 ? `${due.toLocaleString()} XAF` : "-"}</TableCell>
+                              <TableCell>{due.toLocaleString()} XAF</TableCell>
                               <TableCell className="text-green-600 font-medium">
                                 {paid.toLocaleString()} XAF
                               </TableCell>
@@ -288,14 +286,10 @@ export function RubriquesClient({
                                 {balance > 0 ? `${balance.toLocaleString()} XAF` : "0 XAF"}
                               </TableCell>
                               <TableCell className="text-right">
-                                {due > 0 ? (
-                                  balance <= 0 ? (
-                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10">À jour</Badge>
-                                  ) : (
-                                    <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10">Incomplet</Badge>
-                                  )
+                                {balance <= 0 ? (
+                                  <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10">À jour</Badge>
                                 ) : (
-                                  <Badge variant="outline">Variable</Badge>
+                                  <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10">Incomplet</Badge>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -371,12 +365,14 @@ export function RubriquesClient({
         />
       )}
 
-      {showPaiement && selectedRubriqueId && (
+      {showPaiement && selectedRubriqueId && selectedRubrique && (
         <PaiementForm
           rubriqueId={selectedRubriqueId}
           groupId={groupId}
+          montantFixe={parseFloat(selectedRubrique.montant_fixe)}
+          paiements={selectedRubrique.paiements}
           members={members.filter((m) =>
-            selectedRubrique?.membres_concernes.some((mc: any) => mc.id_membre_groupe === m.id_membre_groupe)
+            selectedRubrique.membres_concernes.some((mc: any) => mc.id_membre_groupe === m.id_membre_groupe)
           )}
           onClose={() => setShowPaiement(false)}
         />

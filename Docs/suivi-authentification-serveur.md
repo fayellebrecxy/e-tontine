@@ -19,7 +19,6 @@ Date: 2026-05-11
 - Suppression de `mot_de_passe` du modèle `User`.
 - Suppression du rôle, du statut d'adhésion et du statut visuel du modèle `User`.
 - Ajout du modèle `MembreGroupe`.
-- Ajout du modèle `ReglesGroupe`.
 - Ajout de l'enum `RoleGroupe` avec `ADMIN` et `MEMBRE`.
 - Mise à jour de `StatutVisuel` avec `VERT`, `ORANGE` et `ROUGE`.
 - Les cotisations et pénalités sont rattachées à `MembreGroupe` plutôt qu'à `User`.
@@ -30,7 +29,7 @@ Date: 2026-05-11
 
 - Migration créée: `supabase/migrations/20260511155947_create_auth_server_schema.sql`.
 - Migration appliquée sur Supabase via MCP sous le nom `create_auth_server_schema`.
-- Tables créées: `users`, `groupes`, `membres_groupe`, `regles_groupe`, `cycles_tontine`, `cotisations`, `penalites`.
+- Tables créées: `users`, `groupes`, `membres_groupe`, `cycles_tontine`, `cotisations`, `penalites`.
 - RLS activé sur toutes les tables publiques métier.
 - Aucune policy RLS métier n'a encore été ajoutée. C'est acceptable tant que l'accès aux tables passe par le serveur Prisma, mais il faudra définir les policies avant d'exposer ces tables directement côté client via l'API Supabase.
 

@@ -105,13 +105,6 @@ export async function POST(request: NextRequest) {
   const description = parsedBody.data.description?.trim();
   const devise = parsedBody.data.devise?.trim().toUpperCase();
 
-  const regles = parsedBody.data.regles?.map((r) => ({
-    type_regle: r.type_regle,
-    nom_regle: r.nom_regle?.trim() ?? r.type_regle,
-    valeur: r.valeur.trim(),
-    est_active: r.est_active ?? true,
-  }));
-
   for (let attempt = 0; attempt < 3; attempt++) {
     const inviteCode = generateInviteCode();
 
@@ -135,13 +128,6 @@ export async function POST(request: NextRequest) {
               statut_adhesion: "ACTIF",
             },
           },
-          ...(regles?.length
-            ? {
-                regles: {
-                  create: regles,
-                },
-              }
-            : {}),
         },
         select: {
           id_groupe: true,
@@ -159,17 +145,6 @@ export async function POST(request: NextRequest) {
               statut_adhesion: true,
               statut_visuel: true,
               date_adhesion: true,
-            },
-          },
-          regles: {
-            select: {
-              id_regle: true,
-              type_regle: true,
-              nom_regle: true,
-              valeur: true,
-              est_active: true,
-              date_debut_validite: true,
-              date_fin_validite: true,
             },
           },
         },

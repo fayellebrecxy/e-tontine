@@ -17,7 +17,6 @@ Règle métier principale:
 - `nom` (string, requis)
 - `description` (string, optionnel)
 - `devise` (string, optionnel, défaut: `XAF`)
-- `regles` (optionnel) — règles initiales du groupe (facultatif, pour extension)
 
 **Réponse 201**
 ```json
