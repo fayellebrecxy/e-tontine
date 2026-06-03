@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -14,6 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createRubrique } from "@/lib/actions/rubriques";
+import {
+  RubriqueFormFields,
+  defaultRubriqueFormValues,
+} from "./rubrique-form-fields";
 
 type Props = {
   groupId: string;
@@ -22,110 +28,80 @@ type Props = {
 };
 
 export function RubriqueAssistant({ groupId, members, onClose }: Props) {
+  const router = useRouter();
   const [step, setStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    nom: "",
-    montantFixe: "",
-    duree: "",
-    dateLimite: "",
-    estObligatoire: true,
-    membresIds: members.map((m) => m.id_membre_groupe),
-  });
+  const [formData, setFormData] = React.useState(defaultRubriqueFormValues());
+  const [membresIds, setMembresIds] = React.useState<string[]>(
+    members.map((m) => m.id_membre_groupe),
+  );
 
   const nextStep = () => setStep((s) => s + 1);
   const prevStep = () => setStep((s) => s - 1);
 
+  const canProceedFromStep1 = formData.nom.trim().length > 0;
+  const canProceedFromStep2 =
+    formData.montantFixe !== "" &&
+    parseFloat(formData.montantFixe) > 0 &&
+    formData.dateDebut !== "";
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await createRubrique({
+      const result = await createRubrique({
         groupId,
         nom: formData.nom,
         montantFixe: parseFloat(formData.montantFixe),
-        duree: formData.duree,
+        typeRubrique: formData.typeRubrique,
+        frequence:
+          formData.typeRubrique === "RECURRENTE"
+            ? formData.frequence
+            : "UNIQUE",
+        dateDebut: formData.dateDebut,
         dateLimite: formData.dateLimite || undefined,
         estObligatoire: formData.estObligatoire,
-        membresIds: formData.membresIds,
+        membresIds,
       });
+
+      if (!result.ok) {
+        toast.error("error" in result ? result.error : "Erreur lors de la création.");
+        return;
+      }
+
+      toast.success("Rubrique créée.");
+      router.refresh();
       onClose();
     } catch (error) {
       console.error(error);
+      toast.error("Une erreur est survenue.");
     } finally {
       setLoading(false);
     }
   };
 
-  const canProceedFromStep1 = formData.nom.trim().length > 0;
-  const canProceedFromStep2 =
-    formData.montantFixe !== "" && parseFloat(formData.montantFixe) > 0;
-
   return (
     <Sheet open onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-[500px]">
+      <SheetContent className="sm:max-w-[500px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Créer une rubrique de cotisation</SheetTitle>
-          <SheetDescription>
-            Étape {step} sur 3
-          </SheetDescription>
+          <SheetDescription>Étape {step} sur 3</SheetDescription>
         </SheetHeader>
 
         <div className="py-6">
           {step === 1 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nom">Nom de la rubrique</Label>
-                <Input
-                  id="nom"
-                  placeholder="Ex: Frais de fonctionnement, Boisson, etc."
-                  value={formData.nom}
-                  onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="nom">Nom de la rubrique</Label>
+              <Input
+                id="nom"
+                placeholder="Ex: Frais de fonctionnement, Boisson…"
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              />
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="montant">Montant (XAF)</Label>
-                <Input
-                  id="montant"
-                  type="number"
-                  min="1"
-                  value={formData.montantFixe}
-                  onChange={(e) => setFormData({ ...formData, montantFixe: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duree">Durée / Fréquence (Optionnel)</Label>
-                <Input
-                  id="duree"
-                  placeholder="Ex: Mensuel, Hebdomadaire"
-                  value={formData.duree}
-                  onChange={(e) => setFormData({ ...formData, duree: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dateLimite">Date d'échéance (Optionnel)</Label>
-                <Input
-                  id="dateLimite"
-                  type="date"
-                  value={formData.dateLimite}
-                  onChange={(e) => setFormData({ ...formData, dateLimite: e.target.value })}
-                />
-              </div>
-              <div className="flex items-center space-x-2 pt-2">
-                <Checkbox
-                  id="obligatoire"
-                  checked={formData.estObligatoire}
-                  onCheckedChange={(val: boolean) =>
-                    setFormData({ ...formData, estObligatoire: val })
-                  }
-                />
-                <Label htmlFor="obligatoire">Cotisation obligatoire</Label>
-              </div>
-            </div>
+            <RubriqueFormFields values={formData} onChange={setFormData} showNom={false} />
           )}
 
           {step === 3 && (
@@ -136,24 +112,21 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
                   <div key={member.id_membre_groupe} className="flex items-center space-x-2">
                     <Checkbox
                       id={`member-${member.id_membre_groupe}`}
-                      checked={formData.membresIds.includes(member.id_membre_groupe)}
+                      checked={membresIds.includes(member.id_membre_groupe)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setFormData({
-                            ...formData,
-                            membresIds: [...formData.membresIds, member.id_membre_groupe],
-                          });
+                          setMembresIds([...membresIds, member.id_membre_groupe]);
                         } else {
-                          setFormData({
-                            ...formData,
-                            membresIds: formData.membresIds.filter(
-                              (id) => id !== member.id_membre_groupe
-                            ),
-                          });
+                          setMembresIds(
+                            membresIds.filter((id) => id !== member.id_membre_groupe),
+                          );
                         }
                       }}
                     />
-                    <Label htmlFor={`member-${member.id_membre_groupe}`} className="cursor-pointer">
+                    <Label
+                      htmlFor={`member-${member.id_membre_groupe}`}
+                      className="cursor-pointer"
+                    >
                       {member.user.prenom} {member.user.nom}
                     </Label>
                   </div>
@@ -176,7 +149,7 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
             <Button
               onClick={handleSubmit}
               className="w-full"
-              disabled={loading || formData.membresIds.length === 0}
+              disabled={loading || membresIds.length === 0}
             >
               {loading ? "Création..." : "Enregistrer"}
             </Button>

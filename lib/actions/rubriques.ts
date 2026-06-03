@@ -3,23 +3,127 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  computeStoredDateFin,
+  resolveFrequenceForType,
+  type FrequenceRubrique,
+  type TypeRubriqueCotisation,
+} from "@/lib/rubrique-dates";
+
+async function requireGroupAdmin(groupId: string) {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false as const, error: "Non authentifié." };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false as const, error: "Non authentifié." };
+  }
+
+  const membership = await prisma.membreGroupe.findUnique({
+    where: {
+      id_user_id_groupe: {
+        id_user: user.id,
+        id_groupe: groupId,
+      },
+    },
+    select: { role: true, statut_adhesion: true },
+  });
+
+  if (!membership || membership.statut_adhesion !== "ACTIF" || membership.role !== "ADMIN") {
+    return { ok: false as const, error: "Action réservée aux administrateurs." };
+  }
+
+  return { ok: true as const };
+}
+
+function buildRubriqueDates(input: {
+  typeRubrique: TypeRubriqueCotisation;
+  frequence: FrequenceRubrique;
+  dateDebut: string;
+  dateLimite?: string;
+}) {
+  const dateDebut = new Date(input.dateDebut);
+  if (Number.isNaN(dateDebut.getTime())) {
+    return { ok: false as const, error: "Date de début invalide." };
+  }
+
+  const dateLimite = input.dateLimite ? new Date(input.dateLimite) : null;
+  if (dateLimite && Number.isNaN(dateLimite.getTime())) {
+    return { ok: false as const, error: "Date limite invalide." };
+  }
+
+  if (dateLimite && dateLimite < dateDebut) {
+    return { ok: false as const, error: "La date limite doit être après la date de début." };
+  }
+
+  const frequence = resolveFrequenceForType(input.typeRubrique, input.frequence);
+  const planning = {
+    type_rubrique: input.typeRubrique,
+    frequence,
+    date_debut: dateDebut,
+    date_limite: dateLimite,
+  };
+
+  return {
+    ok: true as const,
+    dateDebut,
+    dateLimite,
+    frequence,
+    dateFin: computeStoredDateFin(planning),
+  };
+}
 
 export async function createRubrique(formData: {
   groupId: string;
   nom: string;
   montantFixe: number;
-  duree?: string;
+  typeRubrique: TypeRubriqueCotisation;
+  frequence: FrequenceRubrique;
+  dateDebut: string;
   dateLimite?: string;
   estObligatoire: boolean;
   membresIds: string[];
 }) {
+  const auth = await requireGroupAdmin(formData.groupId);
+  if (!auth.ok) return auth;
+
+  if (!formData.nom.trim()) {
+    return { ok: false as const, error: "Le nom de la rubrique est requis." };
+  }
+
+  if (!Number.isFinite(formData.montantFixe) || formData.montantFixe <= 0) {
+    return { ok: false as const, error: "Le montant doit être supérieur à 0." };
+  }
+
+  if (formData.membresIds.length === 0) {
+    return { ok: false as const, error: "Sélectionnez au moins un membre." };
+  }
+
+  const dates = buildRubriqueDates({
+    typeRubrique: formData.typeRubrique,
+    frequence: formData.frequence,
+    dateDebut: formData.dateDebut,
+    dateLimite: formData.dateLimite,
+  });
+
+  if (!dates.ok) return dates;
+
   const rubrique = await prisma.rubriqueCotisation.create({
     data: {
       id_groupe: formData.groupId,
-      nom: formData.nom,
+      nom: formData.nom.trim(),
       montant_fixe: formData.montantFixe,
-      duree: formData.duree,
-      date_limite: formData.dateLimite ? new Date(formData.dateLimite) : undefined,
+      type_rubrique: formData.typeRubrique,
+      frequence: dates.frequence,
+      date_debut: dates.dateDebut,
+      date_fin: dates.dateFin,
+      date_limite: dates.dateLimite,
       est_obligatoire: formData.estObligatoire,
       membres_concernes: {
         create: formData.membresIds.map((id) => ({
@@ -36,7 +140,6 @@ export async function createRubrique(formData: {
     },
   });
 
-  // Notifier les membres concernés
   await Promise.all(
     rubrique.membres_concernes.map((mc) =>
       createNotification({
@@ -44,15 +147,78 @@ export async function createRubrique(formData: {
         groupId: formData.groupId,
         message: `Nouvelle rubrique de cotisation : ${formData.nom}`,
         type: "NOUVELLE_RUBRIQUE",
-      })
-    )
+      }),
+    ),
   );
 
   revalidatePath(`/dashboard/groups/${formData.groupId}/rubriques`);
   return { ok: true, rubrique };
 }
 
+export async function updateRubrique(formData: {
+  rubriqueId: string;
+  groupId: string;
+  nom: string;
+  montantFixe: number;
+  typeRubrique: TypeRubriqueCotisation;
+  frequence: FrequenceRubrique;
+  dateDebut: string;
+  dateLimite?: string;
+  estObligatoire: boolean;
+}) {
+  const auth = await requireGroupAdmin(formData.groupId);
+  if (!auth.ok) return auth;
+
+  if (!formData.nom.trim()) {
+    return { ok: false as const, error: "Le nom de la rubrique est requis." };
+  }
+
+  if (!Number.isFinite(formData.montantFixe) || formData.montantFixe <= 0) {
+    return { ok: false as const, error: "Le montant doit être supérieur à 0." };
+  }
+
+  const dates = buildRubriqueDates({
+    typeRubrique: formData.typeRubrique,
+    frequence: formData.frequence,
+    dateDebut: formData.dateDebut,
+    dateLimite: formData.dateLimite,
+  });
+
+  if (!dates.ok) return dates;
+
+  const existing = await prisma.rubriqueCotisation.findFirst({
+    where: { id_rubrique: formData.rubriqueId, id_groupe: formData.groupId },
+    select: { id_rubrique: true },
+  });
+
+  if (!existing) {
+    return { ok: false as const, error: "Rubrique introuvable." };
+  }
+
+  const rubrique = await prisma.rubriqueCotisation.update({
+    where: { id_rubrique: formData.rubriqueId },
+    data: {
+      nom: formData.nom.trim(),
+      montant_fixe: formData.montantFixe,
+      type_rubrique: formData.typeRubrique,
+      frequence: dates.frequence,
+      date_debut: dates.dateDebut,
+      date_fin: dates.dateFin,
+      date_limite: dates.dateLimite,
+      est_obligatoire: formData.estObligatoire,
+    },
+  });
+
+  revalidatePath(`/dashboard/groups/${formData.groupId}/rubriques`);
+  return { ok: true, rubrique };
+}
+
 export async function deleteRubrique(rubriqueId: string, groupId: string) {
+  const auth = await requireGroupAdmin(groupId);
+  if (!auth.ok) {
+    return auth;
+  }
+
   await prisma.rubriqueCotisation.delete({
     where: { id_rubrique: rubriqueId },
   });
@@ -68,6 +234,11 @@ export async function enregistrerPaiement(data: {
   note?: string;
   groupId: string;
 }) {
+  const auth = await requireGroupAdmin(data.groupId);
+  if (!auth.ok) {
+    return auth;
+  }
+
   if (!Number.isFinite(data.montant) || data.montant <= 0) {
     return { ok: false as const, error: "Le montant doit être supérieur à 0." };
   }
@@ -99,7 +270,7 @@ export async function enregistrerPaiement(data: {
   const due = Number(rubrique.montant_fixe);
   const alreadyPaid = rubrique.paiements.reduce(
     (acc, p) => acc + Number(p.montant_paye),
-    0
+    0,
   );
   const remaining = Math.round((due - alreadyPaid) * 100) / 100;
 
@@ -130,7 +301,6 @@ export async function enregistrerPaiement(data: {
     },
   });
 
-  // Notifier le membre
   await createNotification({
     userId: paiement.membre.id_user,
     groupId: data.groupId,
@@ -149,6 +319,11 @@ export async function enregistrerRetrait(data: {
   motif: string;
   rubriqueId?: string;
 }) {
+  const auth = await requireGroupAdmin(data.groupId);
+  if (!auth.ok) {
+    return auth;
+  }
+
   const retrait = await prisma.retrait.create({
     data: {
       id_groupe: data.groupId,
@@ -173,6 +348,11 @@ export async function enregistrerVersementPot(data: {
   reference?: string;
   groupId: string;
 }) {
+  const auth = await requireGroupAdmin(data.groupId);
+  if (!auth.ok) {
+    return auth;
+  }
+
   const versement = await prisma.versement.create({
     data: {
       id_cycle: data.cycleId,
@@ -185,7 +365,6 @@ export async function enregistrerVersementPot(data: {
     },
   });
 
-  revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
   revalidatePath(`/dashboard/groups/${data.groupId}/cycles/${data.cycleId}`);
   return { ok: true, versement };
 }

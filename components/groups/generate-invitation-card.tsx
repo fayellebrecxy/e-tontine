@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ type InvitationResponse = {
 };
 
 export function GenerateInvitationCard({ groupId }: Props) {
+  const router = useRouter();
   const [pending, startTransition] = React.useTransition();
   const [loading, setLoading] = React.useState(true);
   const [inviteLink, setInviteLink] = React.useState("");
@@ -67,6 +69,7 @@ export function GenerateInvitationCard({ groupId }: Props) {
 
       setInviteLink(body.invitation.lien);
       toast.success("✅ Nouveau lien d’invitation généré avec succès.");
+      router.refresh();
     });
   };
 

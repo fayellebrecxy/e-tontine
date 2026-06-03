@@ -28,6 +28,16 @@ export default async function GroupInvitationsPage({
     redirect("/dashboard");
   }
 
+  const groupe =
+    membership.role === "ADMIN"
+      ? await prisma.groupes.findUnique({
+          where: { id_groupe: groupId },
+          select: { lien_invitation: true },
+        })
+      : null;
+
+  const activeCode = groupe?.lien_invitation ?? null;
+
   const invitations =
     membership.role === "ADMIN"
       ? await prisma.invitationGroupe.findMany({
@@ -42,11 +52,6 @@ export default async function GroupInvitationsPage({
         })
       : [];
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_SUPABASE_URL ??
-    "http://localhost:3000";
-
   return (
     <div className="space-y-6">
       <div>
@@ -58,15 +63,24 @@ export default async function GroupInvitationsPage({
         <div className="space-y-6">
           <GenerateInvitationCard groupId={groupId} />
           <InvitationHistory
-            items={invitations.map((invitation) => ({
-              id_invitation: invitation.id_invitation,
-              code: invitation.code,
-              date_creation: invitation.date_creation.toISOString(),
-              date_revocation: invitation.date_revocation
-                ? invitation.date_revocation.toISOString()
-                : null,
-              lien: `${baseUrl}/invitations/${invitation.code}`,
-            }))}
+            groupId={groupId}
+            items={invitations
+              .filter(
+                (invitation) =>
+                  !(
+                    activeCode &&
+                    invitation.code === activeCode &&
+                    !invitation.date_revocation
+                  ),
+              )
+              .map((invitation) => ({
+                id_invitation: invitation.id_invitation,
+                code: invitation.code,
+                date_creation: invitation.date_creation.toISOString(),
+                date_revocation: invitation.date_revocation
+                  ? invitation.date_revocation.toISOString()
+                  : null,
+              }))}
           />
         </div>
       ) : (

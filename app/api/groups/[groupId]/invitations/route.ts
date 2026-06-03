@@ -72,6 +72,13 @@ async function createAndActivateInvitation(groupId: string, userId: string) {
 
     try {
       const invitation = await prisma.$transaction(async (tx) => {
+        const revokedAt = new Date();
+
+        await tx.invitationGroupe.updateMany({
+          where: { id_groupe: groupId, date_revocation: null },
+          data: { date_revocation: revokedAt },
+        });
+
         const createdInvitation = await tx.invitationGroupe.create({
           data: {
             code,
@@ -183,6 +190,52 @@ export async function GET(
     },
     { status: 200 },
   );
+}
+
+export async function DELETE(
+  request: NextRequest,
+  ctx: { params: Promise<{ groupId: string }> },
+) {
+  const { groupId } = await ctx.params;
+  const invitationId = request.nextUrl.searchParams.get("invitationId");
+
+  if (!invitationId) {
+    return NextResponse.json({ ok: false, error: "Identifiant d'invitation manquant." }, { status: 400 });
+  }
+
+  const auth = await getAdminUserId(groupId);
+  if (!auth.ok) return auth.response;
+
+  const groupe = await prisma.groupes.findUnique({
+    where: { id_groupe: groupId },
+    select: { lien_invitation: true },
+  });
+
+  if (!groupe) {
+    return NextResponse.json({ ok: false, error: "Group not found." }, { status: 404 });
+  }
+
+  const invitation = await prisma.invitationGroupe.findFirst({
+    where: { id_invitation: invitationId, id_groupe: groupId },
+    select: { id_invitation: true, code: true },
+  });
+
+  if (!invitation) {
+    return NextResponse.json({ ok: false, error: "Invitation introuvable." }, { status: 404 });
+  }
+
+  if (groupe.lien_invitation && invitation.code === groupe.lien_invitation) {
+    return NextResponse.json(
+      { ok: false, error: "Impossible de supprimer le lien d'invitation actif." },
+      { status: 400 },
+    );
+  }
+
+  await prisma.invitationGroupe.delete({
+    where: { id_invitation: invitationId },
+  });
+
+  return NextResponse.json({ ok: true }, { status: 200 });
 }
 
 export async function POST(

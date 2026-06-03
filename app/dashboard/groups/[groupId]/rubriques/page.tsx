@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { RubriquesClient } from "@/components/rubriques/rubriques-client";
+import { sendRubriqueEcheanceReminders } from "@/lib/rubrique-reminders";
 
 export default async function RubriquesPage({
   params,
@@ -38,6 +39,8 @@ export default async function RubriquesPage({
   if (!membership || membership.statut_adhesion !== "ACTIF") {
     notFound();
   }
+
+  await sendRubriqueEcheanceReminders(groupId);
 
   const rubriques = await prisma.rubriqueCotisation.findMany({
     where: { id_groupe: groupId },
@@ -80,21 +83,6 @@ export default async function RubriquesPage({
     },
   });
 
-  const activeCycles = await prisma.cycleTontine.findMany({
-    where: { id_groupe: groupId },
-    include: {
-      participants: {
-        include: {
-          membre_groupe: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
   return (
     <RubriquesClient
       groupId={groupId}
@@ -102,7 +90,6 @@ export default async function RubriquesPage({
       members={members}
       isAdmin={membership.role === "ADMIN"}
       adminId={membership.id_membre_groupe}
-      activeCycles={activeCycles}
     />
   );
 }
