@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FREQUENCE_LABELS, TYPE_RUBRIQUE_LABELS } from "@/lib/rubrique-dates";
+import { FREQUENCE_LABELS } from "@/lib/rubrique-dates";
 
 export type RubriqueFormValues = {
   nom: string;
@@ -18,8 +18,15 @@ export type RubriqueFormValues = {
   typeRubrique: "PONCTUELLE" | "RECURRENTE";
   frequence: "HEBDOMADAIRE" | "MENSUEL" | "TRIMESTRIEL" | "ANNUEL";
   dateDebut: string;
-  dateLimite: string;
+  dureeJours: string;
   estObligatoire: boolean;
+};
+
+const FREQUENCE_DUREE_MAP: Record<"HEBDOMADAIRE" | "MENSUEL" | "TRIMESTRIEL" | "ANNUEL", number> = {
+  HEBDOMADAIRE: 7,
+  MENSUEL: 30,
+  TRIMESTRIEL: 90,
+  ANNUEL: 365,
 };
 
 type Props = {
@@ -36,16 +43,26 @@ export function defaultRubriqueFormValues(): RubriqueFormValues {
   return {
     nom: "",
     montantFixe: "",
-    typeRubrique: "PONCTUELLE",
+    typeRubrique: "RECURRENTE",
     frequence: "MENSUEL",
     dateDebut: todayInputValue(),
-    dateLimite: "",
+    dureeJours: String(FREQUENCE_DUREE_MAP["MENSUEL"]),
     estObligatoire: true,
   };
 }
 
 export function RubriqueFormFields({ values, onChange, showNom = true }: Props) {
   const set = (patch: Partial<RubriqueFormValues>) => onChange({ ...values, ...patch });
+
+  // La date de fin est calculée automatiquement selon la fréquence
+  const dateFin = values.dateDebut
+    ? (() => {
+        const duree = FREQUENCE_DUREE_MAP[values.frequence];
+        const date = new Date(`${values.dateDebut}T00:00:00`);
+        date.setDate(date.getDate() + duree - 1);
+        return date.toLocaleDateString("fr-FR");
+      })()
+    : null;
 
   return (
     <div className="space-y-4">
@@ -62,22 +79,6 @@ export function RubriqueFormFields({ values, onChange, showNom = true }: Props) 
       ) : null}
 
       <div className="space-y-2">
-        <Label>Type de cotisation</Label>
-        <Select
-          value={values.typeRubrique}
-          onValueChange={(v: "PONCTUELLE" | "RECURRENTE") => set({ typeRubrique: v })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="PONCTUELLE">{TYPE_RUBRIQUE_LABELS.PONCTUELLE}</SelectItem>
-            <SelectItem value="RECURRENTE">{TYPE_RUBRIQUE_LABELS.RECURRENTE}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="montant">Montant (XAF)</Label>
         <Input
           id="montant"
@@ -88,29 +89,29 @@ export function RubriqueFormFields({ values, onChange, showNom = true }: Props) 
         />
       </div>
 
-      {values.typeRubrique === "RECURRENTE" ? (
-        <div className="space-y-2">
-          <Label>Fréquence de cotisation</Label>
-          <Select
-            value={values.frequence}
-            onValueChange={(v: RubriqueFormValues["frequence"]) => set({ frequence: v })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(["HEBDOMADAIRE", "MENSUEL", "TRIMESTRIEL", "ANNUEL"] as const).map((f) => (
-                <SelectItem key={f} value={f}>
-                  {FREQUENCE_LABELS[f]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            La fin de période en cours sera calculée automatiquement à partir de la date de début.
-          </p>
-        </div>
-      ) : null}
+      <div className="space-y-2">
+        <Label>Fréquence de la rubrique</Label>
+        <Select
+          value={values.frequence}
+          onValueChange={(v: RubriqueFormValues["frequence"]) =>
+            set({
+              frequence: v,
+              dureeJours: String(FREQUENCE_DUREE_MAP[v]),
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(["HEBDOMADAIRE", "MENSUEL", "TRIMESTRIEL", "ANNUEL"] as const).map((f) => (
+              <SelectItem key={f} value={f}>
+                {FREQUENCE_LABELS[f]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="dateDebut">Date de début</Label>
@@ -122,24 +123,11 @@ export function RubriqueFormFields({ values, onChange, showNom = true }: Props) 
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="dateLimite">
-          {values.typeRubrique === "PONCTUELLE"
-            ? "Date d'échéance (optionnelle)"
-            : "Date limite de campagne (optionnelle)"}
-        </Label>
-        <Input
-          id="dateLimite"
-          type="date"
-          value={values.dateLimite}
-          onChange={(e) => set({ dateLimite: e.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">
-          {values.typeRubrique === "PONCTUELLE"
-            ? "Si renseignée, les membres verront cette date comme échéance de paiement."
-            : "Limite globale au-delà de laquelle la rubrique n'accepte plus de nouvelle période."}
-        </p>
-      </div>
+      {dateFin ? (
+        <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+          Date de fin calculée automatiquement : <span className="font-medium text-foreground">{dateFin}</span>
+        </div>
+      ) : null}
 
       <div className="flex items-center space-x-2 pt-2">
         <Checkbox

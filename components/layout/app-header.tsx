@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Search } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
@@ -36,14 +36,6 @@ export function AppHeader() {
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-3">
-          <div className="relative hidden w-full max-w-md items-center lg:flex">
-            <Search className="absolute left-3 h-4 w-4 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Rechercher un groupe..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-700 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200"
-            />
-          </div>
           <nav className="flex items-center gap-2">
             <JoinGroupDialog variant="ghost" className="hidden sm:flex" />
             <NotificationCenter />

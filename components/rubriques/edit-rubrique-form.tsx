@@ -23,7 +23,7 @@ type RubriqueInitial = {
   type_rubrique: TypeRubriqueCotisation;
   frequence: FrequenceRubrique;
   date_debut: string | Date;
-  date_limite?: string | Date | null;
+  duree_jours?: number | null;
   est_obligatoire: boolean;
 };
 
@@ -49,10 +49,10 @@ function toFormValues(rubrique: RubriqueInitial): RubriqueFormValues {
   return {
     nom: rubrique.nom,
     montantFixe: String(rubrique.montant_fixe),
-    typeRubrique: rubrique.type_rubrique,
+    typeRubrique: "RECURRENTE",
     frequence: freq,
     dateDebut: toDateInput(rubrique.date_debut),
-    dateLimite: toDateInput(rubrique.date_limite),
+    dureeJours: String(rubrique.duree_jours ?? 30),
     estObligatoire: rubrique.est_obligatoire,
   };
 }
@@ -70,13 +70,10 @@ export function EditRubriqueForm({ groupId, rubrique, onClose }: Props) {
         groupId,
         nom: formData.nom,
         montantFixe: parseFloat(formData.montantFixe),
-        typeRubrique: formData.typeRubrique,
-        frequence:
-          formData.typeRubrique === "RECURRENTE"
-            ? formData.frequence
-            : "UNIQUE",
+        typeRubrique: "RECURRENTE",
+        frequence: formData.frequence,
         dateDebut: formData.dateDebut,
-        dateLimite: formData.dateLimite || undefined,
+        dureeJours: Number(formData.dureeJours),
         estObligatoire: formData.estObligatoire,
       });
 
@@ -100,6 +97,8 @@ export function EditRubriqueForm({ groupId, rubrique, onClose }: Props) {
     formData.nom.trim().length > 0 &&
     formData.montantFixe !== "" &&
     parseFloat(formData.montantFixe) > 0 &&
+    Number.isInteger(Number(formData.dureeJours)) &&
+    Number(formData.dureeJours) > 0 &&
     formData.dateDebut !== "";
 
   return (

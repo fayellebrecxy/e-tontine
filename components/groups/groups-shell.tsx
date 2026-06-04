@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type GroupItem = {
   id_groupe: string;
@@ -21,6 +22,7 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [groups, setGroups] = React.useState<GroupItem[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState("");
 
   React.useEffect(() => {
     let isMounted = true;
@@ -43,6 +45,11 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const filteredGroups = groups.filter((g) =>
+    g.nom.toLowerCase().includes(search.toLowerCase()) ||
+    (g.description ?? "").toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <div className="flex gap-6">
       <aside className="hidden w-72 shrink-0 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 lg:block">
@@ -55,11 +62,21 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        <div className="mt-4 space-y-1">
+        <div className="relative mt-3">
+          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un groupe…"
+            className="pl-7 h-8 text-xs"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="mt-3 space-y-1">
           {loading ? (
             <p className="text-xs text-gray-500">Chargement...</p>
-          ) : groups.length ? (
-            groups.map((group) => (
+          ) : filteredGroups.length ? (
+            filteredGroups.map((group) => (
               <Link
                 key={group.id_groupe}
                 href={`/dashboard/groups/${group.id_groupe}`}
@@ -76,7 +93,9 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))
           ) : (
-            <p className="text-xs text-gray-500">Aucun groupe.</p>
+            <p className="text-xs text-gray-500">
+              {search ? "Aucun groupe trouvé." : "Aucun groupe."}
+            </p>
           )}
         </div>
       </aside>

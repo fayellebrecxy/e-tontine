@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Search,
   Download,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteRubrique } from "@/lib/actions/rubriques";
+import { deleteRubrique, relaunchRubrique } from "@/lib/actions/rubriques";
 import { RubriqueAssistant } from "./rubrique-assistant";
 import { EditRubriqueForm } from "./edit-rubrique-form";
 import { PaiementForm } from "./paiement-form";
@@ -80,6 +81,7 @@ export function RubriquesClient({
   const [tab, setTab] = React.useState<"solde" | "historique">("solde");
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [relaunching, setRelaunching] = React.useState(false);
 
   const selectedRubrique = rubriques.find((r) => r.id_rubrique === selectedRubriqueId);
 
@@ -102,12 +104,14 @@ export function RubriquesClient({
       )
     : 0;
   const totalWithdrawn = selectedRubrique
-    ? selectedRubrique.retraits.reduce(
+    ? (selectedRubrique.retraits ?? []).reduce(
         (acc: number, r: any) => acc + parseFloat(r.montant),
         0,
       )
     : 0;
   const currentBalance = totalCollected - totalWithdrawn;
+  const canRelaunch =
+    !!selectedRubrique?.date_fin && new Date(selectedRubrique.date_fin) < new Date();
 
   const exportToCSV = () => {
     if (!selectedRubrique) return;
@@ -154,11 +158,29 @@ export function RubriquesClient({
     }
   };
 
+  const handleRelaunchRubrique = async () => {
+    if (!selectedRubrique || relaunching) return;
+    setRelaunching(true);
+    try {
+      const result = await relaunchRubrique(selectedRubrique.id_rubrique, groupId);
+      if (!result.ok) {
+        toast.error(result.error ?? "Impossible de relancer la rubrique.");
+        return;
+      }
+      setSelectedRubriqueId(result.rubrique.id_rubrique);
+      toast.success("Rubrique relancée.");
+      router.refresh();
+    } finally {
+      setRelaunching(false);
+    }
+  };
+
   const planningRubrique = selectedRubrique
     ? {
         type_rubrique: selectedRubrique.type_rubrique as TypeRubriqueCotisation,
         frequence: selectedRubrique.frequence as FrequenceRubrique,
         date_debut: selectedRubrique.date_debut,
+        duree_jours: selectedRubrique.duree_jours,
         date_limite: selectedRubrique.date_limite,
         date_fin: selectedRubrique.date_fin,
       }
@@ -208,7 +230,9 @@ export function RubriquesClient({
                   type_rubrique: rubrique.type_rubrique,
                   frequence: rubrique.frequence,
                   date_debut: rubrique.date_debut,
+                  duree_jours: rubrique.duree_jours,
                   date_limite: rubrique.date_limite,
+                  date_fin: rubrique.date_fin,
                 }}
                 compact
               />
@@ -239,6 +263,17 @@ export function RubriquesClient({
               </div>
               {isAdmin && (
                 <div className="flex flex-wrap gap-2 shrink-0">
+                  {canRelaunch ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRelaunchRubrique}
+                      disabled={relaunching}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      {relaunching ? "Relance..." : "Relancer"}
+                    </Button>
+                  ) : null}
                   <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifier
@@ -411,7 +446,7 @@ export function RubriquesClient({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {[...selectedRubrique.paiements, ...selectedRubrique.retraits]
+                  {[...selectedRubrique.paiements, ...(selectedRubrique.retraits ?? [])]
                     .sort(
                       (a, b) =>
                         new Date(b.date_paiement || b.date_retrait).getTime() -

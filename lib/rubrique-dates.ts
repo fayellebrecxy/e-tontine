@@ -30,10 +30,19 @@ export const FREQUENCE_LABELS: Record<FrequenceRubrique, string> = {
   ANNUEL: "Annuelle",
 };
 
+export const FREQUENCE_DUREE_JOURS: Record<Exclude<FrequenceRubrique, "UNIQUE">, number> = {
+  HEBDOMADAIRE: 7,
+  MENSUEL: 30,
+  TRIMESTRIEL: 90,
+  ANNUEL: 365,
+};
+
 export type RubriquePlanningInput = {
   type_rubrique: TypeRubriqueCotisation;
   frequence: FrequenceRubrique;
   date_debut: Date;
+  duree_jours?: number | null;
+  date_fin?: Date | null;
   date_limite?: Date | null;
 };
 
@@ -60,6 +69,10 @@ function getPeriodEnd(periodStart: Date, frequence: FrequenceRubrique, periodInd
 export function computeStoredDateFin(input: RubriquePlanningInput): Date | null {
   const debut = startOfDay(input.date_debut);
 
+  if (input.duree_jours && input.duree_jours > 0) {
+    return endOfDay(addDays(debut, input.duree_jours - 1));
+  }
+
   if (input.type_rubrique === "PONCTUELLE") {
     return input.date_limite ? endOfDay(input.date_limite) : null;
   }
@@ -75,6 +88,9 @@ export function computeStoredDateFin(input: RubriquePlanningInput): Date | null 
 
 /** Échéance de la période en cours (recalculée pour les rubriques récurrentes). */
 export function getCurrentEcheance(input: RubriquePlanningInput): Date | null {
+  if (input.date_fin) return endOfDay(input.date_fin);
+  if (input.duree_jours && input.duree_jours > 0) return computeStoredDateFin(input);
+
   const now = startOfDay(new Date());
   const debut = startOfDay(input.date_debut);
   const limite = input.date_limite ? endOfDay(input.date_limite) : null;
@@ -144,6 +160,7 @@ export function getRubriquePlanningSummary(input: RubriquePlanningInput) {
   return {
     typeLabel: TYPE_RUBRIQUE_LABELS[input.type_rubrique],
     frequenceLabel: FREQUENCE_LABELS[input.frequence],
+    dureeLabel: input.duree_jours ? `${input.duree_jours} jour${input.duree_jours > 1 ? "s" : ""}` : null,
     dateDebutLabel: formatDateFr(input.date_debut),
     dateFinLabel: echeance ? formatDateFr(echeance) : null,
     dateLimiteLabel: input.date_limite ? formatDateFr(input.date_limite) : null,
@@ -157,4 +174,9 @@ export function resolveFrequenceForType(
   frequence: FrequenceRubrique,
 ): FrequenceRubrique {
   return type === "PONCTUELLE" ? "UNIQUE" : frequence === "UNIQUE" ? "MENSUEL" : frequence;
+}
+
+export function getDefaultDureeJours(frequence: FrequenceRubrique): number {
+  if (frequence === "UNIQUE") return 1;
+  return FREQUENCE_DUREE_JOURS[frequence];
 }

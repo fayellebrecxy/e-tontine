@@ -53,6 +53,7 @@ model RubriqueCotisation {
   type_rubrique     TypeRubriqueCotisation @default(PONCTUELLE)
   frequence         FrequenceRubrique      @default(MENSUEL)
   duree             String? // Conservé pour migration / affichage legacy
+  duree_jours       Int                    @default(1)
   est_obligatoire   Boolean                @default(true)
   id_groupe         String                 @db.Uuid
   groupe            Groupes                @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)

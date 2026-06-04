@@ -42,10 +42,13 @@ export default async function RubriquesPage({
 
   await sendRubriqueEcheanceReminders(groupId);
 
+  const isAdmin = membership.role === "ADMIN";
+
   const rubriques = await prisma.rubriqueCotisation.findMany({
     where: { id_groupe: groupId },
     include: {
       membres_concernes: {
+        where: isAdmin ? undefined : { id_membre_groupe: membership.id_membre_groupe },
         include: {
           membre: {
             include: {
@@ -55,6 +58,7 @@ export default async function RubriquesPage({
         },
       },
       paiements: {
+        where: isAdmin ? undefined : { id_membre_groupe: membership.id_membre_groupe },
         include: {
           membre: {
             include: {
@@ -63,15 +67,17 @@ export default async function RubriquesPage({
           },
         },
       },
-      retraits: {
-        include: {
-          valideur: {
+      retraits: isAdmin
+        ? {
             include: {
-              user: true,
+              valideur: {
+                include: {
+                  user: true,
+                },
+              },
             },
-          },
-        },
-      },
+          }
+        : false,
     },
     orderBy: { date_creation: "desc" },
   });
@@ -88,7 +94,7 @@ export default async function RubriquesPage({
       groupId={groupId}
       rubriques={rubriques}
       members={members}
-      isAdmin={membership.role === "ADMIN"}
+      isAdmin={isAdmin}
       adminId={membership.id_membre_groupe}
     />
   );

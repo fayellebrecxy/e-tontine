@@ -43,6 +43,8 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
   const canProceedFromStep2 =
     formData.montantFixe !== "" &&
     parseFloat(formData.montantFixe) > 0 &&
+    Number.isInteger(Number(formData.dureeJours)) &&
+    Number(formData.dureeJours) > 0 &&
     formData.dateDebut !== "";
 
   const handleSubmit = async () => {
@@ -52,13 +54,10 @@ export function RubriqueAssistant({ groupId, members, onClose }: Props) {
         groupId,
         nom: formData.nom,
         montantFixe: parseFloat(formData.montantFixe),
-        typeRubrique: formData.typeRubrique,
-        frequence:
-          formData.typeRubrique === "RECURRENTE"
-            ? formData.frequence
-            : "UNIQUE",
+        typeRubrique: "RECURRENTE",
+        frequence: formData.frequence,
         dateDebut: formData.dateDebut,
-        dateLimite: formData.dateLimite || undefined,
+        dureeJours: Number(formData.dureeJours),
         estObligatoire: formData.estObligatoire,
         membresIds,
       });

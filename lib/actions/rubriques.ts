@@ -6,6 +6,7 @@ import { createNotification } from "@/lib/notifications";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   computeStoredDateFin,
+  getDefaultDureeJours,
   resolveFrequenceForType,
   type FrequenceRubrique,
   type TypeRubriqueCotisation,
@@ -46,34 +47,31 @@ function buildRubriqueDates(input: {
   typeRubrique: TypeRubriqueCotisation;
   frequence: FrequenceRubrique;
   dateDebut: string;
-  dateLimite?: string;
+  dureeJours?: number;
 }) {
   const dateDebut = new Date(input.dateDebut);
   if (Number.isNaN(dateDebut.getTime())) {
     return { ok: false as const, error: "Date de début invalide." };
   }
 
-  const dateLimite = input.dateLimite ? new Date(input.dateLimite) : null;
-  if (dateLimite && Number.isNaN(dateLimite.getTime())) {
-    return { ok: false as const, error: "Date limite invalide." };
-  }
-
-  if (dateLimite && dateLimite < dateDebut) {
-    return { ok: false as const, error: "La date limite doit être après la date de début." };
-  }
-
   const frequence = resolveFrequenceForType(input.typeRubrique, input.frequence);
+  const dureeJours = input.dureeJours ?? getDefaultDureeJours(frequence);
+
+  if (!Number.isInteger(dureeJours) || dureeJours <= 0) {
+    return { ok: false as const, error: "La durée doit être un nombre de jours positif." };
+  }
+
   const planning = {
     type_rubrique: input.typeRubrique,
     frequence,
     date_debut: dateDebut,
-    date_limite: dateLimite,
+    duree_jours: dureeJours,
   };
 
   return {
     ok: true as const,
     dateDebut,
-    dateLimite,
+    dureeJours,
     frequence,
     dateFin: computeStoredDateFin(planning),
   };
@@ -86,7 +84,7 @@ export async function createRubrique(formData: {
   typeRubrique: TypeRubriqueCotisation;
   frequence: FrequenceRubrique;
   dateDebut: string;
-  dateLimite?: string;
+  dureeJours: number;
   estObligatoire: boolean;
   membresIds: string[];
 }) {
@@ -109,7 +107,7 @@ export async function createRubrique(formData: {
     typeRubrique: formData.typeRubrique,
     frequence: formData.frequence,
     dateDebut: formData.dateDebut,
-    dateLimite: formData.dateLimite,
+    dureeJours: formData.dureeJours,
   });
 
   if (!dates.ok) return dates;
@@ -121,9 +119,11 @@ export async function createRubrique(formData: {
       montant_fixe: formData.montantFixe,
       type_rubrique: formData.typeRubrique,
       frequence: dates.frequence,
+      duree_jours: dates.dureeJours,
+      duree: `${dates.dureeJours} jour${dates.dureeJours > 1 ? "s" : ""}`,
       date_debut: dates.dateDebut,
       date_fin: dates.dateFin,
-      date_limite: dates.dateLimite,
+      date_limite: null,
       est_obligatoire: formData.estObligatoire,
       membres_concernes: {
         create: formData.membresIds.map((id) => ({
@@ -152,7 +152,7 @@ export async function createRubrique(formData: {
   );
 
   revalidatePath(`/dashboard/groups/${formData.groupId}/rubriques`);
-  return { ok: true, rubrique };
+  return { ok: true as const, rubrique };
 }
 
 export async function updateRubrique(formData: {
@@ -163,7 +163,7 @@ export async function updateRubrique(formData: {
   typeRubrique: TypeRubriqueCotisation;
   frequence: FrequenceRubrique;
   dateDebut: string;
-  dateLimite?: string;
+  dureeJours: number;
   estObligatoire: boolean;
 }) {
   const auth = await requireGroupAdmin(formData.groupId);
@@ -181,7 +181,7 @@ export async function updateRubrique(formData: {
     typeRubrique: formData.typeRubrique,
     frequence: formData.frequence,
     dateDebut: formData.dateDebut,
-    dateLimite: formData.dateLimite,
+    dureeJours: formData.dureeJours,
   });
 
   if (!dates.ok) return dates;
@@ -202,15 +202,93 @@ export async function updateRubrique(formData: {
       montant_fixe: formData.montantFixe,
       type_rubrique: formData.typeRubrique,
       frequence: dates.frequence,
+      duree_jours: dates.dureeJours,
+      duree: `${dates.dureeJours} jour${dates.dureeJours > 1 ? "s" : ""}`,
       date_debut: dates.dateDebut,
       date_fin: dates.dateFin,
-      date_limite: dates.dateLimite,
+      date_limite: null,
       est_obligatoire: formData.estObligatoire,
     },
   });
 
   revalidatePath(`/dashboard/groups/${formData.groupId}/rubriques`);
-  return { ok: true, rubrique };
+  return { ok: true as const, rubrique };
+}
+
+export async function relaunchRubrique(rubriqueId: string, groupId: string) {
+  const auth = await requireGroupAdmin(groupId);
+  if (!auth.ok) return auth;
+
+  const existing = await prisma.rubriqueCotisation.findFirst({
+    where: { id_rubrique: rubriqueId, id_groupe: groupId },
+    include: {
+      membres_concernes: {
+        select: {
+          id_membre_groupe: true,
+          membre: { select: { id_user: true } },
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    return { ok: false as const, error: "Rubrique introuvable." };
+  }
+
+  if (!existing.date_fin || existing.date_fin >= new Date()) {
+    return {
+      ok: false as const,
+      error: "Cette rubrique ne peut être relancée qu'après sa date de fin.",
+    };
+  }
+
+  if (existing.membres_concernes.length === 0) {
+    return { ok: false as const, error: "Aucun membre n'est associé à cette rubrique." };
+  }
+
+  const dateDebut = new Date();
+  const dureeJours = existing.duree_jours || getDefaultDureeJours(existing.frequence);
+  const dateFin = computeStoredDateFin({
+    type_rubrique: existing.type_rubrique,
+    frequence: existing.frequence,
+    date_debut: dateDebut,
+    duree_jours: dureeJours,
+  });
+
+  const rubrique = await prisma.rubriqueCotisation.create({
+    data: {
+      id_groupe: groupId,
+      nom: `${existing.nom} - relance`,
+      montant_fixe: existing.montant_fixe,
+      type_rubrique: existing.type_rubrique,
+      frequence: existing.frequence,
+      duree_jours: dureeJours,
+      duree: `${dureeJours} jour${dureeJours > 1 ? "s" : ""}`,
+      date_debut: dateDebut,
+      date_fin: dateFin,
+      date_limite: null,
+      est_obligatoire: existing.est_obligatoire,
+      membres_concernes: {
+        create: existing.membres_concernes.map((mc) => ({
+          id_membre_groupe: mc.id_membre_groupe,
+        })),
+      },
+    },
+  });
+
+  await Promise.all(
+    existing.membres_concernes.map((mc) =>
+      createNotification({
+        userId: mc.membre.id_user,
+        groupId,
+        message: `Rubrique relancée : ${existing.nom}`,
+        type: "NOUVELLE_RUBRIQUE",
+      }),
+    ),
+  );
+
+  revalidatePath(`/dashboard/groups/${groupId}/rubriques`);
+  return { ok: true as const, rubrique };
 }
 
 export async function deleteRubrique(rubriqueId: string, groupId: string) {
@@ -224,7 +302,7 @@ export async function deleteRubrique(rubriqueId: string, groupId: string) {
   });
 
   revalidatePath(`/dashboard/groups/${groupId}/rubriques`);
-  return { ok: true };
+  return { ok: true as const };
 }
 
 export async function enregistrerPaiement(data: {
@@ -309,7 +387,7 @@ export async function enregistrerPaiement(data: {
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
-  return { ok: true, paiement };
+  return { ok: true as const, paiement };
 }
 
 export async function enregistrerRetrait(data: {
@@ -335,7 +413,7 @@ export async function enregistrerRetrait(data: {
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
-  return { ok: true, retrait };
+  return { ok: true as const, retrait };
 }
 
 export async function enregistrerVersementPot(data: {
@@ -366,5 +444,5 @@ export async function enregistrerVersementPot(data: {
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/cycles/${data.cycleId}`);
-  return { ok: true, versement };
+  return { ok: true as const, versement };
 }
