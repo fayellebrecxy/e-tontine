@@ -13,6 +13,8 @@ type ParticipantItem = {
   id_membre_groupe: string;
   nom: string;
   prenom: string;
+  paidForActiveTour?: number;
+  remainingForActiveTour?: number;
 };
 
 type TourItem = {
@@ -37,11 +39,17 @@ export function CyclePaymentForm({
   defaultTour,
 }: CyclePaymentFormProps) {
   const router = useRouter();
-  const [selected, setSelected] = React.useState(participants[0]?.id_membre_groupe ?? "");
+  const [selected, setSelected] = React.useState(
+    participants.find((participant) => (participant.remainingForActiveTour ?? 1) > 0)
+      ?.id_membre_groupe ??
+      participants[0]?.id_membre_groupe ??
+      "",
+  );
   const [numeroTour, setNumeroTour] = React.useState(String(defaultTour));
   const [montant, setMontant] = React.useState("");
   const [datePaiement, setDatePaiement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const selectedParticipant = participants.find((participant) => participant.id_membre_groupe === selected);
 
   const submit = async () => {
     const montantValue = Number(montant);
@@ -99,11 +107,24 @@ export function CyclePaymentForm({
             onChange={(event) => setSelected(event.target.value)}
           >
             {participants.map((member) => (
-              <option key={member.id_membre_groupe} value={member.id_membre_groupe}>
+              <option
+                key={member.id_membre_groupe}
+                value={member.id_membre_groupe}
+                disabled={(member.remainingForActiveTour ?? 1) <= 0}
+              >
                 {member.prenom} {member.nom}
+                {typeof member.remainingForActiveTour === "number"
+                  ? ` — reste ${member.remainingForActiveTour.toLocaleString("fr-FR")}`
+                  : ""}
               </option>
             ))}
           </select>
+          {selectedParticipant ? (
+            <p className="text-xs text-muted-foreground">
+              Avance déjà reçue : {(selectedParticipant.paidForActiveTour ?? 0).toLocaleString("fr-FR")} ·
+              reste à cotiser : {(selectedParticipant.remainingForActiveTour ?? 0).toLocaleString("fr-FR")}
+            </p>
+          ) : null}
         </div>
         <div className="space-y-2">
           <Label>Tour concerné</Label>
@@ -126,6 +147,7 @@ export function CyclePaymentForm({
             <Input
               type="number"
               min={0}
+              max={selectedParticipant?.remainingForActiveTour}
               step="0.01"
               value={montant}
               onChange={(event) => setMontant(event.target.value)}

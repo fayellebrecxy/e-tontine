@@ -29,9 +29,10 @@ type MembersApiBody = {
 type CreateCycleFormProps = {
   groupId: string;
   canManage: boolean;
+  onSuccess?: () => void;
 };
 
-export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
+export function CreateCycleForm({ groupId, canManage, onSuccess }: CreateCycleFormProps) {
   const router = useRouter();
   const [members, setMembers] = React.useState<MemberItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -168,6 +169,7 @@ export function CreateCycleForm({ groupId, canManage }: CreateCycleFormProps) {
     toast.success(`✅ Cycle "${nomCycle.trim()}" démarré avec succès !`);
     setSubmitting(false);
     router.refresh();
+    onSuccess?.();
     // Réinitialiser le formulaire
     setNomCycle("");
     setMontant("");

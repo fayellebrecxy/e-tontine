@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { ModePenalite } from "@/lib/generated/prisma/client";
+import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,19 +58,18 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
 
   if (activeParticipants.length === 0) return;
 
-  const totalTours = activeParticipants.length;
   const montantCotisation = Number(cycle.montant_cotisation);
   const configuredValue = Number(cycle.valeur_penalite);
   if (configuredValue <= 0 || montantCotisation <= 0) return;
 
-  // 1. Identifier tous les tours qui ont déjà expiré
-  const overdueTours: number[] = [];
-  for (let tour = 1; tour <= totalTours; tour += 1) {
-    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tour);
-    if (now > dateEcheance) {
-      overdueTours.push(tour);
-    }
-  }
+  const snapshot = await getCycleTurnSnapshot(cycleId);
+  if (!snapshot.activeTour) return;
+
+  // En mode tontine fluide, on pénalise uniquement le tour actif.
+  // Les tours suivants ne commencent réellement qu'après versement du pot en cours.
+  const activeDueDate =
+    snapshot.activeTourEnd ?? addDays(cycle.date_debut, cycle.duree_tour_de_gain * snapshot.activeTour);
+  const overdueTours = now > activeDueDate ? [snapshot.activeTour] : [];
 
   if (overdueTours.length === 0) return;
 

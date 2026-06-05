@@ -149,6 +149,7 @@ model MembreGroupe {
   membres_rubriques     MembreRubrique[]
   paiements_rubriques   PaiementRubrique[]
   retraits_valides      Retrait[]          @relation("retraits_valides")
+  retraits_penalites    RetraitPenalite[]  @relation("retraits_penalites_valides")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -172,10 +173,28 @@ model CycleTontine {
   cotisations        Cotisations[]
   participants       CycleParticipant[]
   versements         Versement[]
+  retraits_penalites RetraitPenalite[]
   groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
 
   @@index([id_groupe])
   @@map("cycles_tontine")
+  @@schema("public")
+}
+
+model RetraitPenalite {
+  id_retrait_penalite String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  montant             Decimal      @db.Decimal(15, 2)
+  motif               String
+  numero_tour         Int?
+  date_retrait        DateTime     @default(now())
+  id_cycle            String       @db.Uuid
+  id_admin_valideur   String       @db.Uuid
+  cycle               CycleTontine @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+  valideur            MembreGroupe @relation("retraits_penalites_valides", fields: [id_admin_valideur], references: [id_membre_groupe])
+
+  @@index([id_cycle])
+  @@index([id_admin_valideur])
+  @@map("retraits_penalites")
   @@schema("public")
 }
 

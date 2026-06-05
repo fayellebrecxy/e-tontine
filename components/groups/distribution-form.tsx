@@ -133,8 +133,9 @@ export function DistributionForm({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Enregistrez le versement du pot collecté au bénéficiaire du tour sélectionné. Le montant
-          est pré-rempli avec le pot réel collecté (cotisations + pénalités).
+          Enregistrez le versement du pot au bénéficiaire du tour actif. Le montant doit être
+          exactement égal au total attendu et collecté du tour. Les pénalités restent dans une
+          caisse séparée.
         </p>
 
         {/* Sélection du tour */}
@@ -178,7 +179,11 @@ export function DistributionForm({
               placeholder="Ex : 150000"
               value={montantVerse}
               onChange={(e) => setMontantVerse(e.target.value)}
+              readOnly
             />
+            <p className="text-xs text-muted-foreground">
+              Montant verrouillé : il correspond au pot du tour actif.
+            </p>
           </div>
 
           {/* Date du versement */}

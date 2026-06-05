@@ -11,6 +11,11 @@ import {
   calculerPotTour,
   getVersementsCycle,
 } from "@/lib/cycle-distributions";
+import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
+
+function roundCurrency(value: number) {
+  return Math.round(value * 100) / 100;
+}
 
 // POST /api/groups/:groupId/cycles/:cycleId/distributions
 // Enregistre un versement au bénéficiaire d'un tour (admin uniquement)
@@ -79,6 +84,48 @@ export async function POST(
   if (numero_tour < 1 || numero_tour > totalTours) {
     return NextResponse.json(
       { ok: false, error: `Le numéro de tour doit être entre 1 et ${totalTours}.` },
+      { status: 400 },
+    );
+  }
+
+  const snapshot = await getCycleTurnSnapshot(cycleId);
+  if (snapshot.isCompleted || !snapshot.activeTour) {
+    return NextResponse.json({ ok: false, error: "Ce cycle est déjà terminé." }, { status: 409 });
+  }
+
+  if (numero_tour !== snapshot.activeTour) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Le versement du pot concerne uniquement le tour actif (${snapshot.activeTour}).`,
+      },
+      { status: 409 },
+    );
+  }
+
+  if (!snapshot.allCurrentTurnMembersPaid || snapshot.remainingCurrentTurn > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Impossible de solder ce tour : tous les membres doivent d'abord payer leur cotisation complète.",
+      },
+      { status: 409 },
+    );
+  }
+
+  if (roundCurrency(montant_verse) !== roundCurrency(snapshot.expectedCurrentTurn)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Le montant à verser doit être exactement ${snapshot.expectedCurrentTurn.toLocaleString("fr-FR")} ${cycle.groupe.devise}.`,
+      },
+      { status: 400 },
+    );
+  }
+
+  if (roundCurrency(montant_verse) > roundCurrency(snapshot.availableCurrentTurn)) {
+    return NextResponse.json(
+      { ok: false, error: "Le montant ne peut pas dépasser la caisse disponible du tour." },
       { status: 400 },
     );
   }

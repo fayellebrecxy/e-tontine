@@ -1,5 +1,25 @@
 "use client";
 
+import * as React from "react";
+
+import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 type VersementItem = {
   id_versement: string;
   numero_tour: number;
@@ -36,14 +56,21 @@ const MODE_LABELS: Record<string, string> = {
   CHEQUE: "Chèque",
 };
 
+const PAGE_SIZE = 6;
+
 export function DistributionHistory({
   versements,
   tours,
   totalTours,
   devise,
 }: DistributionHistoryProps) {
+  const [page, setPage] = React.useState(1);
   const versementsParTour = new Map(versements.map((v) => [v.numero_tour, v]));
   const toursParNumero = new Map(tours.map((t) => [t.numero, t]));
+  const rows = Array.from({ length: totalTours }, (_, i) => i + 1);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const toursVerses = versements.length;
   const totalDistribue = versements.reduce((acc, v) => acc + Number(v.montant_verse), 0);
@@ -81,71 +108,95 @@ export function DistributionHistory({
         </div>
       </div>
 
-      {/* Tableau des tours */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50 text-left">
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Tour</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Bénéficiaire</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Pot collecté</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Montant versé</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Date</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Mode</th>
-              <th className="px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Statut</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {Array.from({ length: totalTours }, (_, i) => {
-              const num = i + 1;
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tour</TableHead>
+              <TableHead>Bénéficiaire</TableHead>
+              <TableHead className="hidden md:table-cell">Pot collecté</TableHead>
+              <TableHead>Montant versé</TableHead>
+              <TableHead className="hidden sm:table-cell">Date</TableHead>
+              <TableHead className="hidden md:table-cell">Mode</TableHead>
+              <TableHead>Statut</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedRows.map((num) => {
               const versement = versementsParTour.get(num);
               const tourInfo = toursParNumero.get(num);
 
               return (
-                <tr key={num} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-semibold text-gray-900">Tour {num}</td>
-                  <td className="px-4 py-3 text-gray-700">
+                <TableRow key={num}>
+                  <TableCell className="font-medium">Tour {num}</TableCell>
+                  <TableCell>
                     {versement
                       ? `${versement.beneficiaire.user.prenom} ${versement.beneficiaire.user.nom}`
                       : tourInfo?.beneficiaire ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {tourInfo
                       ? `${tourInfo.potCollecte.toLocaleString("fr-FR")} ${devise}`
                       : "—"}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">
+                  </TableCell>
+                  <TableCell className="font-medium">
                     {versement
                       ? `${Number(versement.montant_verse).toLocaleString("fr-FR")} ${devise}`
                       : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-muted-foreground">
                     {versement
                       ? new Date(versement.date_versement).toLocaleDateString("fr-FR")
                       : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
                     {versement?.mode_versement
                       ? MODE_LABELS[versement.mode_versement] ?? versement.mode_versement
                       : "—"}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     {versement ? (
-                      <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                        ✅ Soldé
-                      </span>
+                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                        Soldé
+                      </Badge>
                     ) : (
-                      <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                        ⏳ En attente
-                      </span>
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                        En attente
+                      </Badge>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
+
+      {totalPages > 1 ? (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={safePage === 1}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((item) => (
+              <PaginationItem key={item}>
+                <PaginationLink isActive={safePage === item} onClick={() => setPage(item)}>
+                  {item}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={safePage === totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      ) : null}
 
       {versements.length === 0 && (
         <p className="text-center text-sm text-muted-foreground py-4">

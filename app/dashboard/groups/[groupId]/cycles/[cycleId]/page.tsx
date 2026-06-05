@@ -10,20 +10,16 @@ import { CloseCycleButton } from "@/components/groups/close-cycle-button";
 import { EditCycleForm } from "@/components/groups/edit-cycle-form";
 import { DistributionForm } from "@/components/groups/distribution-form";
 import { DistributionHistory } from "@/components/groups/distribution-history";
+import { CycleDetailActions } from "@/components/groups/cycle-detail-actions";
+import { CycleParticipantsTable } from "@/components/groups/cycle-participants-table";
+import { DeleteCycleButton } from "@/components/groups/delete-cycle-button";
+import { PenaltyWithdrawalForm } from "@/components/groups/penalty-withdrawal-form";
 import { calculerPotTour, getVersementsCycle, getTresorerieCycle } from "@/lib/cycle-distributions";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
-}
-
-function computeCurrentIndex(dateDebut: Date, dureeTour: number) {
-  const now = new Date();
-  const diffMs = now.getTime() - dateDebut.getTime();
-  if (diffMs < 0) return 0;
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  return Math.floor(days / dureeTour);
 }
 
 type PaymentItem = {
@@ -151,35 +147,52 @@ export default async function GroupCycleDetailPage({
     paymentsByMember.set(payment.id_membre_groupe, entry);
   });
 
+  const [versementsCycle, tresorerie] = membership.role === "ADMIN"
+    ? await Promise.all([
+        getVersementsCycle(cycleId),
+        getTresorerieCycle(cycleId),
+      ])
+    : [[], await getTresorerieCycle(cycleId)];
+
   const montantFixe = Number(cycle.montant_cotisation);
   const now = new Date();
-  const currentIndex = computeCurrentIndex(cycle.date_debut, cycle.duree_tour_de_gain);
   const totalTours = cycle.participants.length;
-  const cycleTermine = currentIndex >= totalTours;
-  const currentParticipant = !cycleTermine ? cycle.participants[currentIndex] : null;
+  const activeTour = tresorerie.tourActif ?? null;
+  const currentIndex = activeTour ? activeTour - 1 : totalTours;
+  const cycleTermine = tresorerie.cycleTermine;
+  const currentParticipant = activeTour
+    ? cycle.participants.find((participant) => participant.ordre === activeTour) ?? null
+    : null;
   const currentName = currentParticipant
     ? `${currentParticipant.membre_groupe.user.prenom} ${currentParticipant.membre_groupe.user.nom}`
-    : "Cycle termine";
-  const tourEnd = addDays(
-    cycle.date_debut,
-    cycle.duree_tour_de_gain * Math.min(currentIndex + 1, totalTours),
-  );
+    : "Cycle terminé";
+  const tourEnd = tresorerie.finTourActif ?? cycle.date_fin;
 
-  const defaultTour = Math.min(currentIndex + 1, totalTours);
+  const defaultTour = activeTour ?? totalTours;
 
-  const participantsForForm = cycle.participants.map((participant) => ({
-    id_membre_groupe: participant.id_membre_groupe,
-    nom: participant.membre_groupe.user.nom,
-    prenom: participant.membre_groupe.user.prenom,
-  }));
-  const toursForForm = cycle.participants.map((participant) => ({
-    numero: participant.ordre,
-    beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
-    dateEcheance: addDays(
-      cycle.date_debut,
-      cycle.duree_tour_de_gain * participant.ordre,
-    ).toLocaleDateString("fr-FR"),
-  }));
+  const participantsForForm = cycle.participants.map((participant) => {
+    const paymentsList = paymentsByMember.get(participant.id_membre_groupe) ?? [];
+    const paidForActiveTour = activeTour
+      ? paymentsList
+          .filter((payment) => payment.numero_tour === activeTour)
+          .reduce((acc, payment) => acc + payment.montant, 0)
+      : 0;
+
+    return {
+      id_membre_groupe: participant.id_membre_groupe,
+      nom: participant.membre_groupe.user.nom,
+      prenom: participant.membre_groupe.user.prenom,
+      paidForActiveTour,
+      remainingForActiveTour: Math.max(0, montantFixe - paidForActiveTour),
+    };
+  });
+  const toursForForm = cycle.participants
+    .filter((participant) => participant.ordre === activeTour)
+    .map((participant) => ({
+      numero: participant.ordre,
+      beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
+      dateEcheance: tourEnd.toLocaleDateString("fr-FR"),
+    }));
   const participantsStats = cycle.participants.map((participant) => {
     const member = participant.membre_groupe;
     const paymentsList = paymentsByMember.get(member.id_membre_groupe) ?? [];
@@ -187,12 +200,15 @@ export default async function GroupCycleDetailPage({
     // Calcul par tour pour une précision maximale
     const tourDetails = Array.from({ length: totalTours }, (_, i) => {
       const tourNum = i + 1;
-      const dueDate = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tourNum);
+      const dueDate =
+        tourNum === activeTour && tresorerie.finTourActif
+          ? tresorerie.finTourActif
+          : addDays(cycle.date_debut, cycle.duree_tour_de_gain * tourNum);
       const tourPayments = paymentsList.filter(p => p.numero_tour === tourNum);
       const paidAmount = tourPayments.reduce((acc, p) => acc + p.montant, 0);
       const penaltiesAmount = tourPayments.reduce((acc, p) => acc + (p.montant_penalite || 0), 0);
       
-      const isOverdue = now > dueDate && paidAmount < montantFixe;
+      const isOverdue = tourNum === activeTour && now > dueDate && paidAmount < montantFixe;
       const daysLate = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
       
       return {
@@ -225,14 +241,6 @@ export default async function GroupCycleDetailPage({
     };
   });
 
-  // Récupérer les versements et la trésorerie (admin uniquement)
-  const [versementsCycle, tresorerie] = membership.role === "ADMIN"
-    ? await Promise.all([
-        getVersementsCycle(cycleId),
-        getTresorerieCycle(cycleId),
-      ])
-    : [[], { totalCollecte: 0, totalDistribue: 0, soldeDisponible: 0, toursVerses: 0 }];
-
   // Calculer le pot collecté par tour pour le formulaire de distribution
   const potsParTour = membership.role === "ADMIN"
     ? await Promise.all(
@@ -244,7 +252,9 @@ export default async function GroupCycleDetailPage({
 
   const versementsParTour = new Map(versementsCycle.map((v) => [v.numero_tour, v]));
 
-  const toursForDistribution = cycle.participants.map((participant) => {
+  const toursForDistribution = cycle.participants
+    .filter((participant) => participant.ordre === activeTour)
+    .map((participant) => {
     const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
     return {
       numero: participant.ordre,
@@ -276,101 +286,181 @@ export default async function GroupCycleDetailPage({
     totalCollected: participantsStats.reduce((acc, p) => acc + p.totalPaid, 0),
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{cycle.nom_cycle}</h1>
-          <p className="text-sm text-muted-foreground">
-            Du {cycle.date_debut.toLocaleDateString("fr-FR")} au {cycle.date_fin.toLocaleDateString("fr-FR")}
+  const participantsForTable = participantsStats
+    .filter(({ participant }) => {
+      if (membership.role === "ADMIN") return true;
+      return participant.membre_groupe.id_membre_groupe === membership.id_membre_groupe;
+    })
+    .map(({ participant, totalPaid, totalPenalties, totalDaysLate, hasActivePenalty, isLate, isIncomplete, tourDetails }) => {
+      const member = participant.membre_groupe;
+
+      return {
+        id: member.id_membre_groupe,
+        name: `${member.user.prenom} ${member.user.nom}`,
+        email: member.user.email,
+        totalPaid,
+        totalPenalties,
+        totalDaysLate,
+        hasActivePenalty,
+        isLate,
+        isIncomplete,
+        montantInitial: montantFixe * totalTours,
+        tourDetails: tourDetails.map((tour) => ({
+          ...tour,
+          dueDate: tour.dueDate.toISOString(),
+        })),
+      };
+    });
+
+  const overviewContent = (
+    <div className="space-y-4">
+      {membership.role === "ADMIN" ? (
+        <>
+          {!cycleTermine && tresorerie.resteACollecter === 0 && tresorerie.totalCollecte > 0 ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+              <p className="text-sm font-semibold">Tour prêt à solder</p>
+              <p className="mt-1 text-xs">
+                Tous les membres ont cotisé pour le tour {activeTour}. L'admin peut maintenant
+                verser le pot à {currentName}. Après ce versement, le cycle passera
+                automatiquement au tour suivant.
+              </p>
+            </div>
+          ) : null}
+
+          {cycleTermine ? (
+            <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-brand-900">
+              <p className="text-sm font-semibold">Cycle terminé</p>
+              <p className="mt-1 text-xs">
+                Tous les tours ont été soldés. Vous pouvez relancer un nouveau cycle quand vous le
+                souhaitez.
+              </p>
+              <Button asChild size="sm" className="mt-3">
+                <Link href={`/dashboard/groups/${groupId}/cycles`}>Relancer</Link>
+              </Button>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">
+                Total attendu du tour
+              </p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {tresorerie.totalAttendu.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-gray-400">
+                {totalTours} membres x {montantFixe.toLocaleString("fr-FR")}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Collecté du tour</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-600">
+                {tresorerie.totalCollecte.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-gray-400">Cotisations reçues uniquement</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Reste à collecter</p>
+              <p className="mt-1 text-2xl font-bold text-amber-600">
+                {tresorerie.resteACollecter.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Distribué du tour</p>
+              <p className="mt-1 text-2xl font-bold text-brand-600">
+                {tresorerie.totalDistribue.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-gray-400">Pot versé au bénéficiaire</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Solde du tour</p>
+              <p
+                className={`mt-1 text-2xl font-bold ${
+                  tresorerie.soldeDisponible >= 0 ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {tresorerie.soldeDisponible.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-gray-400">Après versement du pot, attendu à 0</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Membres en retard</p>
+              <p className="mt-1 text-2xl font-bold text-rose-600">{globalStats.totalLateMembers}</p>
+              <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours cumulés</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-medium uppercase text-amber-700">Pénalités du tour</p>
+              <p className="mt-1 text-2xl font-bold text-amber-700">
+                {tresorerie.caissePenalitesTour.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-amber-700/70">Caisse séparée du pot</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-white p-4">
+              <p className="text-xs font-medium uppercase text-amber-700">Pénalités cycle</p>
+              <p className="mt-1 text-2xl font-bold text-amber-700">
+                {tresorerie.caissePenalitesCycle.toLocaleString("fr-FR")} {membership.groupe.devise}
+              </p>
+              <p className="text-xs text-amber-700/70">Disponible après retraits</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+              <p className="text-xs font-medium uppercase text-gray-500">Progression</p>
+              <p className="mt-1 text-2xl font-bold text-brand-600">
+                {Math.round((tresorerie.toursVerses / Math.max(totalTours, 1)) * 100)}%
+              </p>
+              <p className="text-xs text-gray-400">{tresorerie.toursVerses} / {totalTours} tours soldés</p>
+            </div>
+          </div>
+
+          {(tresorerie.caissePenalitesTour > 0 || tresorerie.caissePenalitesCycle > 0) ? (
+            <PenaltyWithdrawalForm
+              groupId={groupId}
+              cycleId={cycleId}
+              activeTour={activeTour}
+              devise={membership.groupe.devise}
+              caisseTour={tresorerie.caissePenalitesTour}
+              caisseCycle={tresorerie.caissePenalitesCycle}
+            />
+          ) : null}
+        </>
+      ) : (
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-800">Votre espace membre</p>
+          <p className="mt-1 text-xs text-blue-700">
+            Vous voyez ici votre situation personnelle dans ce cycle. Contactez l'administrateur si
+            un versement effectué n'apparaît pas.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {membership.role === "ADMIN" && !cycleTermine ? (
-            <CloseCycleButton groupId={groupId} cycleId={cycleId} />
-          ) : null}
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/dashboard/groups/${groupId}/cycles`}>Retour aux cycles</Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Trésorerie (Admin) */}
-      {membership.role === "ADMIN" && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Total collecté</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">
-              {tresorerie.totalCollecte.toLocaleString("fr-FR")} {membership.groupe.devise}
-            </p>
-            <p className="text-xs text-gray-400">Cotisations + pénalités</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Total distribué</p>
-            <p className="mt-1 text-2xl font-bold text-brand-600">
-              {tresorerie.totalDistribue.toLocaleString("fr-FR")} {membership.groupe.devise}
-            </p>
-            <p className="text-xs text-gray-400">{tresorerie.toursVerses} tour(s) soldé(s)</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Solde disponible</p>
-            <p className={`mt-1 text-2xl font-bold ${tresorerie.soldeDisponible >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {tresorerie.soldeDisponible.toLocaleString("fr-FR")} {membership.groupe.devise}
-            </p>
-          </div>
-        </div>
       )}
 
-      {membership.role === "ADMIN" && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Membres en retard</p>
-            <p className="mt-1 text-2xl font-bold text-rose-600">{globalStats.totalLateMembers}</p>
-            <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours de retard cumulés</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Pénalités générées</p>
-            <p className="mt-1 text-2xl font-bold text-amber-600">
-              {globalStats.totalPenalties.toLocaleString("fr-FR")} {membership.groupe.devise}
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Collecté</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">
-              {globalStats.totalCollected.toLocaleString("fr-FR")} {membership.groupe.devise}
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Progression financière</p>
-            <p className="mt-1 text-2xl font-bold text-brand-600">
-              {Math.round((globalStats.totalCollected / (montantFixe * totalTours * totalTours)) * 100 || 0)}%
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-4">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase">Tour actuel — Bénéficiaire du pot</p>
+            <p className="text-xs font-medium uppercase text-gray-500">Tour actuel</p>
             <p className="text-lg font-semibold text-brand-600">{currentName}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {cycleTermine
                 ? "Tous les tours sont terminés. Le cycle est clos."
-                : `C'est au tour de ${currentName} de recevoir le pot collecté par tous les membres.`}
+                : `C'est au tour de ${currentName} de recevoir le pot collecté.`}
             </p>
           </div>
           {!cycleTermine ? (
             <div className="text-right">
-              <p className="text-xs text-gray-500">Échéance du tour</p>
-              <p className="text-sm font-bold text-gray-900">{tourEnd.toLocaleDateString("fr-FR")}</p>
+              <p className="text-xs text-gray-500">Échéance</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {tourEnd.toLocaleDateString("fr-FR")}
+              </p>
             </div>
           ) : null}
         </div>
         <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
             <span>Progression du cycle</span>
-            <span>{Math.min(currentIndex, totalTours)} / {totalTours} tours complétés</span>
+            <span>
+              {Math.min(currentIndex, totalTours)} / {totalTours} tours complétés
+            </span>
           </div>
           <div className="h-2 w-full rounded-full bg-gray-100">
             <div
@@ -382,190 +472,101 @@ export default async function GroupCycleDetailPage({
           </div>
         </div>
       </div>
+    </div>
+  );
 
-      {membership.role === "ADMIN" ? (
-        <EditCycleForm
-          groupId={groupId}
-          cycleId={cycleId}
-          canManage={true}
-          initialCycle={{
-            nom_cycle: cycle.nom_cycle,
-            date_debut: cycle.date_debut.toISOString(),
-            date_fin: cycle.date_fin.toISOString(),
-            duree_tour_de_gain: cycle.duree_tour_de_gain,
-            montant_cotisation: Number(cycle.montant_cotisation),
-            penalites_activees: cycle.penalites_activees,
-            mode_penalite: cycle.mode_penalite,
-            valeur_penalite: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : null,
-          }}
-          initialOrder={cycle.participants.map((participant) => participant.id_membre_groupe)}
-        />
-      ) : null}
+  const editContent =
+    membership.role === "ADMIN" ? (
+      <EditCycleForm
+        groupId={groupId}
+        cycleId={cycleId}
+        canManage={true}
+        initialCycle={{
+          nom_cycle: cycle.nom_cycle,
+          date_debut: cycle.date_debut.toISOString(),
+          date_fin: cycle.date_fin.toISOString(),
+          duree_tour_de_gain: cycle.duree_tour_de_gain,
+          montant_cotisation: Number(cycle.montant_cotisation),
+          penalites_activees: cycle.penalites_activees,
+          mode_penalite: cycle.mode_penalite,
+          valeur_penalite: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : null,
+        }}
+        initialOrder={cycle.participants.map((participant) => participant.id_membre_groupe)}
+      />
+    ) : null;
 
-      {membership.role === "ADMIN" ? (
-        <DistributionForm
-          groupId={groupId}
-          cycleId={cycleId}
-          tours={toursForDistribution}
-          defaultTour={defaultTour}
-          devise={membership.groupe.devise}
-        />
-      ) : null}
+  const distributionContent =
+    membership.role === "ADMIN" ? (
+      <DistributionForm
+        groupId={groupId}
+        cycleId={cycleId}
+        tours={toursForDistribution}
+        defaultTour={defaultTour}
+        devise={membership.groupe.devise}
+      />
+    ) : null;
 
-      {membership.role === "ADMIN" ? (
-        <CyclePaymentForm
-          groupId={groupId}
-          cycleId={cycleId}
-          participants={participantsForForm}
-          tours={toursForForm}
-          defaultTour={defaultTour}
-        />
-      ) : null}
+  const paymentContent =
+    membership.role === "ADMIN" ? (
+      <CyclePaymentForm
+        groupId={groupId}
+        cycleId={cycleId}
+        participants={participantsForForm}
+        tours={toursForForm}
+        defaultTour={defaultTour}
+      />
+    ) : null;
 
-      {membership.role !== "ADMIN" && (
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-sm font-semibold text-blue-800">ℹ️ Votre espace membre</p>
-          <p className="text-xs text-blue-700 mt-1">
-            Vous voyez ici votre situation personnelle dans ce cycle. Seul l'administrateur peut enregistrer un paiement en votre nom. Contactez-le si vous avez effectué un versement qui n'apparaît pas.
+  const historyContent =
+    membership.role === "ADMIN" ? (
+      <DistributionHistory
+        versements={versementsCycle.map((v) => ({
+          ...v,
+          montant_verse: Number(v.montant_verse),
+          date_versement: v.date_versement.toISOString(),
+        }))}
+        tours={toursForHistory}
+        totalTours={totalTours}
+        devise={membership.groupe.devise}
+      />
+    ) : null;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{cycle.nom_cycle}</h1>
+          <p className="text-sm text-muted-foreground">
+            Du {cycle.date_debut.toLocaleDateString("fr-FR")} au {cycle.date_fin.toLocaleDateString("fr-FR")}
           </p>
         </div>
-      )}
-
-      {membership.role === "ADMIN" && (
-        <DistributionHistory
-          versements={versementsCycle.map((v) => ({
-            ...v,
-            montant_verse: Number(v.montant_verse),
-          }))}
-          tours={toursForHistory}
-          totalTours={totalTours}
-          devise={membership.groupe.devise}
-        />
-      )}
-
-      <div className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Situation des participants</h2>
-        <div className="grid gap-3">
-          {participantsStats.map(({ participant, totalPaid, totalPenalties, totalDaysLate, hasActivePenalty, isLate, isIncomplete, tourDetails }) => {
-            const member = participant.membre_groupe;
-            if (
-              membership.role !== "ADMIN" &&
-              member.id_membre_groupe !== membership.id_membre_groupe
-            ) {
-              return null;
-            }
-
-            const montantInitial = montantFixe * totalTours;
-            const totalDu = montantInitial + totalPenalties;
-            const progressPercent = Math.min((totalPaid / montantInitial) * 100, 100);
-
-            return (
-              <div
-                key={member.id_membre_groupe}
-                className="rounded-xl border border-gray-200 bg-white p-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold uppercase">
-                      {member.user.prenom[0]}{member.user.nom[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {member.user.prenom} {member.user.nom}
-                      </p>
-                      <p className="text-xs text-gray-500">{member.user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {isLate && (
-                      <span className="inline-flex items-center rounded-md bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                        🔴 En retard ({totalDaysLate}j)
-                      </span>
-                    )}
-                    {hasActivePenalty && (
-                      <span className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                        ⚠️ Pénalité appliquée
-                      </span>
-                    )}
-                    {isIncomplete && (
-                      <span className="inline-flex items-center rounded-md bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 ring-1 ring-inset ring-orange-600/20">
-                        🟠 Paiement incomplet
-                      </span>
-                    )}
-                    {!isIncomplete && !isLate && totalPaid >= montantInitial && (
-                      <span className="inline-flex items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                        🟢 À jour
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-gray-500 uppercase">Cotisation totale (tous les tours)</p>
-                    <p className="text-sm font-semibold">{montantInitial.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-gray-500 uppercase">Pénalités</p>
-                    <p className="text-sm font-semibold text-amber-600">+{totalPenalties.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-gray-500 uppercase">Total à payer</p>
-                    <p className="text-sm font-bold text-gray-900">{totalDu.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-gray-500 uppercase">Total versé</p>
-                    <p className="text-sm font-bold text-emerald-600">{totalPaid.toLocaleString("fr-FR")} {membership.groupe.devise}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-[10px] mb-1">
-                    <span className="text-gray-500 font-medium">Progression de la cotisation</span>
-                    <span className="text-gray-900 font-bold">{Math.round(progressPercent)}%</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-gray-100">
-                    <div
-                      className="h-1.5 rounded-full bg-emerald-500 transition-all"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 border-t border-gray-50 pt-4">
-                  <details className="group">
-                    <summary className="flex cursor-pointer items-center justify-between list-none text-xs font-semibold text-gray-900">
-                      <span>Détail par tour</span>
-                      <span className="text-brand-600 group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div className="mt-3 space-y-2">
-                      {tourDetails.map((tour) => (
-                        <div key={tour.tourNum} className="flex items-center justify-between text-[11px] p-2 rounded-lg bg-gray-50">
-                          <div className="space-y-0.5">
-                            <p className="font-bold text-gray-900">Tour {tour.tourNum}</p>
-                            <p className="text-gray-500">Échéance : {tour.dueDate.toLocaleDateString("fr-FR")}</p>
-                          </div>
-                          <div className="text-right space-y-0.5">
-                            <p className="font-medium">
-                              {tour.paidAmount.toLocaleString("fr-FR")} / {montantFixe.toLocaleString("fr-FR")}
-                            </p>
-                            {tour.penaltiesAmount > 0 && (
-                              <p className="text-amber-600 font-bold">Pén. : +{tour.penaltiesAmount.toLocaleString("fr-FR")}</p>
-                            )}
-                            {tour.isOverdue && (
-                              <p className="text-rose-600 font-bold">Retard: {tour.daysLate}j</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
+
+      <CycleDetailActions
+        isAdmin={membership.role === "ADMIN"}
+        overview={overviewContent}
+        edit={editContent}
+        payment={paymentContent}
+        distribution={distributionContent}
+        history={historyContent}
+        participants={
+          <CycleParticipantsTable
+            participants={participantsForTable}
+            devise={membership.groupe.devise}
+          />
+        }
+        closeAction={
+          !cycleTermine ? <CloseCycleButton groupId={groupId} cycleId={cycleId} /> : null
+        }
+        deleteAction={
+          <DeleteCycleButton groupId={groupId} cycleId={cycleId} cycleName={cycle.nom_cycle} />
+        }
+        backAction={
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/dashboard/groups/${groupId}/cycles`}>Retour</Link>
+          </Button>
+        }
+      />
     </div>
   );
 }

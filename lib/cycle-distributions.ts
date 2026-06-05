@@ -1,8 +1,10 @@
 import { prisma } from "./prisma";
+import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
 
 /**
  * Calcule le pot collecté pour un tour donné d'un cycle.
- * Pot réel = somme des cotisations enregistrées pour ce tour + pénalités associées.
+ * Pot réel = somme des cotisations enregistrées pour ce tour.
+ * Les pénalités sont suivies dans une caisse séparée.
  */
 export async function calculerPotTour(cycleId: string, numeroTour: number) {
   const cotisations = await prisma.cotisations.findMany({
@@ -19,7 +21,7 @@ export async function calculerPotTour(cycleId: string, numeroTour: number) {
   return {
     potCollecte,
     totalPenalites,
-    potTotal: potCollecte + totalPenalites,
+    potTotal: potCollecte,
     nombreCotisations: cotisations.length,
   };
 }
@@ -88,33 +90,26 @@ export async function getVersementsCycle(cycleId: string) {
 }
 
 /**
- * Calcule la trésorerie globale d'un cycle :
- * - Total collecté (cotisations + pénalités)
- * - Total distribué (versements)
- * - Solde disponible
+ * Calcule la trésorerie du tour actif.
+ * La caisse de pénalités reste séparée du pot à verser au bénéficiaire.
  */
 export async function getTresorerieCycle(cycleId: string) {
-  const [cotisations, versements] = await Promise.all([
-    prisma.cotisations.findMany({
-      where: { id_cycle: cycleId },
-      select: { montant: true, montant_penalite: true },
-    }),
-    prisma.versement.findMany({
-      where: { id_cycle: cycleId },
-      select: { montant_verse: true },
-    }),
-  ]);
-
-  const totalCollecte = cotisations.reduce(
-    (acc, c) => acc + Number(c.montant) + (c.montant_penalite ? Number(c.montant_penalite) : 0),
-    0,
-  );
-  const totalDistribue = versements.reduce((acc, v) => acc + Number(v.montant_verse), 0);
+  const snapshot = await getCycleTurnSnapshot(cycleId);
 
   return {
-    totalCollecte,
-    totalDistribue,
-    soldeDisponible: totalCollecte - totalDistribue,
-    toursVerses: versements.length,
+    totalAttendu: snapshot.expectedCurrentTurn,
+    totalCollecte: snapshot.collectedCurrentTurn,
+    totalDistribue: snapshot.distributedCurrentTurn,
+    soldeDisponible: snapshot.availableCurrentTurn,
+    resteACollecter: snapshot.remainingCurrentTurn,
+    toursVerses: snapshot.completedTours,
+    tourActif: snapshot.activeTour,
+    debutTourActif: snapshot.activeTourStart,
+    finTourActif: snapshot.activeTourEnd,
+    cycleTermine: snapshot.isCompleted,
+    penalitesTour: snapshot.penaltiesCurrentTurn,
+    caissePenalitesTour: snapshot.penaltyCashCurrentTurn,
+    penalitesCycle: snapshot.penaltiesCycle,
+    caissePenalitesCycle: snapshot.penaltyCashCycle,
   };
 }

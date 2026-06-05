@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCyclePaymentSchema } from "@/lib/validations";
 import { createNotification } from "@/lib/notifications";
+import { getCycleTurnSnapshot, getMemberRemainingForTurn } from "@/lib/cycle-turns";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -107,16 +108,55 @@ export async function POST(
   }
 
   try {
+    const snapshot = await getCycleTurnSnapshot(cycleId);
+    if (snapshot.isCompleted || !snapshot.activeTour) {
+      return NextResponse.json({ ok: false, error: "Ce cycle est déjà terminé." }, { status: 409 });
+    }
+
     const totalTours = cycle.participants.length;
     const numeroTour =
       numero_tour ??
       computeCurrentTour(cycle.date_debut, cycle.duree_tour_de_gain, datePaiement, totalTours);
 
-    if (numeroTour > totalTours) {
-      return NextResponse.json({ ok: false, error: "Invalid cycle round." }, { status: 400 });
+    if (numeroTour !== snapshot.activeTour) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Les cotisations concernent uniquement le tour actif (${snapshot.activeTour}).`,
+        },
+        { status: 409 },
+      );
     }
 
-    const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * numeroTour);
+    const remaining = await getMemberRemainingForTurn({
+      cycleId,
+      memberId: id_membre_groupe,
+      numeroTour,
+    });
+
+    if (!remaining) {
+      return NextResponse.json({ ok: false, error: "Cycle not found." }, { status: 404 });
+    }
+
+    if (remaining.remaining <= 0) {
+      return NextResponse.json(
+        { ok: false, error: "Ce membre a déjà soldé sa cotisation pour ce tour." },
+        { status: 409 },
+      );
+    }
+
+    if (roundCurrency(montant) > remaining.remaining) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Montant trop élevé. Reste à cotiser pour ce membre : ${remaining.remaining.toLocaleString("fr-FR")}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    const dateEcheance =
+      snapshot.activeTourEnd ?? addDays(cycle.date_debut, cycle.duree_tour_de_gain * numeroTour);
     const joursRetard = Math.max(
       0,
       Math.ceil((datePaiement.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),
@@ -124,8 +164,25 @@ export async function POST(
     const valeurPenalite = cycle.valeur_penalite ? Number(cycle.valeur_penalite) : 0;
     const montantCotisation = Number(cycle.montant_cotisation);
 
+    const existingPenalty = await prisma.cotisations.findFirst({
+      where: {
+        id_cycle: cycle.id_cycle,
+        id_membre_groupe,
+        numero_tour: numeroTour,
+        penalite_appliquee: true,
+        montant_penalite: { not: null },
+      },
+      select: { id_cotisation: true },
+    });
+
     let montantPenalite = 0;
-    if (cycle.penalites_activees && cycle.mode_penalite && valeurPenalite > 0 && joursRetard > 0) {
+    if (
+      !existingPenalty &&
+      cycle.penalites_activees &&
+      cycle.mode_penalite &&
+      valeurPenalite > 0 &&
+      joursRetard > 0
+    ) {
       if (cycle.mode_penalite === "FIXE") {
         montantPenalite = valeurPenalite;
       } else if (cycle.mode_penalite === "POURCENTAGE") {
@@ -207,7 +264,7 @@ export async function POST(
     }
 
     return NextResponse.json({ ok: true, payment }, { status: 201 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ ok: false, error: "Internal server error." }, { status: 500 });
   }
 }
