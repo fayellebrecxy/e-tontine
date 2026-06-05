@@ -32,24 +32,6 @@ export default async function GroupOverviewPage({
           description: true,
           devise: true,
           date_de_creation: true,
-          cycles: {
-            where: {
-              id_groupe: groupId,
-            },
-            orderBy: { date_debut: "desc" },
-            select: {
-              id_cycle: true,
-              nom_cycle: true,
-              date_debut: true,
-              date_fin: true,
-              duree_tour_de_gain: true,
-              participants: {
-                select: {
-                  id_membre_groupe: true,
-                },
-              },
-            },
-          },
         },
       },
     },
@@ -59,14 +41,50 @@ export default async function GroupOverviewPage({
     redirect("/dashboard");
   }
 
-  const normalizedCycles =
-    membership.statut_adhesion === "ACTIF"
-      ? membership.role === "ADMIN"
-        ? membership.groupe.cycles
-        : membership.groupe.cycles.filter((c) =>
-            c.participants.some((p) => p.id_membre_groupe === membership.id_membre_groupe),
-          )
-      : [];
+  // Requête directe selon le rôle pour garantir que tous les cycles du membre sont visibles
+  type CyclePreview = {
+    id_cycle: string;
+    nom_cycle: string;
+    date_debut: Date;
+    date_fin: Date;
+    duree_tour_de_gain: number;
+  };
+
+  let normalizedCycles: CyclePreview[] = [];
+
+  if (membership.statut_adhesion === "ACTIF") {
+    if (membership.role === "ADMIN") {
+      normalizedCycles = await prisma.cycleTontine.findMany({
+        where: { id_groupe: groupId },
+        orderBy: { date_debut: "desc" },
+        select: {
+          id_cycle: true,
+          nom_cycle: true,
+          date_debut: true,
+          date_fin: true,
+          duree_tour_de_gain: true,
+        },
+      });
+    } else {
+      // Requête directe sur CycleParticipant → garantit que le membre voit ses cycles
+      const participations = await prisma.cycleParticipant.findMany({
+        where: { id_membre_groupe: membership.id_membre_groupe },
+        orderBy: { cycle: { date_debut: "desc" } },
+        select: {
+          cycle: {
+            select: {
+              id_cycle: true,
+              nom_cycle: true,
+              date_debut: true,
+              date_fin: true,
+              duree_tour_de_gain: true,
+            },
+          },
+        },
+      });
+      normalizedCycles = participations.map((p) => p.cycle);
+    }
+  }
 
   return (
     <div className="space-y-6">

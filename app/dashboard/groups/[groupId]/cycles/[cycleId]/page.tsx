@@ -5,6 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
 import { EditCycleForm } from "@/components/groups/edit-cycle-form";
@@ -14,6 +23,7 @@ import { CycleDetailActions } from "@/components/groups/cycle-detail-actions";
 import { CycleParticipantsTable } from "@/components/groups/cycle-participants-table";
 import { DeleteCycleButton } from "@/components/groups/delete-cycle-button";
 import { PenaltyWithdrawalForm } from "@/components/groups/penalty-withdrawal-form";
+import { RelancerCycleSheet } from "@/components/groups/relancer-cycle-sheet";
 import { calculerPotTour, getVersementsCycle, getTresorerieCycle } from "@/lib/cycle-distributions";
 
 function addDays(date: Date, days: number) {
@@ -329,14 +339,12 @@ export default async function GroupCycleDetailPage({
 
           {cycleTermine ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-brand-900">
-              <p className="text-sm font-semibold">Cycle terminé</p>
+              <p className="text-sm font-semibold">🎉 Cycle terminé avec succès</p>
               <p className="mt-1 text-xs">
-                Tous les tours ont été soldés. Vous pouvez relancer un nouveau cycle quand vous le
-                souhaitez.
+                Tous les tours ont été soldés et les pots distribués. Vous pouvez relancer un nouveau
+                cycle dès maintenant ou à tout moment depuis la liste des cycles.
               </p>
-              <Button asChild size="sm" className="mt-3">
-                <Link href={`/dashboard/groups/${groupId}/cycles`}>Relancer</Link>
-              </Button>
+              <RelancerCycleSheet groupId={groupId} />
             </div>
           ) : null}
 
@@ -531,6 +539,95 @@ export default async function GroupCycleDetailPage({
       />
     ) : null;
 
+  // Paiements du membre connecté avec types convertis (Decimal → number déjà fait dans paymentsByMember)
+  const myMemberPayments = paymentsByMember.get(membership.id_membre_groupe) ?? [];
+
+  const devise = membership.groupe.devise;
+
+  const myPaymentsContent = (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Vos cotisations enregistrées dans ce cycle, avec les dates exactes de paiement.
+      </p>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tour</TableHead>
+              <TableHead>Date de paiement</TableHead>
+              <TableHead>Montant</TableHead>
+              <TableHead className="hidden sm:table-cell">Pénalité</TableHead>
+              <TableHead>Statut</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {myMemberPayments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                  Aucune cotisation enregistrée pour vous dans ce cycle.
+                </TableCell>
+              </TableRow>
+            ) : (
+              myMemberPayments.map((payment) => (
+                <TableRow key={payment.id_cotisation}>
+                  <TableCell className="font-medium">
+                    Tour {payment.numero_tour ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-700">
+                    {payment.date_de_paiement.toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell className="font-medium text-emerald-600">
+                    {payment.montant.toLocaleString("fr-FR")} {devise}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-amber-600">
+                    {payment.montant_penalite
+                      ? `${payment.montant_penalite.toLocaleString("fr-FR")} ${devise}`
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {payment.penalite_appliquee ? (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                        En retard
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                        À l'heure
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {myMemberPayments.length > 0 ? (
+        <div className="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
+          <span>
+            <span className="font-medium text-gray-700">Total versé : </span>
+            <span className="font-bold text-emerald-600">
+              {myMemberPayments.reduce((acc, p) => acc + p.montant, 0).toLocaleString("fr-FR")} {devise}
+            </span>
+          </span>
+          <span>
+            <span className="font-medium text-gray-700">Pénalités : </span>
+            <span className="font-bold text-amber-600">
+              {myMemberPayments.reduce((acc, p) => acc + (p.montant_penalite ?? 0), 0).toLocaleString("fr-FR")} {devise}
+            </span>
+          </span>
+          <span>
+            <span className="font-medium text-gray-700">Nb de versements : </span>
+            <span className="font-bold text-gray-900">{myMemberPayments.length}</span>
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -552,9 +649,10 @@ export default async function GroupCycleDetailPage({
         participants={
           <CycleParticipantsTable
             participants={participantsForTable}
-            devise={membership.groupe.devise}
+            devise={devise}
           />
         }
+        myPayments={myPaymentsContent}
         closeAction={
           !cycleTermine ? <CloseCycleButton groupId={groupId} cycleId={cycleId} /> : null
         }

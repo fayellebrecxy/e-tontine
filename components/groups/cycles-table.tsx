@@ -41,6 +41,7 @@ type CycleItem = {
   duree_tour_de_gain: number;
   montant_cotisation: number;
   participants: { id_membre_groupe: string }[];
+  versements: { id_versement: string }[];
 };
 
 type CyclesTableProps = {
@@ -54,6 +55,10 @@ type CyclesTableProps = {
 const PAGE_SIZE = 8;
 
 function getCycleStatus(cycle: CycleItem) {
+  // Un cycle est terminé si tous ses tours ont été distribués (logique métier)
+  if (cycle.participants.length > 0 && cycle.versements.length >= cycle.participants.length) {
+    return "closed";
+  }
   const now = new Date();
   const debut = new Date(cycle.date_debut);
   const fin = new Date(cycle.date_fin);

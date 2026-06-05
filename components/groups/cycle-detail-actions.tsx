@@ -7,13 +7,14 @@ import {
   Eye,
   History,
   Pencil,
+  Receipt,
   Users,
   Wallet,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "participants";
+type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "participants" | "myPayments";
 
 type Panel = {
   key: PanelKey;
@@ -31,6 +32,7 @@ type CycleDetailActionsProps = {
   distribution?: React.ReactNode;
   history?: React.ReactNode;
   participants: React.ReactNode;
+  myPayments?: React.ReactNode;
   closeAction?: React.ReactNode;
   deleteAction?: React.ReactNode;
   backAction: React.ReactNode;
@@ -44,6 +46,7 @@ export function CycleDetailActions({
   distribution,
   history,
   participants,
+  myPayments,
   closeAction,
   deleteAction,
   backAction,
@@ -56,8 +59,9 @@ export function CycleDetailActions({
       { key: "distribution", label: "Verser pot", icon: Wallet, content: distribution, adminOnly: true },
       { key: "history", label: "Historique", icon: History, content: history, adminOnly: true },
       { key: "participants", label: "Participants", icon: Users, content: participants },
+      { key: "myPayments", label: "Mes versements", icon: Receipt, content: myPayments },
     ],
-    [distribution, edit, history, overview, participants, payment],
+    [distribution, edit, history, myPayments, overview, participants, payment],
   );
 
   const visiblePanels = panels.filter((panel) => panel.content && (!panel.adminOnly || isAdmin));

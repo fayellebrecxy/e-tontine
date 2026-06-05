@@ -8,6 +8,28 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const CYCLE_SELECT = {
+  id_cycle: true,
+  nom_cycle: true,
+  date_debut: true,
+  date_fin: true,
+  duree_tour_de_gain: true,
+  montant_cotisation: true,
+  participants: {
+    orderBy: { ordre: "asc" as const },
+    select: {
+      id_membre_groupe: true,
+      ordre: true,
+      membre_groupe: {
+        select: { user: { select: { nom: true, prenom: true } } },
+      },
+    },
+  },
+  versements: {
+    select: { id_versement: true },
+  },
+} as const;
+
 export default async function GroupCyclesPage({
   params,
   searchParams,
@@ -30,32 +52,7 @@ export default async function GroupCyclesPage({
     select: {
       id_membre_groupe: true,
       role: true,
-      groupe: {
-        select: {
-          devise: true,
-          cycles: {
-            orderBy: { date_debut: "desc" },
-            select: {
-              id_cycle: true,
-              nom_cycle: true,
-              date_debut: true,
-              date_fin: true,
-              duree_tour_de_gain: true,
-              montant_cotisation: true,
-              participants: {
-                orderBy: { ordre: "asc" },
-                select: {
-                  id_membre_groupe: true,
-                  ordre: true,
-                  membre_groupe: {
-                    select: { user: { select: { nom: true, prenom: true } } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      groupe: { select: { devise: true } },
     },
   });
 
@@ -63,18 +60,36 @@ export default async function GroupCyclesPage({
     redirect("/dashboard");
   }
 
-  const normalized =
-    membership.role === "ADMIN"
-      ? membership.groupe.cycles
-      : membership.groupe.cycles.filter((c) =>
-          c.participants.some((p) => p.id_membre_groupe === membership.id_membre_groupe),
-        );
+  // Requête directe selon le rôle pour ne jamais rater un cycle
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rawCycles: any[];
 
-  const cycles = normalized.map((cycle) => ({
+  if (membership.role === "ADMIN") {
+    // L'admin voit tous les cycles du groupe
+    rawCycles = await prisma.cycleTontine.findMany({
+      where: { id_groupe: groupId },
+      orderBy: { date_debut: "desc" },
+      select: CYCLE_SELECT,
+    });
+  } else {
+    // Le membre ne voit que les cycles où il est participant
+    // Requête directe sur CycleParticipant pour ne pas rater de cycle
+    const participations = await prisma.cycleParticipant.findMany({
+      where: { id_membre_groupe: membership.id_membre_groupe },
+      orderBy: { cycle: { date_debut: "desc" } },
+      select: {
+        cycle: { select: CYCLE_SELECT },
+      },
+    });
+    rawCycles = participations.map((p) => p.cycle);
+  }
+
+  const cycles = rawCycles.map((cycle) => ({
     ...cycle,
     date_debut: cycle.date_debut.toISOString(),
     date_fin: cycle.date_fin.toISOString(),
     montant_cotisation: Number(cycle.montant_cotisation),
+    versements: cycle.versements ?? [],
   }));
 
   return (
@@ -83,7 +98,7 @@ export default async function GroupCyclesPage({
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Cycles de tontine</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {membership.role === "ADMIN"
-            ? "Gérez les cycles de ce groupe : création, suivi des tours et enregistrement des versements."
+            ? "Gérez les cycles de ce groupe : création, suivi des tours et enregistrement des versements."
             : "Consultez les cycles auxquels vous participez et suivez votre progression."
           }
         </p>
