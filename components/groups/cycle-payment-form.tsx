@@ -15,6 +15,8 @@ type ParticipantItem = {
   prenom: string;
   paidForActiveTour?: number;
   remainingForActiveTour?: number;
+  /** Pénalité automatique en attente pour ce tour (non encore collectée) */
+  pendingPenaltyForActiveTour?: number | null;
 };
 
 type TourItem = {
@@ -97,7 +99,7 @@ export function CyclePaymentForm({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Sélectionnez le membre qui a payé, le tour concerné, puis saisissez le montant reçu. Une pénalité sera calculée automatiquement si le paiement est en retard.
+          Sélectionnez le membre qui a payé, le tour concerné, puis saisissez le montant reçu.
         </p>
         <div className="space-y-2">
           <Label>Membre qui a versé</Label>
@@ -114,16 +116,34 @@ export function CyclePaymentForm({
               >
                 {member.prenom} {member.nom}
                 {typeof member.remainingForActiveTour === "number"
-                  ? ` — reste ${member.remainingForActiveTour.toLocaleString("fr-FR")}`
+                  ? ` — cotisation restante : ${member.remainingForActiveTour.toLocaleString("fr-FR")}`
+                  : ""}
+                {member.pendingPenaltyForActiveTour
+                  ? ` ⚠️ pénalité : ${member.pendingPenaltyForActiveTour.toLocaleString("fr-FR")}`
                   : ""}
               </option>
             ))}
           </select>
           {selectedParticipant ? (
-            <p className="text-xs text-muted-foreground">
-              Avance déjà reçue : {(selectedParticipant.paidForActiveTour ?? 0).toLocaleString("fr-FR")} ·
-              reste à cotiser : {(selectedParticipant.remainingForActiveTour ?? 0).toLocaleString("fr-FR")}
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Déjà versé : {(selectedParticipant.paidForActiveTour ?? 0).toLocaleString("fr-FR")} ·
+                Reste à cotiser : <span className="font-medium text-gray-700">{(selectedParticipant.remainingForActiveTour ?? 0).toLocaleString("fr-FR")}</span>
+              </p>
+              {selectedParticipant.pendingPenaltyForActiveTour ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <span className="font-semibold">⚠️ Pénalité de retard enregistrée automatiquement :</span>{" "}
+                  <span className="font-bold">{selectedParticipant.pendingPenaltyForActiveTour.toLocaleString("fr-FR")}</span>
+                  <br />
+                  Ce membre doit payer sa cotisation + la pénalité. Lorsque vous enregistrerez son paiement,
+                  la cotisation ira dans la caisse principale et la pénalité dans la caisse pénalités.
+                  <br />
+                  <span className="font-semibold">Total à collecter :{" "}
+                    {((selectedParticipant.remainingForActiveTour ?? 0) + selectedParticipant.pendingPenaltyForActiveTour).toLocaleString("fr-FR")}
+                  </span>
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </div>
         <div className="space-y-2">

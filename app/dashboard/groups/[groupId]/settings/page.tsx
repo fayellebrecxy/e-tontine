@@ -24,7 +24,7 @@ export default async function GroupSettingsPage({
   });
 
   if (!membership || membership.role !== "ADMIN") {
-    redirect("/dashboard");
+    redirect(`/dashboard/groups/${groupId}`);
   }
 
   const groupe = await prisma.groupes.findUnique({

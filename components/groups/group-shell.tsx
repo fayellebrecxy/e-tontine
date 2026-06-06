@@ -189,7 +189,7 @@ export function GroupShell({
 
       <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
         <aside className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <GroupNav groupId={groupId} />
+          <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />
         </aside>
         <section className="min-w-0">{children}</section>
       </div>

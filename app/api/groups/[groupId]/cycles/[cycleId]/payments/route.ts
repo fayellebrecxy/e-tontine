@@ -164,35 +164,62 @@ export async function POST(
     const valeurPenalite = cycle.valeur_penalite ? Number(cycle.valeur_penalite) : 0;
     const montantCotisation = Number(cycle.montant_cotisation);
 
-    const existingPenalty = await prisma.cotisations.findFirst({
+    // Chercher un enregistrement de pénalité automatique en attente (montant = 0)
+    const autoPenaltyRecord = await prisma.cotisations.findFirst({
       where: {
         id_cycle: cycle.id_cycle,
         id_membre_groupe,
         numero_tour: numeroTour,
         penalite_appliquee: true,
         montant_penalite: { not: null },
+        montant: 0, // pénalité automatique non encore collectée
+      },
+      select: {
+        id_cotisation: true,
+        montant_penalite: true,
+        penalites: { select: { id_penalite: true } },
+      },
+    });
+
+    // Pénalité déjà enregistrée manuellement sur un vrai paiement ?
+    const paidWithPenalty = await prisma.cotisations.findFirst({
+      where: {
+        id_cycle: cycle.id_cycle,
+        id_membre_groupe,
+        numero_tour: numeroTour,
+        penalite_appliquee: true,
+        montant_penalite: { not: null },
+        montant: { gt: 0 }, // pénalité déjà collectée avec un vrai paiement
       },
       select: { id_cotisation: true },
     });
 
+    // Calculer le montant de pénalité à appliquer sur CE paiement
     let montantPenalite = 0;
-    if (
-      !existingPenalty &&
-      cycle.penalites_activees &&
-      cycle.mode_penalite &&
-      valeurPenalite > 0 &&
-      joursRetard > 0
-    ) {
-      if (cycle.mode_penalite === "FIXE") {
-        montantPenalite = valeurPenalite;
-      } else if (cycle.mode_penalite === "POURCENTAGE") {
-        montantPenalite = roundCurrency((montantCotisation * valeurPenalite) / 100);
-      } else {
-        montantPenalite = roundCurrency(valeurPenalite * joursRetard);
+
+    if (!paidWithPenalty && autoPenaltyRecord) {
+      // La pénalité auto est en attente → on la collecte maintenant avec ce paiement
+      montantPenalite = Number(autoPenaltyRecord.montant_penalite ?? 0);
+    } else if (!paidWithPenalty && !autoPenaltyRecord) {
+      // Pas de pénalité auto → calculer si le paiement est en retard
+      if (
+        cycle.penalites_activees &&
+        cycle.mode_penalite &&
+        valeurPenalite > 0 &&
+        joursRetard > 0
+      ) {
+        if (cycle.mode_penalite === "FIXE") {
+          montantPenalite = valeurPenalite;
+        } else if (cycle.mode_penalite === "POURCENTAGE") {
+          montantPenalite = roundCurrency((montantCotisation * valeurPenalite) / 100);
+        } else {
+          montantPenalite = roundCurrency(valeurPenalite * joursRetard);
+        }
       }
     }
 
     const payment = await prisma.$transaction(async (tx) => {
+      // Enregistrer le vrai paiement (cotisation collectée)
       const created = await tx.cotisations.create({
         data: {
           id_cycle: cycle.id_cycle,
@@ -218,12 +245,24 @@ export async function POST(
       });
 
       if (montantPenalite > 0) {
+        if (autoPenaltyRecord) {
+          // Supprimer l'enregistrement auto en attente (il est maintenant collecté via ce paiement)
+          await tx.penalite.deleteMany({
+            where: { id_cotisation: autoPenaltyRecord.id_cotisation },
+          });
+          await tx.cotisations.delete({
+            where: { id_cotisation: autoPenaltyRecord.id_cotisation },
+          });
+        }
+        // Créer la pénalité liée au vrai paiement
         await tx.penalite.create({
           data: {
             id_cotisation: created.id_cotisation,
             id_membre_groupe,
             montant_base: valeurPenalite,
-            motif: "Retard de paiement",
+            motif: autoPenaltyRecord
+              ? "Pénalité de retard collectée (préalablement enregistrée automatiquement)"
+              : "Retard de paiement",
             taux_augmentation_heure: 0,
             seuil_heure_augmentation: 24,
             date_application: datePaiement,

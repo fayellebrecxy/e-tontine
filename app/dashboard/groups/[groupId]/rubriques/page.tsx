@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { RubriquesClient } from "@/components/rubriques/rubriques-client";
 import { sendRubriqueEcheanceReminders } from "@/lib/rubrique-reminders";
 
+export const dynamic = "force-dynamic";
+
 export default async function RubriquesPage({
   params,
 }: {

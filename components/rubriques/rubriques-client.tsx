@@ -377,72 +377,121 @@ export function RubriquesClient({
               </div>
 
               {tab === "solde" ? (
-                <div className="rounded-md border bg-card">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Membre</TableHead>
-                        <TableHead>Dû</TableHead>
-                        <TableHead>Payé</TableHead>
-                        <TableHead>Reste</TableHead>
-                        <TableHead className="text-right">Statut</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedRubrique.membres_concernes
-                        .filter((mc: any) =>
-                          !isAdmin ? mc.membre.id_membre_groupe === adminId : true,
-                        )
-                        .map((mc: any) => {
-                          const due = parseFloat(selectedRubrique.montant_fixe);
-                          const paid = selectedRubrique.paiements
-                            .filter((p: any) => p.id_membre_groupe === mc.id_membre_groupe)
-                            .reduce(
-                              (acc: number, p: any) => acc + parseFloat(p.montant_paye),
-                              0,
-                            );
-                          const balance = due - paid;
+                <div className="space-y-4">
+                  <div className="rounded-md border bg-card">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Membre</TableHead>
+                          <TableHead>Dû</TableHead>
+                          <TableHead>Payé</TableHead>
+                          <TableHead>Reste</TableHead>
+                          <TableHead className="text-right">Statut</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedRubrique.membres_concernes
+                          .filter((mc: any) =>
+                            !isAdmin ? mc.membre.id_membre_groupe === adminId : true,
+                          )
+                          .map((mc: any) => {
+                            const due = parseFloat(selectedRubrique.montant_fixe);
+                            const paid = selectedRubrique.paiements
+                              .filter((p: any) => p.id_membre_groupe === mc.id_membre_groupe)
+                              .reduce(
+                                (acc: number, p: any) => acc + parseFloat(p.montant_paye),
+                                0,
+                              );
+                            const balance = due - paid;
 
-                          return (
-                            <TableRow key={mc.id_membre_rubrique}>
-                              <TableCell className="font-medium">
-                                {mc.membre.user.prenom} {mc.membre.user.nom}
-                                {mc.membre.id_membre_groupe === adminId && (
-                                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
-                                    Vous
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>{due.toLocaleString()} XAF</TableCell>
-                              <TableCell className="text-green-600 font-medium">
-                                {paid.toLocaleString()} XAF
-                              </TableCell>
-                              <TableCell
-                                className={
-                                  balance > 0 ? "text-red-500 font-bold" : "text-muted-foreground"
-                                }
+                            return (
+                              <TableRow key={mc.id_membre_rubrique}>
+                                <TableCell className="font-medium">
+                                  {mc.membre.user.prenom} {mc.membre.user.nom}
+                                  {mc.membre.id_membre_groupe === adminId && (
+                                    <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                                      Vous
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell>{due.toLocaleString()} XAF</TableCell>
+                                <TableCell className="text-green-600 font-medium">
+                                  {paid.toLocaleString()} XAF
+                                </TableCell>
+                                <TableCell
+                                  className={
+                                    balance > 0 ? "text-red-500 font-bold" : "text-muted-foreground"
+                                  }
+                                >
+                                  {balance > 0 ? `${balance.toLocaleString()} XAF` : "0 XAF"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {balance <= 0 ? (
+                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10">
+                                      À jour
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="destructive"
+                                      className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10"
+                                    >
+                                      Incomplet
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Détail des versements avec dates — visible par le membre pour traçabilité */}
+                  {(() => {
+                    const myPayments = selectedRubrique.paiements.filter(
+                      (p: any) => p.id_membre_groupe === adminId,
+                    );
+                    if (myPayments.length === 0) return null;
+                    return (
+                      <div className="rounded-xl border bg-card p-4 space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Historique de mes versements
+                        </p>
+                        <div className="space-y-2">
+                          {myPayments
+                            .slice()
+                            .sort(
+                              (a: any, b: any) =>
+                                new Date(b.date_paiement).getTime() -
+                                new Date(a.date_paiement).getTime(),
+                            )
+                            .map((p: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between rounded-lg border bg-green-50/40 px-4 py-2.5 dark:bg-green-900/10"
                               >
-                                {balance > 0 ? `${balance.toLocaleString()} XAF` : "0 XAF"}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {balance <= 0 ? (
-                                  <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10">
-                                    À jour
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="destructive"
-                                    className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10"
-                                  >
-                                    Incomplet
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
+                                <div className="flex items-center gap-3">
+                                  <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
+                                    <Calendar className="h-3.5 w-3.5 text-green-600" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-foreground">
+                                      {format(new Date(p.date_paiement), "PPP", { locale: fr })}
+                                    </p>
+                                    {p.note && (
+                                      <p className="text-[11px] text-muted-foreground">{p.note}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm font-bold text-green-600">
+                                  +{parseFloat(p.montant_paye).toLocaleString()} XAF
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="space-y-3">

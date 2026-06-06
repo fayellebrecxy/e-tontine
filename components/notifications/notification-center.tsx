@@ -83,6 +83,17 @@ export function NotificationCenter() {
     }
   };
 
+  const deleteAll = async () => {
+    try {
+      const res = await fetch("/api/notifications", { method: "DELETE" });
+      if (res.ok) {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Failed to delete all notifications", error);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -99,11 +110,23 @@ export function NotificationCenter() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between border-b px-4 py-2">
           <h3 className="text-sm font-semibold">Notifications</h3>
-          {unreadCount > 0 && (
-            <span className="text-[10px] font-medium text-muted-foreground">
-              {unreadCount} non lue(s)
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {unreadCount} non lue(s)
+              </span>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={deleteAll}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-rose-500 hover:bg-rose-50 transition-colors"
+                title="Tout supprimer"
+              >
+                <X className="h-3 w-3" />
+                Tout supprimer
+              </button>
+            )}
+          </div>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
           {notifications.length === 0 ? (

@@ -4,17 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Mail, Settings, Repeat, Landmark } from "lucide-react";
 
-const items = [
-  { label: "Apercu", href: "", icon: LayoutDashboard },
-  { label: "Membres", href: "members", icon: Users },
-  { label: "Invitations", href: "invitations", icon: Mail },
-  { label: "Rubriques", href: "rubriques", icon: Landmark },
-  { label: "Cycles", href: "cycles", icon: Repeat },
-  { label: "Parametres", href: "settings", icon: Settings },
+const allItems = [
+  { label: "Apercu", href: "", icon: LayoutDashboard, adminOnly: false },
+  { label: "Membres", href: "members", icon: Users, adminOnly: false },
+  { label: "Invitations", href: "invitations", icon: Mail, adminOnly: true },
+  { label: "Rubriques", href: "rubriques", icon: Landmark, adminOnly: false },
+  { label: "Cycles", href: "cycles", icon: Repeat, adminOnly: false },
+  { label: "Parametres", href: "settings", icon: Settings, adminOnly: true },
 ];
 
-export function GroupNav({ groupId }: { groupId: string }) {
+export function GroupNav({ groupId, isAdmin = false }: { groupId: string; isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = allItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <div className="space-y-2">

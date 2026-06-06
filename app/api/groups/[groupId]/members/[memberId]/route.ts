@@ -217,17 +217,18 @@ export async function DELETE(
         return { status: 404 as const, error: "Member not found." };
       }
 
-      if (member.id_user === authUser.id) {
-        return { status: 409 as const, error: "Cannot remove yourself." };
-      }
-
+      // Pour se supprimer soi-même ou supprimer un autre admin,
+      // on vérifie qu'il reste au moins un autre admin actif.
       if (member.role === "ADMIN") {
         const adminCount = await tx.membreGroupe.count({
           where: { id_groupe: groupId, role: "ADMIN", statut_adhesion: "ACTIF" },
         });
 
         if (adminCount <= 1) {
-          return { status: 409 as const, error: "At least one admin is required." };
+          return {
+            status: 409 as const,
+            error: "Impossible : ce groupe doit conserver au moins un administrateur.",
+          };
         }
       }
 

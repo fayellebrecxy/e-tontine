@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { ModePenalite } from "@/lib/generated/prisma/client";
 import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
+import { createNotification } from "@/lib/notifications";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,77 +74,74 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
 
   if (overdueTours.length === 0) return;
 
-  // 2. Récupérer toutes les cotisations pour les tours expirés et les participants actifs
+  // Utiliser la vraie date d'échéance du tour actif (calculée dynamiquement par le snapshot)
+  const dateEcheance =
+    snapshot.activeTourEnd ??
+    addDays(cycle.date_debut, cycle.duree_tour_de_gain * (snapshot.activeTour ?? 1));
+
+  const joursRetard = Math.max(
+    1,
+    Math.ceil((now.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),
+  );
+
+  // Récupérer les cotisations existantes pour ce tour
   const cotisations = await prisma.cotisations.findMany({
     where: {
       id_cycle: cycleId,
       id_membre_groupe: { in: activeParticipants },
-      numero_tour: { in: overdueTours },
+      numero_tour: snapshot.activeTour,
     },
     select: {
       id_cotisation: true,
       id_membre_groupe: true,
-      numero_tour: true,
       montant: true,
       penalite_appliquee: true,
       montant_penalite: true,
-      penalites: {
-        select: {
-          id_penalite: true,
-        },
-      },
+      penalites: { select: { id_penalite: true } },
     },
   });
 
-  const byMemberAndTour = new Map<string, typeof cotisations>();
+  const byMember = new Map<string, typeof cotisations>();
   for (const item of cotisations) {
-    if (!item.numero_tour) continue;
-    const key = `${item.id_membre_groupe}:${item.numero_tour}`;
-    const list = byMemberAndTour.get(key) ?? [];
+    const list = byMember.get(item.id_membre_groupe) ?? [];
     list.push(item);
-    byMemberAndTour.set(key, list);
+    byMember.set(item.id_membre_groupe, list);
   }
 
-  await prisma.$transaction(async (tx) => {
-    for (const memberId of activeParticipants) {
-      for (const tour of overdueTours) {
-        const dateEcheance = addDays(cycle.date_debut, cycle.duree_tour_de_gain * tour);
+  // Traiter chaque membre indépendamment pour éviter qu'une erreur bloque les autres
+  for (const memberId of activeParticipants) {
+    try {
+      const records = byMember.get(memberId) ?? [];
+      const totalPaid = records.reduce((acc, item) => {
+        const amount = Number(item.montant);
+        return amount > 0 ? acc + amount : acc;
+      }, 0);
 
-        const key = `${memberId}:${tour}`;
-        const records = byMemberAndTour.get(key) ?? [];
-        const totalPaid = records.reduce((acc, item) => {
-          const amount = Number(item.montant);
-          return amount > 0 ? acc + amount : acc;
-        }, 0);
+      // Membre déjà entièrement payé → pas de pénalité
+      if (totalPaid >= montantCotisation) continue;
 
-        if (totalPaid >= montantCotisation) continue;
+      const montantPenalite = computePenaltyAmount(
+        cycle.mode_penalite!,
+        configuredValue,
+        montantCotisation,
+        joursRetard,
+      );
 
-        const joursRetard = Math.max(
-          1,
-          Math.ceil((now.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),
-        );
-        const montantPenalite = computePenaltyAmount(
-          cycle.mode_penalite!,
-          configuredValue,
-          montantCotisation,
-          joursRetard,
-        );
+      if (montantPenalite <= 0) continue;
 
-        const pendingPenaltyRecord = records.find(
-          (item) => Number(item.montant) === 0 && item.penalite_appliquee,
-        );
+      const pendingPenaltyRecord = records.find(
+        (item) => Number(item.montant) === 0 && item.penalite_appliquee,
+      );
 
-        if (pendingPenaltyRecord) {
-          if (Number(pendingPenaltyRecord.montant_penalite ?? 0) !== montantPenalite) {
+      if (pendingPenaltyRecord) {
+        // Mettre à jour la pénalité si le montant a changé (pénalité progressive par jour)
+        const existingAmount = Number(pendingPenaltyRecord.montant_penalite ?? 0);
+        if (existingAmount !== montantPenalite) {
+          await prisma.$transaction(async (tx) => {
             await tx.cotisations.update({
               where: { id_cotisation: pendingPenaltyRecord.id_cotisation },
-              data: {
-                montant_penalite: montantPenalite,
-                date_de_paiement: now,
-                date_echeance: dateEcheance,
-              },
+              data: { montant_penalite: montantPenalite, date_de_paiement: now },
             });
-
             if (pendingPenaltyRecord.penalites[0]?.id_penalite) {
               await tx.penalite.update({
                 where: { id_penalite: pendingPenaltyRecord.penalites[0].id_penalite },
@@ -151,23 +149,24 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
                   montant_final: montantPenalite,
                   jours_retard: joursRetard,
                   date_application: now,
-                  date_echeance: dateEcheance,
                   valeur_configuree: configuredValue,
                 },
               });
             }
-          }
-
-          continue;
+          });
         }
+        continue;
+      }
 
+      // Créer un enregistrement "pénalité seule" : montant = 0, pénalité = montantPenalite
+      await prisma.$transaction(async (tx) => {
         const created = await tx.cotisations.create({
           data: {
             id_cycle: cycle.id_cycle,
             id_membre_groupe: memberId,
             date_debut: cycle.date_debut,
             date_de_paiement: now,
-            numero_tour: tour,
+            numero_tour: snapshot.activeTour!,
             date_echeance: dateEcheance,
             montant: 0,
             penalite_appliquee: true,
@@ -181,7 +180,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
             id_cotisation: created.id_cotisation,
             id_membre_groupe: memberId,
             montant_base: configuredValue,
-            motif: "Retard de paiement detecte automatiquement",
+            motif: "Retard de paiement détecté automatiquement",
             taux_augmentation_heure: 0,
             seuil_heure_augmentation: 24,
             date_application: now,
@@ -192,9 +191,24 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
             date_echeance: dateEcheance,
           },
         });
-      }
+
+        // Notifier le membre
+        const member = await tx.membreGroupe.findUnique({
+          where: { id_membre_groupe: memberId },
+          select: { id_user: true, id_groupe: true },
+        });
+        if (member) {
+          await createNotification({
+            userId: member.id_user,
+            groupId: member.id_groupe,
+            type: "PENALITE_APPLIQUEE",
+            message: `Pénalité de ${montantPenalite.toLocaleString("fr-FR")} appliquée pour retard de cotisation — Tour ${snapshot.activeTour} (${joursRetard} jour(s) de retard).`,
+          });
+        }
+      });
+    } catch {
+      // Erreur silencieuse par membre pour ne pas bloquer le chargement de la page
+      // (ex: conflit de contrainte si deux onglets chargent simultanément)
     }
-  }, {
-    timeout: 15000, // Augmenter le timeout à 15 secondes pour les cycles avec beaucoup de membres/tours
-  });
+  }
 }

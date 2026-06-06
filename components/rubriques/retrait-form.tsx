@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
+  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({
     montant: "",
@@ -47,6 +49,7 @@ export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
         rubriqueId: formData.rubriqueId === "GLOBAL" ? undefined : formData.rubriqueId,
       });
       onClose();
+      router.refresh();
     } catch (error) {
       console.error(error);
     } finally {

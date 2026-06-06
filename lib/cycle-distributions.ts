@@ -107,9 +107,16 @@ export async function getTresorerieCycle(cycleId: string) {
     debutTourActif: snapshot.activeTourStart,
     finTourActif: snapshot.activeTourEnd,
     cycleTermine: snapshot.isCompleted,
+    /** Pénalités effectivement collectées (argent reçu) */
     penalitesTour: snapshot.penaltiesCurrentTurn,
     caissePenalitesTour: snapshot.penaltyCashCurrentTurn,
+    /** Pénalités automatiques enregistrées mais pas encore collectées */
+    penalitesEnAttenteTour: snapshot.pendingPenaltiesCurrentTurn,
     penalitesCycle: snapshot.penaltiesCycle,
+    penalitesEnAttenteCycle: snapshot.pendingPenaltiesCycle,
     caissePenalitesCycle: snapshot.penaltyCashCycle,
+    allMembersPaid: snapshot.allCurrentTurnMembersPaid,
+    paidMembersCount: snapshot.paidMembersCurrentTurn,
+    totalMembersCount: snapshot.totalTours,
   };
 }

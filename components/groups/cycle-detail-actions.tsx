@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Eye,
   History,
+  ListChecks,
   Pencil,
   Receipt,
   Users,
@@ -14,7 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "participants" | "myPayments";
+type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments";
 
 type Panel = {
   key: PanelKey;
@@ -31,6 +32,7 @@ type CycleDetailActionsProps = {
   payment?: React.ReactNode;
   distribution?: React.ReactNode;
   history?: React.ReactNode;
+  allCotisations?: React.ReactNode;
   participants: React.ReactNode;
   myPayments?: React.ReactNode;
   closeAction?: React.ReactNode;
@@ -45,6 +47,7 @@ export function CycleDetailActions({
   payment,
   distribution,
   history,
+  allCotisations,
   participants,
   myPayments,
   closeAction,
@@ -58,10 +61,11 @@ export function CycleDetailActions({
       { key: "payment", label: "Cotisation", icon: Banknote, content: payment, adminOnly: true },
       { key: "distribution", label: "Verser pot", icon: Wallet, content: distribution, adminOnly: true },
       { key: "history", label: "Historique", icon: History, content: history, adminOnly: true },
+      { key: "allCotisations", label: "Versements membres", icon: ListChecks, content: allCotisations, adminOnly: true },
       { key: "participants", label: "Participants", icon: Users, content: participants },
       { key: "myPayments", label: "Mes versements", icon: Receipt, content: myPayments },
     ],
-    [distribution, edit, history, myPayments, overview, participants, payment],
+    [allCotisations, distribution, edit, history, myPayments, overview, participants, payment],
   );
 
   const visiblePanels = panels.filter((panel) => panel.content && (!panel.adminOnly || isAdmin));

@@ -182,11 +182,18 @@ export default async function GroupCycleDetailPage({
 
   const participantsForForm = cycle.participants.map((participant) => {
     const paymentsList = paymentsByMember.get(participant.id_membre_groupe) ?? [];
-    const paidForActiveTour = activeTour
-      ? paymentsList
-          .filter((payment) => payment.numero_tour === activeTour)
-          .reduce((acc, payment) => acc + payment.montant, 0)
-      : 0;
+    // Paiements réels (montant > 0) pour le tour actif
+    const activeTourPayments = activeTour
+      ? paymentsList.filter((payment) => payment.numero_tour === activeTour)
+      : [];
+    const paidForActiveTour = activeTourPayments
+      .filter((payment) => payment.montant > 0)
+      .reduce((acc, payment) => acc + payment.montant, 0);
+    // Pénalité automatique en attente (montant = 0) pour ce membre
+    const pendingPenaltyRecord = activeTourPayments.find(
+      (payment) => payment.montant === 0 && payment.penalite_appliquee && payment.montant_penalite !== null,
+    );
+    const pendingPenaltyForActiveTour = pendingPenaltyRecord?.montant_penalite ?? null;
 
     return {
       id_membre_groupe: participant.id_membre_groupe,
@@ -194,6 +201,7 @@ export default async function GroupCycleDetailPage({
       prenom: participant.membre_groupe.user.prenom,
       paidForActiveTour,
       remainingForActiveTour: Math.max(0, montantFixe - paidForActiveTour),
+      pendingPenaltyForActiveTour,
     };
   });
   const toursForForm = cycle.participants
@@ -400,18 +408,30 @@ export default async function GroupCycleDetailPage({
               <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours cumulés</p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs font-medium uppercase text-amber-700">Pénalités du tour</p>
+              <p className="text-xs font-medium uppercase text-amber-700">Caisse pénalités (tour)</p>
               <p className="mt-1 text-2xl font-bold text-amber-700">
                 {tresorerie.caissePenalitesTour.toLocaleString("fr-FR")} {membership.groupe.devise}
               </p>
-              <p className="text-xs text-amber-700/70">Caisse séparée du pot</p>
+              {tresorerie.penalitesEnAttenteTour > 0 ? (
+                <p className="text-xs text-rose-600">
+                  + {tresorerie.penalitesEnAttenteTour.toLocaleString("fr-FR")} en attente
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700/70">Argent effectivement collecté</p>
+              )}
             </div>
             <div className="rounded-lg border border-amber-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase text-amber-700">Pénalités cycle</p>
+              <p className="text-xs font-medium uppercase text-amber-700">Caisse pénalités (cycle)</p>
               <p className="mt-1 text-2xl font-bold text-amber-700">
                 {tresorerie.caissePenalitesCycle.toLocaleString("fr-FR")} {membership.groupe.devise}
               </p>
-              <p className="text-xs text-amber-700/70">Disponible après retraits</p>
+              {tresorerie.penalitesEnAttenteCycle > 0 ? (
+                <p className="text-xs text-rose-600">
+                  + {tresorerie.penalitesEnAttenteCycle.toLocaleString("fr-FR")} en attente de collecte
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700/70">Disponible après retraits</p>
+              )}
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
               <p className="text-xs font-medium uppercase text-gray-500">Progression</p>
@@ -525,6 +545,97 @@ export default async function GroupCycleDetailPage({
       />
     ) : null;
 
+  // Panneau admin : toutes les cotisations de tous les membres avec dates
+  const allCotisationsContent =
+    membership.role === "ADMIN" ? (
+      <div className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Toutes les cotisations du cycle, par membre et par tour, avec les dates de versement.
+        </p>
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Membre</TableHead>
+                <TableHead>Tour</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Cotisation</TableHead>
+                <TableHead className="hidden sm:table-cell">Pénalité</TableHead>
+                <TableHead>Statut</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    Aucune cotisation enregistrée pour ce cycle.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                payments
+                  .filter((p) => p.numero_tour !== null)
+                  .sort((a, b) => {
+                    if ((a.numero_tour ?? 0) !== (b.numero_tour ?? 0))
+                      return (a.numero_tour ?? 0) - (b.numero_tour ?? 0);
+                    return b.date_de_paiement.getTime() - a.date_de_paiement.getTime();
+                  })
+                  .map((payment) => {
+                    const isPenaltyOnly = Number(payment.montant) === 0 && payment.penalite_appliquee;
+                    const participant = cycle.participants.find(
+                      (par) => par.id_membre_groupe === payment.id_membre_groupe,
+                    );
+                    const memberName = participant
+                      ? `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`
+                      : payment.id_membre_groupe.slice(0, 8);
+                    return (
+                      <TableRow
+                        key={payment.id_cotisation}
+                        className={isPenaltyOnly ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
+                      >
+                        <TableCell className="font-medium">{memberName}</TableCell>
+                        <TableCell>Tour {payment.numero_tour}</TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {payment.date_de_paiement.toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className={isPenaltyOnly ? "text-muted-foreground italic" : "font-medium text-emerald-600"}>
+                          {isPenaltyOnly
+                            ? "—"
+                            : `${Number(payment.montant).toLocaleString("fr-FR")} ${devise}`}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-amber-600">
+                          {payment.montant_penalite
+                            ? `${Number(payment.montant_penalite).toLocaleString("fr-FR")} ${devise}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {isPenaltyOnly ? (
+                            <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100 text-[11px]">
+                              ⚠️ Pénalité auto
+                            </Badge>
+                          ) : payment.penalite_appliquee ? (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 text-[11px]">
+                              Retard
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[11px]">
+                              À l'heure
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    ) : null;
+
   const historyContent =
     membership.role === "ADMIN" ? (
       <DistributionHistory
@@ -554,8 +665,8 @@ export default async function GroupCycleDetailPage({
           <TableHeader>
             <TableRow>
               <TableHead>Tour</TableHead>
-              <TableHead>Date de paiement</TableHead>
-              <TableHead>Montant</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Cotisation</TableHead>
               <TableHead className="hidden sm:table-cell">Pénalité</TableHead>
               <TableHead>Statut</TableHead>
             </TableRow>
@@ -568,39 +679,51 @@ export default async function GroupCycleDetailPage({
                 </TableCell>
               </TableRow>
             ) : (
-              myMemberPayments.map((payment) => (
-                <TableRow key={payment.id_cotisation}>
-                  <TableCell className="font-medium">
-                    Tour {payment.numero_tour ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-700">
-                    {payment.date_de_paiement.toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="font-medium text-emerald-600">
-                    {payment.montant.toLocaleString("fr-FR")} {devise}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-amber-600">
-                    {payment.montant_penalite
-                      ? `${payment.montant_penalite.toLocaleString("fr-FR")} ${devise}`
-                      : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {payment.penalite_appliquee ? (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                        En retard
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                        À l'heure
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
+              myMemberPayments.map((payment) => {
+                const isPenaltyOnly = payment.montant === 0 && payment.penalite_appliquee;
+                return (
+                  <TableRow
+                    key={payment.id_cotisation}
+                    className={isPenaltyOnly ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
+                  >
+                    <TableCell className="font-medium">
+                      Tour {payment.numero_tour ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-700">
+                      {payment.date_de_paiement.toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className={isPenaltyOnly ? "text-muted-foreground italic" : "font-medium text-emerald-600"}>
+                      {isPenaltyOnly
+                        ? "Pas encore payé"
+                        : `${payment.montant.toLocaleString("fr-FR")} ${devise}`}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-amber-600 font-medium">
+                      {payment.montant_penalite
+                        ? `${payment.montant_penalite.toLocaleString("fr-FR")} ${devise}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {isPenaltyOnly ? (
+                        <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100">
+                          ⚠️ Pénalité due
+                        </Badge>
+                      ) : payment.penalite_appliquee ? (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                          En retard
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                          À l'heure
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -646,6 +769,7 @@ export default async function GroupCycleDetailPage({
         payment={paymentContent}
         distribution={distributionContent}
         history={historyContent}
+        allCotisations={allCotisationsContent}
         participants={
           <CycleParticipantsTable
             participants={participantsForTable}

@@ -6,6 +6,16 @@ import { Eye } from "lucide-react";
 import { toast } from "sonner";
 
 import { MemberRoleActions } from "@/components/groups/member-role-actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -40,6 +50,8 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
   const [selected, setSelected] = React.useState<MemberRow | null>(null);
   const [pendingRemoval, setPendingRemoval] = React.useState(false);
   const [pendingApproval, setPendingApproval] = React.useState(false);
+  const [confirmLeave, setConfirmLeave] = React.useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = React.useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
   const pageStart = (page - 1) * PAGE_SIZE;
@@ -49,7 +61,7 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const handleRemove = (memberId: string) => {
+  const doRemove = (memberId: string, isSelfLeave = false) => {
     if (pendingRemoval) return;
     setPendingRemoval(true);
 
@@ -66,11 +78,23 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
           return;
         }
 
-        toast.success("Membre retire du groupe.");
-        router.refresh();
+        if (isSelfLeave) {
+          toast.success("Vous avez quitté le groupe.");
+          router.push("/dashboard");
+        } else {
+          toast.success("Membre retiré du groupe.");
+          router.refresh();
+        }
       })
-      .finally(() => setPendingRemoval(false));
+      .finally(() => {
+        setPendingRemoval(false);
+        setConfirmLeave(false);
+        setConfirmRemoveId(null);
+      });
   };
+
+  const handleRemove = (memberId: string) => setConfirmRemoveId(memberId);
+  const handleLeave = () => setConfirmLeave(true);
 
   const handleApprove = (memberId: string) => {
     if (pendingApproval) return;
@@ -115,6 +139,7 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
             {pageItems.map((member) => {
               const isSelf = member.user.id_user === currentUserId;
               const canExclude = canManage && !isSelf && member.statut_adhesion !== "INACTIF";
+              const canLeave = canManage && isSelf && member.statut_adhesion === "ACTIF";
               const isPending = member.statut_adhesion === "EN_ATTENTE";
               return (
                 <tr key={member.id_membre_groupe} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
@@ -169,15 +194,29 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
                               Valider
                             </Button>
                           ) : null}
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            disabled={!canExclude || pendingRemoval}
-                            onClick={() => handleRemove(member.id_membre_groupe)}
-                          >
-                            Exclure
-                          </Button>
+                          {canLeave ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="border-red-300 text-red-600 hover:bg-red-50"
+                              disabled={pendingRemoval}
+                              onClick={handleLeave}
+                            >
+                              Quitter
+                            </Button>
+                          ) : null}
+                          {canExclude ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              disabled={pendingRemoval}
+                              onClick={() => handleRemove(member.id_membre_groupe)}
+                            >
+                              Exclure
+                            </Button>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -202,6 +241,64 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
           </Button>
         </div>
       </div>
+
+      {/* Confirmation — quitter le groupe (soi-même) */}
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quitter le groupe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de quitter ce groupe. Cette action vous retirera de la liste
+              des membres actifs. Assurez-vous qu'un autre administrateur prendra le relais.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pendingRemoval}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={pendingRemoval}
+              onClick={() => {
+                const self = members.find((m) => m.user.id_user === currentUserId);
+                if (self) doRemove(self.id_membre_groupe, true);
+              }}
+            >
+              Quitter le groupe
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation — exclure un autre membre */}
+      <AlertDialog
+        open={Boolean(confirmRemoveId)}
+        onOpenChange={(open: boolean) => !open && setConfirmRemoveId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer ce membre ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const target = members.find((m) => m.id_membre_groupe === confirmRemoveId);
+                return target
+                  ? `Vous êtes sur le point de retirer ${target.user.prenom} ${target.user.nom} du groupe.`
+                  : "Ce membre sera retiré du groupe.";
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pendingRemoval}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={pendingRemoval}
+              onClick={() => {
+                if (confirmRemoveId) doRemove(confirmRemoveId, false);
+              }}
+            >
+              Retirer du groupe
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => (!open ? setSelected(null) : null)}>
         <DialogContent className="fixed right-0 top-0 h-full w-full max-w-md translate-x-0 translate-y-0 rounded-none border-l bg-white p-6 sm:rounded-none">

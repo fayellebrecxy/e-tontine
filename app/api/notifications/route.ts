@@ -24,3 +24,18 @@ export async function GET() {
 
   return NextResponse.json(notifications);
 }
+
+export async function DELETE() {
+  const supabase = await createSupabaseServerClient();
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await prisma.notificationGroupe.deleteMany({
+    where: { id_user: user.id },
+  });
+
+  return NextResponse.json({ success: true });
+}

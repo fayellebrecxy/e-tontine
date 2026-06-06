@@ -372,6 +372,7 @@ export async function enregistrerPaiement(data: {
       id_membre_groupe: data.membreId,
       montant_paye: data.montant,
       note: data.note,
+      // date_paiement est enregistrée automatiquement via @default(now())
     },
     include: {
       membre: true,

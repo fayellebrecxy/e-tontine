@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { GenerateInvitationCard } from "@/components/groups/generate-invitation-card";
 import { MembersTable } from "@/components/groups/members-table";
 import { Button } from "@/components/ui/button";
 
@@ -65,8 +64,6 @@ export default async function GroupMembersPage({
           </Button>
         </div>
       </div>
-
-      {viewerMembership.role === "ADMIN" ? <GenerateInvitationCard groupId={groupId} /> : null}
 
       <MembersTable
         groupId={groupId}

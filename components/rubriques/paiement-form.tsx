@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -51,6 +52,7 @@ export function PaiementForm({
   members,
   onClose,
 }: Props) {
+  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [formData, setFormData] = React.useState({
@@ -86,6 +88,7 @@ export function PaiementForm({
         return;
       }
       onClose();
+      router.refresh();
     } catch (err) {
       console.error(err);
       setError("Une erreur est survenue lors de l'enregistrement.");
