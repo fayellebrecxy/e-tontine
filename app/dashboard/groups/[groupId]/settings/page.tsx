@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UpdateGroupForm } from "@/components/groups/update-group-form";
+import { ExportRapportIconButton } from "@/components/groups/export-rapport-button";
 
 export default async function GroupSettingsPage({
   params,
@@ -38,9 +39,24 @@ export default async function GroupSettingsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Parametres du groupe</h1>
-        <p className="text-muted-foreground">Admin uniquement.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Paramètres du groupe</h1>
+          <p className="text-muted-foreground">Admin uniquement.</p>
+        </div>
+        <ExportRapportIconButton groupId={groupId} groupeNom={groupe.nom} />
+      </div>
+
+      {/* Section rapport financier */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <h2 className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
+          Rapport financier du groupe
+        </h2>
+        <p className="mb-4 text-sm text-gray-500">
+          Exportez le bilan complet du groupe : cotisations, distributions, pénalités, amendes
+          réunions. Disponible en PDF (impression / partage) ou Excel (analyse de données).
+        </p>
+        <ExportRapportIconButton groupId={groupId} groupeNom={groupe.nom} />
       </div>
 
       <UpdateGroupForm

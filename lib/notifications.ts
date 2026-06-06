@@ -43,6 +43,35 @@ export async function createNotification({
   }
 }
 
+// Helper : notifier par id_membre_groupe (résout automatiquement l'id_user)
+export async function notifyMembre({
+  id_membre_groupe,
+  titre,
+  message,
+  type,
+}: {
+  id_membre_groupe: string;
+  titre?: string;
+  message: string;
+  type: NotificationType;
+}) {
+  try {
+    const membre = await prisma.membreGroupe.findUnique({
+      where: { id_membre_groupe },
+      select: { id_user: true, id_groupe: true },
+    });
+    if (!membre) return;
+    return await createNotification({
+      userId: membre.id_user,
+      groupId: membre.id_groupe,
+      message: titre ? `${titre} : ${message}` : message,
+      type,
+    });
+  } catch (error) {
+    console.error("Erreur notifyMembre:", error);
+  }
+}
+
 export async function notifyGroupAdmins({
   groupId,
   message,

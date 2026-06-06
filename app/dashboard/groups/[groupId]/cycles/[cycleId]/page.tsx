@@ -25,6 +25,12 @@ import { DeleteCycleButton } from "@/components/groups/delete-cycle-button";
 import { PenaltyWithdrawalForm } from "@/components/groups/penalty-withdrawal-form";
 import { RelancerCycleSheet } from "@/components/groups/relancer-cycle-sheet";
 import { calculerPotTour, getVersementsCycle, getTresorerieCycle } from "@/lib/cycle-distributions";
+import { OrdrePassage } from "@/components/groups/ordre-passage";
+import type { ParticipantOrdre } from "@/components/groups/ordre-passage";
+import { AdminOrdreEditor } from "@/components/groups/admin-ordre-editor";
+import type { ParticipantEditable } from "@/components/groups/admin-ordre-editor";
+import { EchangesAdmin } from "@/components/groups/echanges-admin";
+import type { EchangeAdmin } from "@/components/groups/echanges-admin";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -69,6 +75,8 @@ export default async function GroupCycleDetailPage({
   if (!membership) {
     redirect("/dashboard");
   }
+
+  const devise = membership.groupe.devise;
 
   const cycle = await prisma.cycleTontine.findFirst({
     where: { id_cycle: cycleId, id_groupe: groupId },
@@ -296,6 +304,51 @@ export default async function GroupCycleDetailPage({
     };
   });
 
+  // ─── Ordre de passage ───
+  const membresAvecVersement = new Set(versementsCycle.map((v) => v.id_beneficiaire));
+
+  const participantsOrdre: ParticipantOrdre[] = cycle.participants
+    .sort((a, b) => a.ordre - b.ordre)
+    .map((p) => ({
+      id_membre_groupe: p.id_membre_groupe,
+      ordre: p.ordre,
+      nom: `${p.membre_groupe.user.prenom} ${p.membre_groupe.user.nom}`,
+      potRecu: membresAvecVersement.has(p.id_membre_groupe),
+      estMoi: p.id_membre_groupe === membership.id_membre_groupe,
+    }));
+
+  const participantsEditables: ParticipantEditable[] = cycle.participants
+    .sort((a, b) => a.ordre - b.ordre)
+    .map((p) => ({
+      id_membre_groupe: p.id_membre_groupe,
+      ordre: p.ordre,
+      nom: `${p.membre_groupe.user.prenom} ${p.membre_groupe.user.nom}`,
+      verrouille: membresAvecVersement.has(p.id_membre_groupe),
+    }));
+
+  // ─── Échanges (admin) ───
+  const echangesDB = membership.role === "ADMIN"
+    ? await prisma.demandeEchange.findMany({
+        where: { id_cycle: cycleId },
+        orderBy: { date_demande: "desc" },
+        select: {
+          id_demande: true,
+          statut: true,
+          tour_demandeur: true,
+          tour_cible: true,
+          note: true,
+          date_demande: true,
+          demandeur: { select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } } },
+          cible: { select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } } },
+        },
+      })
+    : [];
+
+  const echangesAdmin: EchangeAdmin[] = echangesDB.map((e) => ({
+    ...e,
+    date_demande: e.date_demande.toISOString(),
+  }));
+
   const globalStats = {
     totalPenalties: participantsStats.reduce((acc, p) => acc + p.totalPenalties, 0),
     totalLateMembers: participantsStats.filter(p => p.isLate).length,
@@ -505,22 +558,56 @@ export default async function GroupCycleDetailPage({
 
   const editContent =
     membership.role === "ADMIN" ? (
-      <EditCycleForm
-        groupId={groupId}
-        cycleId={cycleId}
-        canManage={true}
-        initialCycle={{
-          nom_cycle: cycle.nom_cycle,
-          date_debut: cycle.date_debut.toISOString(),
-          date_fin: cycle.date_fin.toISOString(),
-          duree_tour_de_gain: cycle.duree_tour_de_gain,
-          montant_cotisation: Number(cycle.montant_cotisation),
-          penalites_activees: cycle.penalites_activees,
-          mode_penalite: cycle.mode_penalite,
-          valeur_penalite: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : null,
-        }}
-        initialOrder={cycle.participants.map((participant) => participant.id_membre_groupe)}
-      />
+      <div className="space-y-8">
+        <EditCycleForm
+          groupId={groupId}
+          cycleId={cycleId}
+          canManage={true}
+          initialCycle={{
+            nom_cycle: cycle.nom_cycle,
+            date_debut: cycle.date_debut.toISOString(),
+            date_fin: cycle.date_fin.toISOString(),
+            duree_tour_de_gain: cycle.duree_tour_de_gain,
+            montant_cotisation: Number(cycle.montant_cotisation),
+            penalites_activees: cycle.penalites_activees,
+            mode_penalite: cycle.mode_penalite,
+            valeur_penalite: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : null,
+          }}
+          initialOrder={cycle.participants.map((participant) => participant.id_membre_groupe)}
+        />
+
+        {/* ─── Réorganisation de l'ordre de passage ─── */}
+        {!cycleTermine && (
+          <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            <h3 className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
+              Ordre de passage
+            </h3>
+            <p className="mb-4 text-sm text-gray-500">
+              Modifiez l&apos;ordre des bénéficiaires. Les tours déjà distribués sont verrouillés.
+            </p>
+            <AdminOrdreEditor
+              groupId={groupId}
+              cycleId={cycleId}
+              participants={participantsEditables}
+            />
+          </div>
+        )}
+
+        {/* ─── Demandes d'échange ─── */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+          <h3 className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
+            Demandes d&apos;échange de place
+          </h3>
+          <p className="mb-4 text-sm text-gray-500">
+            Validez ou refusez les échanges de tour acceptés par les deux membres.
+          </p>
+          <EchangesAdmin
+            groupId={groupId}
+            cycleId={cycleId}
+            echanges={echangesAdmin}
+          />
+        </div>
+      </div>
     ) : null;
 
   const distributionContent =
@@ -653,8 +740,6 @@ export default async function GroupCycleDetailPage({
   // Paiements du membre connecté avec types convertis (Decimal → number déjà fait dans paymentsByMember)
   const myMemberPayments = paymentsByMember.get(membership.id_membre_groupe) ?? [];
 
-  const devise = membership.groupe.devise;
-
   const myPaymentsContent = (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
@@ -777,6 +862,22 @@ export default async function GroupCycleDetailPage({
           />
         }
         myPayments={myPaymentsContent}
+        ordrePassage={
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">
+              Ordre de passage des bénéficiaires dans ce cycle. {!cycleTermine && membership.role === "MEMBRE" && "Vous pouvez demander un échange de place avec un autre membre."}
+            </p>
+            <OrdrePassage
+              groupId={groupId}
+              cycleId={cycleId}
+              participants={participantsOrdre}
+              tourActuel={activeTour ?? totalTours + 1}
+              monId={membership.id_membre_groupe}
+              isAdmin={membership.role === "ADMIN"}
+              cycleTermine={cycleTermine}
+            />
+          </div>
+        }
         closeAction={
           !cycleTermine ? <CloseCycleButton groupId={groupId} cycleId={cycleId} /> : null
         }

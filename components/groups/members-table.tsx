@@ -6,6 +6,23 @@ import { Eye } from "lucide-react";
 import { toast } from "sonner";
 
 import { MemberRoleActions } from "@/components/groups/member-role-actions";
+import { DownloadReleveButton } from "@/components/groups/download-releve-button";
+
+const STATUT_VISUEL_CONFIG = {
+  VERT:   { dot: "bg-emerald-500", label: "À jour",      title: "Membre à jour — aucune pénalité ni amende en attente" },
+  ORANGE: { dot: "bg-amber-400",   label: "Attention",   title: "Quelques retards ou amendes en attente" },
+  ROUGE:  { dot: "bg-rose-500",    label: "En retard",   title: "Plusieurs retards ou amendes non réglées" },
+};
+
+function StatutBadge({ statut }: { statut: "VERT" | "ORANGE" | "ROUGE" }) {
+  const config = STATUT_VISUEL_CONFIG[statut] ?? STATUT_VISUEL_CONFIG.VERT;
+  return (
+    <span
+      title={config.title}
+      className={`inline-flex h-2.5 w-2.5 flex-shrink-0 rounded-full ${config.dot}`}
+    />
+  );
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,11 +158,15 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
               const canExclude = canManage && !isSelf && member.statut_adhesion !== "INACTIF";
               const canLeave = canManage && isSelf && member.statut_adhesion === "ACTIF";
               const isPending = member.statut_adhesion === "EN_ATTENTE";
+              const statutVisuel = member.statut_visuel as "VERT" | "ORANGE" | "ROUGE";
               return (
                 <tr key={member.id_membre_groupe} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">
-                      {member.user.prenom} {member.user.nom}
+                    <div className="flex items-center gap-2">
+                      <StatutBadge statut={statutVisuel} />
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                        {member.user.prenom} {member.user.nom}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{member.user.email}</td>
@@ -175,6 +196,15 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      {/* Relevé PDF : admin pour tous, membre uniquement pour lui-même */}
+                      {(canManage || isSelf) && (
+                        <DownloadReleveButton
+                          groupId={groupId}
+                          membreId={member.id_membre_groupe}
+                          membreNom={`${member.user.prenom} ${member.user.nom}`}
+                          variant="icon"
+                        />
+                      )}
                       {canManage ? (
                         <div className="flex flex-wrap items-center gap-2">
                           <MemberRoleActions

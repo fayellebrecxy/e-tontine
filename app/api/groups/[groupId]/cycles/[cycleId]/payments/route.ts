@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCyclePaymentSchema } from "@/lib/validations";
 import { createNotification } from "@/lib/notifications";
 import { getCycleTurnSnapshot, getMemberRemainingForTurn } from "@/lib/cycle-turns";
+import { majStatutMembre } from "@/lib/membre-statut";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -301,6 +302,9 @@ export async function POST(
         });
       }
     }
+
+    // Recalcul statut visuel du membre (en arrière-plan, non bloquant)
+    majStatutMembre(targetMemberId).catch(() => null);
 
     return NextResponse.json({ ok: true, payment }, { status: 201 });
   } catch {

@@ -152,8 +152,10 @@ model MembreGroupe {
   paiements_rubriques   PaiementRubrique[]
   retraits_valides      Retrait[]          @relation("retraits_valides")
   retraits_penalites    RetraitPenalite[]  @relation("retraits_penalites_valides")
-  presences_reunions    PresenceReunion[]
+  presences_reunions        PresenceReunion[]
   retraits_amendes_reunions RetraitAmendeReunion[] @relation("retraits_amendes_reunions")
+  echanges_demandes         DemandeEchange[]       @relation("echanges_demandes")
+  echanges_cibles           DemandeEchange[]       @relation("echanges_cibles")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -178,6 +180,7 @@ model CycleTontine {
   participants       CycleParticipant[]
   versements         Versement[]
   retraits_penalites RetraitPenalite[]
+  demandes_echange   DemandeEchange[]
   groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
 
   @@index([id_groupe])
@@ -434,6 +437,39 @@ enum StatutPresence {
   ABSENT
   EXCUSE
   EN_RETARD
+
+  @@schema("public")
+}
+
+model DemandeEchange {
+  id_demande     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_cycle       String        @db.Uuid
+  id_demandeur   String        @db.Uuid
+  id_cible       String        @db.Uuid
+  tour_demandeur Int
+  tour_cible     Int
+  statut         StatutEchange @default(EN_ATTENTE)
+  note           String?
+  date_demande   DateTime      @default(now())
+  date_reponse   DateTime?
+  cycle          CycleTontine  @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+  demandeur      MembreGroupe  @relation("echanges_demandes", fields: [id_demandeur], references: [id_membre_groupe], onDelete: Cascade)
+  cible          MembreGroupe  @relation("echanges_cibles", fields: [id_cible], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@index([id_cycle])
+  @@index([id_demandeur])
+  @@index([id_cible])
+  @@map("demandes_echange")
+  @@schema("public")
+}
+
+enum StatutEchange {
+  EN_ATTENTE
+  ACCEPTEE_MEMBRES
+  VALIDEE_ADMIN
+  REFUSEE_CIBLE
+  REFUSEE_ADMIN
+  ANNULEE
 
   @@schema("public")
 }

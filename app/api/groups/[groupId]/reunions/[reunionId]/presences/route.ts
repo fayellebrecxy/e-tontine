@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
+import { majStatutMembre } from "@/lib/membre-statut";
 
 const presenceEntrySchema = z.object({
   id_membre_groupe: z.string().uuid(),
@@ -118,6 +119,9 @@ export async function POST(
         type: "REUNION_PRESENCE",
         message,
       });
+
+      // Recalcul statut visuel (amendes potentiellement appliquées)
+      majStatutMembre(entry.id_membre_groupe).catch(() => null);
     }),
   );
 

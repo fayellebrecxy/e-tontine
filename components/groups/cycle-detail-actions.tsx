@@ -11,11 +11,12 @@ import {
   Receipt,
   Users,
   Wallet,
+  ArrowUpDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments";
+type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments" | "ordrePassage";
 
 type Panel = {
   key: PanelKey;
@@ -35,6 +36,7 @@ type CycleDetailActionsProps = {
   allCotisations?: React.ReactNode;
   participants: React.ReactNode;
   myPayments?: React.ReactNode;
+  ordrePassage?: React.ReactNode;
   closeAction?: React.ReactNode;
   deleteAction?: React.ReactNode;
   backAction: React.ReactNode;
@@ -50,6 +52,7 @@ export function CycleDetailActions({
   allCotisations,
   participants,
   myPayments,
+  ordrePassage,
   closeAction,
   deleteAction,
   backAction,
@@ -57,6 +60,7 @@ export function CycleDetailActions({
   const panels = React.useMemo<Panel[]>(
     () => [
       { key: "overview", label: "Aperçu", icon: Eye, content: overview },
+      { key: "ordrePassage", label: "Ordre de passage", icon: ArrowUpDown, content: ordrePassage },
       { key: "edit", label: "Modifier", icon: Pencil, content: edit, adminOnly: true },
       { key: "payment", label: "Cotisation", icon: Banknote, content: payment, adminOnly: true },
       { key: "distribution", label: "Verser pot", icon: Wallet, content: distribution, adminOnly: true },
@@ -65,7 +69,7 @@ export function CycleDetailActions({
       { key: "participants", label: "Participants", icon: Users, content: participants },
       { key: "myPayments", label: "Mes versements", icon: Receipt, content: myPayments },
     ],
-    [allCotisations, distribution, edit, history, myPayments, overview, participants, payment],
+    [allCotisations, distribution, edit, history, myPayments, ordrePassage, overview, participants, payment],
   );
 
   const visiblePanels = panels.filter((panel) => panel.content && (!panel.adminOnly || isAdmin));

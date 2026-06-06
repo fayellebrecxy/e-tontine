@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
+import { majStatutMembre } from "@/lib/membre-statut";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   computeStoredDateFin,
@@ -386,6 +387,9 @@ export async function enregistrerPaiement(data: {
     message: `Votre paiement de ${data.montant} XAF pour la rubrique ${paiement.rubrique.nom} a été enregistré.`,
     type: "PAIEMENT_RECU",
   });
+
+  // Recalcul statut visuel du membre
+  majStatutMembre(data.membreId).catch(() => null);
 
   revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
   return { ok: true as const, paiement };

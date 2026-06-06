@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { calculerStatutMembre } from "@/lib/membre-statut";
+import { DownloadReleveButton } from "@/components/groups/download-releve-button";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,26 @@ export default async function GroupOverviewPage({
     duree_tour_de_gain: number;
   };
 
+  // Statuts des membres (admin) + statut personnel (membre)
+  let statsStatuts = { vert: 0, orange: 0, rouge: 0 };
+  let monStatutDetail: { statut: string; raisons: string[] } | null = null;
+
+  if (membership.statut_adhesion === "ACTIF") {
+    if (membership.role === "ADMIN") {
+      const tousLesMembres = await prisma.membreGroupe.findMany({
+        where: { id_groupe: groupId, statut_adhesion: "ACTIF" },
+        select: { statut_visuel: true },
+      });
+      statsStatuts = {
+        vert:   tousLesMembres.filter((m) => m.statut_visuel === "VERT").length,
+        orange: tousLesMembres.filter((m) => m.statut_visuel === "ORANGE").length,
+        rouge:  tousLesMembres.filter((m) => m.statut_visuel === "ROUGE").length,
+      };
+    } else {
+      monStatutDetail = await calculerStatutMembre(membership.id_membre_groupe);
+    }
+  }
+
   let normalizedCycles: CyclePreview[] = [];
 
   if (membership.statut_adhesion === "ACTIF") {
@@ -86,24 +108,82 @@ export default async function GroupOverviewPage({
     }
   }
 
+  const STATUT_VISUEL_COLORS: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+    VERT:   { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500", label: "À jour" },
+    ORANGE: { bg: "bg-amber-50 border-amber-200",     text: "text-amber-700",   dot: "bg-amber-400",   label: "Attention" },
+    ROUGE:  { bg: "bg-rose-50 border-rose-200",       text: "text-rose-700",    dot: "bg-rose-500",    label: "En retard" },
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Fiche du groupe</h2>
-        <p className="text-sm text-muted-foreground">
-          Statut: {membership.statut_adhesion}
-        </p>
+      {/* ─── En-tête groupe ─── */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{membership.groupe.nom}</h2>
+            {membership.groupe.description && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{membership.groupe.description}</p>
+            )}
+            {membership.groupe.devise && (
+              <p className="mt-1 text-xs text-gray-400">Devise : {membership.groupe.devise}</p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+              membership.statut_adhesion === "ACTIF"
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-gray-100 text-gray-500"
+            }`}>
+              {membership.statut_adhesion}
+            </span>
+            {membership.statut_adhesion === "ACTIF" && (
+              <DownloadReleveButton
+                groupId={groupId}
+                membreId={membership.id_membre_groupe}
+                membreNom={`${membership.groupe.nom}`}
+                variant="full"
+              />
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">{membership.groupe.nom}</p>
-        {membership.groupe.description ? (
-          <p className="mt-2">{membership.groupe.description}</p>
-        ) : null}
-        {membership.groupe.devise ? (
-          <p className="mt-2 text-xs text-gray-500">Devise: {membership.groupe.devise}</p>
-        ) : null}
-      </div>
+      {/* ─── Mon statut (membre) ─── */}
+      {membership.role === "MEMBRE" && monStatutDetail && (
+        <div className={`rounded-2xl border p-4 ${STATUT_VISUEL_COLORS[monStatutDetail.statut]?.bg ?? "bg-gray-50 border-gray-200"}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`h-3 w-3 rounded-full flex-shrink-0 ${STATUT_VISUEL_COLORS[monStatutDetail.statut]?.dot ?? "bg-gray-400"}`} />
+            <p className={`text-sm font-semibold ${STATUT_VISUEL_COLORS[monStatutDetail.statut]?.text ?? "text-gray-700"}`}>
+              Mon statut : {STATUT_VISUEL_COLORS[monStatutDetail.statut]?.label ?? monStatutDetail.statut}
+            </p>
+          </div>
+          <ul className="space-y-0.5">
+            {monStatutDetail.raisons.map((r, i) => (
+              <li key={i} className={`text-xs ${STATUT_VISUEL_COLORS[monStatutDetail!.statut]?.text ?? "text-gray-500"}`}>
+                • {r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ─── Stats statuts membres (admin) ─── */}
+      {membership.role === "ADMIN" && membership.statut_adhesion === "ACTIF" && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
+            <span className="block text-2xl font-bold text-emerald-700">{statsStatuts.vert}</span>
+            <span className="text-xs text-emerald-600 font-medium">🟢 À jour</span>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
+            <span className="block text-2xl font-bold text-amber-700">{statsStatuts.orange}</span>
+            <span className="text-xs text-amber-600 font-medium">🟠 Attention</span>
+          </div>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
+            <span className="block text-2xl font-bold text-rose-700">{statsStatuts.rouge}</span>
+            <span className="text-xs text-rose-600 font-medium">🔴 En retard</span>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-center justify-between">

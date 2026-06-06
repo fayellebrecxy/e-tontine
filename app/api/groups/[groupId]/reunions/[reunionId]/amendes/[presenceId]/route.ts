@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
+import { majStatutMembre } from "@/lib/membre-statut";
 
 // Admin marque une amende comme payée
 export async function PATCH(
@@ -66,6 +67,9 @@ export async function PATCH(
     type: "AMENDE_PAYEE",
     message: `✅ Ton amende de ${montant} pour la réunion "${presence.reunion.titre}" du ${dateStr} a été enregistrée comme payée.`,
   });
+
+  // Recalcul statut visuel du membre
+  majStatutMembre(presence.id_membre_groupe).catch(() => null);
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }
