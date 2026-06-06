@@ -41,6 +41,8 @@ model Groupes {
   notifications        NotificationGroupe[]
   rubriques_cotisation RubriqueCotisation[]
   retraits             Retrait[]
+  reunions             Reunion[]
+  retraits_amendes_reunions RetraitAmendeReunion[]
 
   @@map("groupes")
   @@schema("public")
@@ -150,6 +152,8 @@ model MembreGroupe {
   paiements_rubriques   PaiementRubrique[]
   retraits_valides      Retrait[]          @relation("retraits_valides")
   retraits_penalites    RetraitPenalite[]  @relation("retraits_penalites_valides")
+  presences_reunions    PresenceReunion[]
+  retraits_amendes_reunions RetraitAmendeReunion[] @relation("retraits_amendes_reunions")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -278,6 +282,63 @@ model Versement {
   @@schema("public")
 }
 
+model RetraitAmendeReunion {
+  id_retrait_amende String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe         String       @db.Uuid
+  id_admin_valideur String       @db.Uuid
+  montant           Decimal      @db.Decimal(15, 2)
+  motif             String
+  date_retrait      DateTime     @default(now())
+
+  groupe            Groupes      @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  valideur          MembreGroupe @relation("retraits_amendes_reunions", fields: [id_admin_valideur], references: [id_membre_groupe])
+
+  @@index([id_groupe])
+  @@map("retraits_amendes_reunions")
+  @@schema("public")
+}
+
+model Reunion {
+  id_reunion      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe       String           @db.Uuid
+  titre           String
+  description     String?
+  date_reunion    DateTime
+  lieu            String?
+  type_reunion    TypeReunion      @default(ORDINAIRE)
+  statut          StatutReunion    @default(PLANIFIEE)
+  montant_amende  Decimal?         @db.Decimal(15, 2)
+  compte_rendu    String?
+  date_creation   DateTime         @default(now())
+  date_mise_a_jour DateTime        @updatedAt
+
+  groupe          Groupes          @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  presences       PresenceReunion[]
+
+  @@index([id_groupe])
+  @@map("reunions")
+  @@schema("public")
+}
+
+model PresenceReunion {
+  id_presence      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_reunion       String          @db.Uuid
+  id_membre_groupe String          @db.Uuid
+  statut_presence  StatutPresence  @default(ABSENT)
+  amende_payee     Boolean         @default(false)
+  note_absence     String?
+  date_enregistrement DateTime     @default(now())
+
+  reunion          Reunion         @relation(fields: [id_reunion], references: [id_reunion], onDelete: Cascade)
+  membre_groupe    MembreGroupe    @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@unique([id_reunion, id_membre_groupe])
+  @@index([id_reunion])
+  @@index([id_membre_groupe])
+  @@map("presences_reunion")
+  @@schema("public")
+}
+
 model NotificationGroupe {
   id_notification   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type_notification String
@@ -348,6 +409,31 @@ enum FrequenceRubrique {
   MENSUEL
   TRIMESTRIEL
   ANNUEL
+
+  @@schema("public")
+}
+
+enum TypeReunion {
+  ORDINAIRE
+  EXTRAORDINAIRE
+  URGENCE
+
+  @@schema("public")
+}
+
+enum StatutReunion {
+  PLANIFIEE
+  TERMINEE
+  ANNULEE
+
+  @@schema("public")
+}
+
+enum StatutPresence {
+  PRESENT
+  ABSENT
+  EXCUSE
+  EN_RETARD
 
   @@schema("public")
 }

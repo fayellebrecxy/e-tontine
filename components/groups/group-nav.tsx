@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Mail, Settings, Repeat, Landmark } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Settings, Repeat, Landmark, CalendarDays } from "lucide-react";
 
 const allItems = [
   { label: "Apercu", href: "", icon: LayoutDashboard, adminOnly: false },
@@ -10,6 +10,7 @@ const allItems = [
   { label: "Invitations", href: "invitations", icon: Mail, adminOnly: true },
   { label: "Rubriques", href: "rubriques", icon: Landmark, adminOnly: false },
   { label: "Cycles", href: "cycles", icon: Repeat, adminOnly: false },
+  { label: "Réunions", href: "reunions", icon: CalendarDays, adminOnly: false },
   { label: "Parametres", href: "settings", icon: Settings, adminOnly: true },
 ];
 

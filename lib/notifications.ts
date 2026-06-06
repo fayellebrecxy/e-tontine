@@ -7,7 +7,16 @@ export type NotificationType =
   | "NOUVEAU_MEMBRE"
   | "RAPPEL_ECHEANCE"
   | "NOUVEAU_CYCLE"
-  | "NOUVELLE_RUBRIQUE";
+  | "NOUVELLE_RUBRIQUE"
+  // Réunions
+  | "REUNION_PLANIFIEE"
+  | "REUNION_ANNULEE"
+  | "REUNION_PRESENCE"
+  | "REUNION_EXCUSE"
+  | "REUNION_COMPTE_RENDU"
+  | "RAPPEL_REUNION_J1"
+  | "RAPPEL_REUNION_J2"
+  | "AMENDE_PAYEE";
 
 export async function createNotification({
   userId,
