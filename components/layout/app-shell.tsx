@@ -10,19 +10,15 @@ import { useSidebar } from "@/components/layout/sidebar-context";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
 
-  const mainOffset = isMobileOpen
-    ? "ml-0"
-    : isExpanded || isHovered
-    ? "lg:ml-72"
-    : "lg:ml-20";
+  const mainOffset = isMobileOpen ? "ml-0" : isExpanded || isHovered ? "lg:ml-72" : "lg:ml-20";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#f6f4ef] text-slate-950 dark:bg-slate-950 dark:text-white">
       <AppSidebar />
       <Backdrop />
       <div className={`transition-all duration-200 ${mainOffset}`}>
         <AppHeader />
-        <main className="px-4 py-6 lg:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

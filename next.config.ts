@@ -21,6 +21,7 @@ const supabaseRemotePattern =
 const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const isDevelopment = process.env.NODE_ENV !== "production";
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+const isStandaloneBuild = process.env.NODE_ENV === "production" && !isVercel;
 const shouldEnforceHttpsHeaders =
   process.env.NODE_ENV === "production" &&
   typeof publicSiteUrl === "string" &&
@@ -29,10 +30,20 @@ const shouldEnforceHttpsHeaders =
 const nextConfig: NextConfig = {
   /* config options here */
   // Keep standalone only for Docker/VPS self-hosting. Vercel handles output internally.
-  output: isVercel ? undefined : "standalone",
+  output: isStandaloneBuild ? "standalone" : undefined,
   outputFileTracingRoot: process.cwd(),
   compress: true,
   poweredByHeader: false,
+  webpack(config, { dev, isServer }) {
+    if (dev && isServer) {
+      config.cache = false;
+      if (config.optimization) {
+        config.optimization.splitChunks = false;
+      }
+    }
+
+    return config;
+  },
   async headers() {
     const connectSrc = ["'self'", "https:", "wss:"];
     if (isDevelopment) {

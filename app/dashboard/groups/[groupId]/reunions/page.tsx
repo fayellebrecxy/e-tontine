@@ -7,20 +7,19 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { CreateReunionSheet } from "@/components/reunions/create-reunion-sheet";
 import { ReunionCard } from "@/components/reunions/reunion-card";
+import { ReunionsHistory } from "@/components/reunions/reunions-history";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReunionsPage({
-  params,
-}: {
-  params: Promise<{ groupId: string }>;
-}) {
+export default async function ReunionsPage({ params }: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await params;
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/auth/login");
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
   const membership = await prisma.membreGroupe.findFirst({
@@ -65,7 +64,9 @@ export default async function ReunionsPage({
   });
 
   const now = new Date();
-  const upcoming = reunions.filter((r) => new Date(r.date_reunion) >= now && r.statut === "PLANIFIEE");
+  const upcoming = reunions.filter(
+    (r) => new Date(r.date_reunion) >= now && r.statut === "PLANIFIEE",
+  );
   const past = reunions.filter((r) => new Date(r.date_reunion) < now || r.statut !== "PLANIFIEE");
 
   // Stats amendes (membres seulement)
@@ -90,7 +91,12 @@ export default async function ReunionsPage({
         </div>
         {isAdmin && (
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm" className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-50"
+            >
               <Link href={`/dashboard/groups/${groupId}/reunions/caisse`}>
                 <Wallet className="h-4 w-4" />
                 Caisse amendes
@@ -104,8 +110,12 @@ export default async function ReunionsPage({
       {/* Alerte amendes impayées (membres) */}
       {!isAdmin && myPendingAmendes.length > 0 && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-          <p className="font-medium">⚠️ Vous avez {myPendingAmendes.length} amende(s) de réunion non payée(s).</p>
-          <p className="text-xs mt-1 text-rose-600">Contactez votre administrateur pour régulariser.</p>
+          <p className="font-medium">
+            ⚠️ Vous avez {myPendingAmendes.length} amende(s) de réunion non payée(s).
+          </p>
+          <p className="mt-1 text-xs text-rose-600">
+            Contactez votre administrateur pour régulariser.
+          </p>
         </div>
       )}
 
@@ -133,35 +143,24 @@ export default async function ReunionsPage({
       )}
 
       {/* Réunions passées */}
-      {past.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            🗓 Réunions passées ({past.length})
-          </h2>
-          <div className="space-y-3">
-            {past.map((reunion) => (
-              <ReunionCard
-                key={reunion.id_reunion}
-                reunion={{
-                  ...reunion,
-                  montant_amende: reunion.montant_amende ? Number(reunion.montant_amende) : null,
-                }}
-                groupId={groupId}
-                isAdmin={isAdmin}
-                devise={devise}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <ReunionsHistory
+        groupId={groupId}
+        reunions={past.map((reunion) => ({
+          ...reunion,
+          date_reunion: reunion.date_reunion.toISOString(),
+          montant_amende: reunion.montant_amende ? Number(reunion.montant_amende) : null,
+        }))}
+        isAdmin={isAdmin}
+        devise={devise}
+      />
 
       {/* Aucune réunion */}
       {reunions.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-300 py-16 text-center">
-          <p className="text-2xl mb-2">📅</p>
+          <p className="mb-2 text-2xl">📅</p>
           <p className="font-medium text-gray-700">Aucune réunion planifiée</p>
           {isAdmin && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               Cliquez sur "Planifier une réunion" pour commencer.
             </p>
           )}

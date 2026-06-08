@@ -52,22 +52,36 @@ export default async function GroupOverviewPage({
     duree_tour_de_gain: number;
   };
 
-  // Statuts des membres (admin) + statut personnel (membre)
+  // Statuts des membres — recalculés en temps réel à chaque chargement
   let statsStatuts = { vert: 0, orange: 0, rouge: 0 };
   let monStatutDetail: { statut: string; raisons: string[] } | null = null;
 
   if (membership.statut_adhesion === "ACTIF") {
     if (membership.role === "ADMIN") {
+      // Recalculer tous les statuts en temps réel puis mettre à jour la base
       const tousLesMembres = await prisma.membreGroupe.findMany({
         where: { id_groupe: groupId, statut_adhesion: "ACTIF" },
-        select: { statut_visuel: true },
+        select: { id_membre_groupe: true },
       });
+      // Calcul en parallèle (recalcul frais, pas la valeur stockée)
+      const statuts = await Promise.all(
+        tousLesMembres.map(async (m) => {
+          const detail = await calculerStatutMembre(m.id_membre_groupe);
+          // Mise à jour silencieuse en base pour les composants qui lisent statut_visuel
+          await prisma.membreGroupe.update({
+            where: { id_membre_groupe: m.id_membre_groupe },
+            data: { statut_visuel: detail.statut },
+          }).catch(() => null);
+          return detail.statut;
+        }),
+      );
       statsStatuts = {
-        vert:   tousLesMembres.filter((m) => m.statut_visuel === "VERT").length,
-        orange: tousLesMembres.filter((m) => m.statut_visuel === "ORANGE").length,
-        rouge:  tousLesMembres.filter((m) => m.statut_visuel === "ROUGE").length,
+        vert:   statuts.filter((s) => s === "VERT").length,
+        orange: 0,
+        rouge:  statuts.filter((s) => s === "ROUGE").length,
       };
     } else {
+      // Recalcul frais pour le membre connecté
       monStatutDetail = await calculerStatutMembre(membership.id_membre_groupe);
     }
   }
@@ -110,7 +124,6 @@ export default async function GroupOverviewPage({
 
   const STATUT_VISUEL_COLORS: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     VERT:   { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500", label: "À jour" },
-    ORANGE: { bg: "bg-amber-50 border-amber-200",     text: "text-amber-700",   dot: "bg-amber-400",   label: "Attention" },
     ROUGE:  { bg: "bg-rose-50 border-rose-200",       text: "text-rose-700",    dot: "bg-rose-500",    label: "En retard" },
   };
 
@@ -169,18 +182,14 @@ export default async function GroupOverviewPage({
 
       {/* ─── Stats statuts membres (admin) ─── */}
       {membership.role === "ADMIN" && membership.statut_adhesion === "ACTIF" && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
-            <span className="block text-2xl font-bold text-emerald-700">{statsStatuts.vert}</span>
-            <span className="text-xs text-emerald-600 font-medium">🟢 À jour</span>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+            <span className="block text-3xl font-bold text-emerald-700">{statsStatuts.vert}</span>
+            <span className="text-sm text-emerald-600 font-medium">🟢 À jour</span>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
-            <span className="block text-2xl font-bold text-amber-700">{statsStatuts.orange}</span>
-            <span className="text-xs text-amber-600 font-medium">🟠 Attention</span>
-          </div>
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
-            <span className="block text-2xl font-bold text-rose-700">{statsStatuts.rouge}</span>
-            <span className="text-xs text-rose-600 font-medium">🔴 En retard</span>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-center">
+            <span className="block text-3xl font-bold text-rose-700">{statsStatuts.rouge}</span>
+            <span className="text-sm text-rose-600 font-medium">🔴 En retard</span>
           </div>
         </div>
       )}

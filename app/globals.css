@@ -35,19 +35,12 @@
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -104,11 +97,11 @@
   }
 
   .menu-item-active {
-    @apply bg-brand-50 text-brand-600;
+    @apply bg-white text-slate-950 shadow-sm;
   }
 
   .menu-item-inactive {
-    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800;
+    @apply text-slate-300 hover:bg-white/10 hover:text-white;
   }
 
   .menu-dropdown-item {
@@ -116,10 +109,10 @@
   }
 
   .menu-dropdown-item-active {
-    @apply bg-brand-50 text-brand-600;
+    @apply bg-white text-slate-950 shadow-sm;
   }
 
   .menu-dropdown-item-inactive {
-    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800;
+    @apply text-slate-300 hover:bg-white/10 hover:text-white;
   }
 }

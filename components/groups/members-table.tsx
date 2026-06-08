@@ -9,13 +9,15 @@ import { MemberRoleActions } from "@/components/groups/member-role-actions";
 import { DownloadReleveButton } from "@/components/groups/download-releve-button";
 
 const STATUT_VISUEL_CONFIG = {
-  VERT:   { dot: "bg-emerald-500", label: "À jour",      title: "Membre à jour — aucune pénalité ni amende en attente" },
-  ORANGE: { dot: "bg-amber-400",   label: "Attention",   title: "Quelques retards ou amendes en attente" },
-  ROUGE:  { dot: "bg-rose-500",    label: "En retard",   title: "Plusieurs retards ou amendes non réglées" },
+  VERT:   { dot: "bg-emerald-500", label: "À jour",    title: "Membre à jour — aucune pénalité ni amende en attente" },
+  ORANGE: { dot: "bg-rose-500",    label: "En retard", title: "Membre en retard" }, // ORANGE traité comme ROUGE
+  ROUGE:  { dot: "bg-rose-500",    label: "En retard", title: "Membre en retard sur ses paiements" },
 };
 
 function StatutBadge({ statut }: { statut: "VERT" | "ORANGE" | "ROUGE" }) {
-  const config = STATUT_VISUEL_CONFIG[statut] ?? STATUT_VISUEL_CONFIG.VERT;
+  // ORANGE est traité comme ROUGE (2 statuts seulement)
+  const key = statut === "ORANGE" ? "ROUGE" : statut;
+  const config = STATUT_VISUEL_CONFIG[key] ?? STATUT_VISUEL_CONFIG.VERT;
   return (
     <span
       title={config.title}
@@ -59,24 +61,13 @@ type MembersTableProps = {
   members: MemberRow[];
 };
 
-const PAGE_SIZE = 10;
-
 export function MembersTable({ groupId, currentUserId, canManage, members }: MembersTableProps) {
   const router = useRouter();
-  const [page, setPage] = React.useState(1);
   const [selected, setSelected] = React.useState<MemberRow | null>(null);
   const [pendingRemoval, setPendingRemoval] = React.useState(false);
   const [pendingApproval, setPendingApproval] = React.useState(false);
   const [confirmLeave, setConfirmLeave] = React.useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = React.useState<string | null>(null);
-
-  const totalPages = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
-  const pageStart = (page - 1) * PAGE_SIZE;
-  const pageItems = members.slice(pageStart, pageStart + PAGE_SIZE);
-
-  React.useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
 
   const doRemove = (memberId: string, isSelfLeave = false) => {
     if (pendingRemoval) return;
@@ -153,12 +144,12 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {pageItems.map((member) => {
+            {members.map((member) => {
               const isSelf = member.user.id_user === currentUserId;
               const canExclude = canManage && !isSelf && member.statut_adhesion !== "INACTIF";
               const canLeave = canManage && isSelf && member.statut_adhesion === "ACTIF";
               const isPending = member.statut_adhesion === "EN_ATTENTE";
-              const statutVisuel = member.statut_visuel as "VERT" | "ORANGE" | "ROUGE";
+              const statutVisuel = (member.statut_visuel === "ORANGE" ? "ROUGE" : member.statut_visuel) as "VERT" | "ROUGE";
               return (
                 <tr key={member.id_membre_groupe} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                   <td className="px-4 py-3">
@@ -256,20 +247,6 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
             })}
           </tbody>
         </table>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">
-          Page {page} sur {totalPages}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Precedent
-          </Button>
-          <Button type="button" size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            Suivant
-          </Button>
-        </div>
       </div>
 
       {/* Confirmation — quitter le groupe (soi-même) */}

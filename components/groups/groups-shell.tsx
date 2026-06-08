@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Home, Plus, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,10 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     const load = async () => {
       const res = await fetch("/api/groups?include_inactive=1", { cache: "no-store" });
-      const body = (await res.json().catch(() => null)) as
-        | null
-        | { ok?: boolean; groups?: GroupApiItem[] };
+      const body = (await res.json().catch(() => null)) as null | {
+        ok?: boolean;
+        groups?: GroupApiItem[];
+      };
       if (!isMounted) return;
       if (res.ok && body?.ok && body.groups) {
         setGroups(body.groups.map((item) => item.groupe));
@@ -45,62 +46,74 @@ export function GroupsShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const filteredGroups = groups.filter((g) =>
-    g.nom.toLowerCase().includes(search.toLowerCase()) ||
-    (g.description ?? "").toLowerCase().includes(search.toLowerCase()),
+  const filteredGroups = groups.filter(
+    (g) =>
+      g.nom.toLowerCase().includes(search.toLowerCase()) ||
+      (g.description ?? "").toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
-    <div className="flex gap-6">
-      <aside className="hidden w-72 shrink-0 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 lg:block">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Groupes</h2>
-          <Button asChild size="icon" variant="ghost">
-            <Link href="/dashboard/groups/new" aria-label="Creer un groupe">
-              <Plus className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button asChild variant="outline">
+          <Link href="/dashboard">
+            <Home className="h-4 w-4" />
+            Accueil
+          </Link>
+        </Button>
+      </div>
 
-        <div className="relative mt-3">
-          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un groupe…"
-            className="pl-7 h-8 text-xs"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="mt-3 space-y-1">
-          {loading ? (
-            <p className="text-xs text-gray-500">Chargement...</p>
-          ) : filteredGroups.length ? (
-            filteredGroups.map((group) => (
-              <Link
-                key={group.id_groupe}
-                href={`/dashboard/groups/${group.id_groupe}`}
-                className={`block rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  pathname.includes(group.id_groupe)
-                    ? "bg-brand-50 text-brand-600"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                }`}
-              >
-                <p className="truncate">{group.nom}</p>
-                {group.description ? (
-                  <p className="truncate text-xs text-gray-400">{group.description}</p>
-                ) : null}
+      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5 lg:block">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-950 dark:text-white">Groupes</h2>
+            <Button asChild size="icon" variant="ghost">
+              <Link href="/dashboard/groups/new" aria-label="Créer un groupe">
+                <Plus className="h-4 w-4" />
               </Link>
-            ))
-          ) : (
-            <p className="text-xs text-gray-500">
-              {search ? "Aucun groupe trouvé." : "Aucun groupe."}
-            </p>
-          )}
-        </div>
-      </aside>
+            </Button>
+          </div>
 
-      <div className="min-w-0 flex-1">{children}</div>
+          <div className="relative mt-3">
+            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un groupe…"
+              className="h-8 pl-7 text-xs"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-3 space-y-1">
+            {loading ? (
+              <p className="text-xs text-gray-500">Chargement...</p>
+            ) : filteredGroups.length ? (
+              filteredGroups.map((group) => (
+                <Link
+                  key={group.id_groupe}
+                  href={`/dashboard/groups/${group.id_groupe}`}
+                  className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
+                    pathname.includes(group.id_groupe)
+                      ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  }`}
+                >
+                  <p className="truncate">{group.nom}</p>
+                  {group.description && !pathname.includes(group.id_groupe) ? (
+                    <p className="truncate text-xs text-slate-400">{group.description}</p>
+                  ) : null}
+                </Link>
+              ))
+            ) : (
+              <p className="text-xs text-gray-500">
+                {search ? "Aucun groupe trouvé." : "Aucun groupe."}
+              </p>
+            )}
+          </div>
+        </aside>
+
+        <div className="min-w-0">{children}</div>
+      </div>
     </div>
   );
 }

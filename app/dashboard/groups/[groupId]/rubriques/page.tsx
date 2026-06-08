@@ -91,11 +91,14 @@ export default async function RubriquesPage({
     },
   });
 
+  const plainRubriques = JSON.parse(JSON.stringify(rubriques));
+  const plainMembers = JSON.parse(JSON.stringify(members));
+
   return (
     <RubriquesClient
       groupId={groupId}
-      rubriques={rubriques}
-      members={members}
+      rubriques={plainRubriques}
+      members={plainMembers}
       isAdmin={isAdmin}
       adminId={membership.id_membre_groupe}
     />

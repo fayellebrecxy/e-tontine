@@ -34,7 +34,7 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = await res.json() as { error?: string };
+    const data = (await res.json()) as { error?: string };
     if (!res.ok) throw new Error(data.error ?? "Erreur serveur");
   };
 
@@ -56,7 +56,7 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
   // Tirage au sort (seulement les non-verrouillés)
   const tirage = () => {
     const verrous = liste.filter((p) => p.verrouille);
-    let libres = liste.filter((p) => !p.verrouille);
+    const libres = liste.filter((p) => !p.verrouille);
     // Fisher-Yates
     for (let i = libres.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -126,7 +126,7 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
             size="sm"
             onClick={sauvegarder}
             disabled={!!loading}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
           >
             {loading === "save" ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -150,7 +150,9 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
           </Button>
         )}
         {!modifie && (
-          <span className="text-xs text-gray-400">Utilisez les flèches ou le tirage au sort pour modifier l&apos;ordre.</span>
+          <span className="text-xs text-gray-400">
+            Utilisez les flèches ou le tirage au sort pour modifier l&apos;ordre.
+          </span>
         )}
       </div>
 
@@ -159,21 +161,26 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             <tr>
-              <th className="px-4 py-3 text-left w-16">Tour</th>
+              <th className="w-16 px-4 py-3 text-left">Tour</th>
               <th className="px-4 py-3 text-left">Bénéficiaire</th>
               <th className="px-4 py-3 text-right">Déplacer</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {liste.map((p, idx) => (
-              <tr key={p.id_membre_groupe} className={`${p.verrouille ? "bg-gray-50 opacity-70 dark:bg-gray-800/40" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}>
+              <tr
+                key={p.id_membre_groupe}
+                className={`${p.verrouille ? "bg-gray-50 opacity-70 dark:bg-gray-800/40" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+              >
                 <td className="px-4 py-2.5 font-bold text-gray-700 dark:text-gray-300">
                   #{p.ordre}
                 </td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
-                    {p.verrouille && <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />}
-                    <span className={`font-medium ${p.verrouille ? "text-gray-400" : "text-gray-900 dark:text-gray-100"}`}>
+                    {p.verrouille && <Lock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />}
+                    <span
+                      className={`font-medium ${p.verrouille ? "text-gray-400" : "text-gray-900 dark:text-gray-100"}`}
+                    >
                       {p.nom}
                     </span>
                     {p.verrouille && (
@@ -202,7 +209,9 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        disabled={idx === liste.length - 1 || liste[idx + 1].verrouille || !!loading}
+                        disabled={
+                          idx === liste.length - 1 || liste[idx + 1].verrouille || !!loading
+                        }
                         onClick={() => deplacer(idx, "bas")}
                         title="Descendre"
                       >
@@ -218,7 +227,7 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
       </div>
 
       {liste.some((p) => p.verrouille) && (
-        <p className="text-xs text-gray-400 flex items-center gap-1">
+        <p className="flex items-center gap-1 text-xs text-gray-400">
           <Lock className="h-3 w-3" />
           Les tours marqués « Pot versé » sont verrouillés et ne peuvent pas être déplacés.
         </p>

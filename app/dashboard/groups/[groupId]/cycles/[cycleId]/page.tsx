@@ -5,15 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
 import { EditCycleForm } from "@/components/groups/edit-cycle-form";
@@ -21,6 +12,7 @@ import { DistributionForm } from "@/components/groups/distribution-form";
 import { DistributionHistory } from "@/components/groups/distribution-history";
 import { CycleDetailActions } from "@/components/groups/cycle-detail-actions";
 import { CycleParticipantsTable } from "@/components/groups/cycle-participants-table";
+import { CyclePaymentsHistory } from "@/components/groups/cycle-payments-history";
 import { DeleteCycleButton } from "@/components/groups/delete-cycle-button";
 import { PenaltyWithdrawalForm } from "@/components/groups/penalty-withdrawal-form";
 import { RelancerCycleSheet } from "@/components/groups/relancer-cycle-sheet";
@@ -165,12 +157,10 @@ export default async function GroupCycleDetailPage({
     paymentsByMember.set(payment.id_membre_groupe, entry);
   });
 
-  const [versementsCycle, tresorerie] = membership.role === "ADMIN"
-    ? await Promise.all([
-        getVersementsCycle(cycleId),
-        getTresorerieCycle(cycleId),
-      ])
-    : [[], await getTresorerieCycle(cycleId)];
+  const [versementsCycle, tresorerie] =
+    membership.role === "ADMIN"
+      ? await Promise.all([getVersementsCycle(cycleId), getTresorerieCycle(cycleId)])
+      : [[], await getTresorerieCycle(cycleId)];
 
   const montantFixe = Number(cycle.montant_cotisation);
   const now = new Date();
@@ -179,7 +169,7 @@ export default async function GroupCycleDetailPage({
   const currentIndex = activeTour ? activeTour - 1 : totalTours;
   const cycleTermine = tresorerie.cycleTermine;
   const currentParticipant = activeTour
-    ? cycle.participants.find((participant) => participant.ordre === activeTour) ?? null
+    ? (cycle.participants.find((participant) => participant.ordre === activeTour) ?? null)
     : null;
   const currentName = currentParticipant
     ? `${currentParticipant.membre_groupe.user.prenom} ${currentParticipant.membre_groupe.user.nom}`
@@ -199,7 +189,8 @@ export default async function GroupCycleDetailPage({
       .reduce((acc, payment) => acc + payment.montant, 0);
     // Pénalité automatique en attente (montant = 0) pour ce membre
     const pendingPenaltyRecord = activeTourPayments.find(
-      (payment) => payment.montant === 0 && payment.penalite_appliquee && payment.montant_penalite !== null,
+      (payment) =>
+        payment.montant === 0 && payment.penalite_appliquee && payment.montant_penalite !== null,
     );
     const pendingPenaltyForActiveTour = pendingPenaltyRecord?.montant_penalite ?? null;
 
@@ -222,7 +213,7 @@ export default async function GroupCycleDetailPage({
   const participantsStats = cycle.participants.map((participant) => {
     const member = participant.membre_groupe;
     const paymentsList = paymentsByMember.get(member.id_membre_groupe) ?? [];
-    
+
     // Calcul par tour pour une précision maximale
     const tourDetails = Array.from({ length: totalTours }, (_, i) => {
       const tourNum = i + 1;
@@ -230,13 +221,15 @@ export default async function GroupCycleDetailPage({
         tourNum === activeTour && tresorerie.finTourActif
           ? tresorerie.finTourActif
           : addDays(cycle.date_debut, cycle.duree_tour_de_gain * tourNum);
-      const tourPayments = paymentsList.filter(p => p.numero_tour === tourNum);
+      const tourPayments = paymentsList.filter((p) => p.numero_tour === tourNum);
       const paidAmount = tourPayments.reduce((acc, p) => acc + p.montant, 0);
       const penaltiesAmount = tourPayments.reduce((acc, p) => acc + (p.montant_penalite || 0), 0);
-      
+
       const isOverdue = tourNum === activeTour && now > dueDate && paidAmount < montantFixe;
-      const daysLate = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-      
+      const daysLate = isOverdue
+        ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
       return {
         tourNum,
         dueDate,
@@ -244,16 +237,16 @@ export default async function GroupCycleDetailPage({
         penaltiesAmount,
         isOverdue,
         daysLate,
-        isComplete: paidAmount >= montantFixe
+        isComplete: paidAmount >= montantFixe,
       };
     });
 
     const totalPaid = tourDetails.reduce((acc, t) => acc + t.paidAmount, 0);
     const totalPenalties = tourDetails.reduce((acc, t) => acc + t.penaltiesAmount, 0);
     const totalDaysLate = tourDetails.reduce((acc, t) => acc + t.daysLate, 0);
-    const hasActivePenalty = tourDetails.some(t => t.penaltiesAmount > 0);
-    const isLate = tourDetails.some(t => t.isOverdue);
-    const isIncomplete = tourDetails.some(t => t.tourNum <= currentIndex + 1 && !t.isComplete);
+    const hasActivePenalty = tourDetails.some((t) => t.penaltiesAmount > 0);
+    const isLate = tourDetails.some((t) => t.isOverdue);
+    const isIncomplete = tourDetails.some((t) => t.tourNum <= currentIndex + 1 && !t.isComplete);
 
     return {
       participant,
@@ -263,37 +256,38 @@ export default async function GroupCycleDetailPage({
       hasActivePenalty,
       isLate,
       isIncomplete,
-      tourDetails
+      tourDetails,
     };
   });
 
   // Calculer le pot collecté par tour pour le formulaire de distribution
-  const potsParTour = membership.role === "ADMIN"
-    ? await Promise.all(
-        cycle.participants.map((p) =>
-          calculerPotTour(cycleId, p.ordre).then((pot) => ({ numero: p.ordre, pot }))
-        ),
-      )
-    : [];
+  const potsParTour =
+    membership.role === "ADMIN"
+      ? await Promise.all(
+          cycle.participants.map((p) =>
+            calculerPotTour(cycleId, p.ordre).then((pot) => ({ numero: p.ordre, pot })),
+          ),
+        )
+      : [];
 
   const versementsParTour = new Map(versementsCycle.map((v) => [v.numero_tour, v]));
 
   const toursForDistribution = cycle.participants
     .filter((participant) => participant.ordre === activeTour)
     .map((participant) => {
-    const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
-    return {
-      numero: participant.ordre,
-      beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
-      idBeneficiaire: participant.id_membre_groupe,
-      dateEcheance: addDays(
-        cycle.date_debut,
-        cycle.duree_tour_de_gain * participant.ordre,
-      ).toLocaleDateString("fr-FR"),
-      potCollecte: potInfo?.pot.potTotal ?? 0,
-      dejaVerse: versementsParTour.has(participant.ordre),
-    };
-  });
+      const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
+      return {
+        numero: participant.ordre,
+        beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
+        idBeneficiaire: participant.id_membre_groupe,
+        dateEcheance: addDays(
+          cycle.date_debut,
+          cycle.duree_tour_de_gain * participant.ordre,
+        ).toLocaleDateString("fr-FR"),
+        potCollecte: potInfo?.pot.potTotal ?? 0,
+        dejaVerse: versementsParTour.has(participant.ordre),
+      };
+    });
 
   const toursForHistory = cycle.participants.map((participant) => {
     const potInfo = potsParTour.find((p) => p.numero === participant.ordre);
@@ -305,7 +299,7 @@ export default async function GroupCycleDetailPage({
   });
 
   // ─── Ordre de passage ───
-  const membresAvecVersement = new Set(versementsCycle.map((v) => v.id_beneficiaire));
+  const membresAvecVersement = new Set(versementsCycle.map((v) => v.beneficiaire.id_membre_groupe));
 
   const participantsOrdre: ParticipantOrdre[] = cycle.participants
     .sort((a, b) => a.ordre - b.ordre)
@@ -327,22 +321,27 @@ export default async function GroupCycleDetailPage({
     }));
 
   // ─── Échanges (admin) ───
-  const echangesDB = membership.role === "ADMIN"
-    ? await prisma.demandeEchange.findMany({
-        where: { id_cycle: cycleId },
-        orderBy: { date_demande: "desc" },
-        select: {
-          id_demande: true,
-          statut: true,
-          tour_demandeur: true,
-          tour_cible: true,
-          note: true,
-          date_demande: true,
-          demandeur: { select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } } },
-          cible: { select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } } },
-        },
-      })
-    : [];
+  const echangesDB =
+    membership.role === "ADMIN"
+      ? await prisma.demandeEchange.findMany({
+          where: { id_cycle: cycleId },
+          orderBy: { date_demande: "desc" },
+          select: {
+            id_demande: true,
+            statut: true,
+            tour_demandeur: true,
+            tour_cible: true,
+            note: true,
+            date_demande: true,
+            demandeur: {
+              select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } },
+            },
+            cible: {
+              select: { id_membre_groupe: true, user: { select: { nom: true, prenom: true } } },
+            },
+          },
+        })
+      : [];
 
   const echangesAdmin: EchangeAdmin[] = echangesDB.map((e) => ({
     ...e,
@@ -351,7 +350,7 @@ export default async function GroupCycleDetailPage({
 
   const globalStats = {
     totalPenalties: participantsStats.reduce((acc, p) => acc + p.totalPenalties, 0),
-    totalLateMembers: participantsStats.filter(p => p.isLate).length,
+    totalLateMembers: participantsStats.filter((p) => p.isLate).length,
     totalDaysLate: participantsStats.reduce((acc, p) => acc + p.totalDaysLate, 0),
     totalExpected: montantFixe * totalTours * totalTours, // Simplification: chaque membre paie à chaque tour
     totalCollected: participantsStats.reduce((acc, p) => acc + p.totalPaid, 0),
@@ -362,26 +361,37 @@ export default async function GroupCycleDetailPage({
       if (membership.role === "ADMIN") return true;
       return participant.membre_groupe.id_membre_groupe === membership.id_membre_groupe;
     })
-    .map(({ participant, totalPaid, totalPenalties, totalDaysLate, hasActivePenalty, isLate, isIncomplete, tourDetails }) => {
-      const member = participant.membre_groupe;
-
-      return {
-        id: member.id_membre_groupe,
-        name: `${member.user.prenom} ${member.user.nom}`,
-        email: member.user.email,
+    .map(
+      ({
+        participant,
         totalPaid,
         totalPenalties,
         totalDaysLate,
         hasActivePenalty,
         isLate,
         isIncomplete,
-        montantInitial: montantFixe * totalTours,
-        tourDetails: tourDetails.map((tour) => ({
-          ...tour,
-          dueDate: tour.dueDate.toISOString(),
-        })),
-      };
-    });
+        tourDetails,
+      }) => {
+        const member = participant.membre_groupe;
+
+        return {
+          id: member.id_membre_groupe,
+          name: `${member.user.prenom} ${member.user.nom}`,
+          email: member.user.email,
+          totalPaid,
+          totalPenalties,
+          totalDaysLate,
+          hasActivePenalty,
+          isLate,
+          isIncomplete,
+          montantInitial: montantFixe * totalTours,
+          tourDetails: tourDetails.map((tour) => ({
+            ...tour,
+            dueDate: tour.dueDate.toISOString(),
+          })),
+        };
+      },
+    );
 
   const overviewContent = (
     <div className="space-y-4">
@@ -392,8 +402,8 @@ export default async function GroupCycleDetailPage({
               <p className="text-sm font-semibold">Tour prêt à solder</p>
               <p className="mt-1 text-xs">
                 Tous les membres ont cotisé pour le tour {activeTour}. L'admin peut maintenant
-                verser le pot à {currentName}. Après ce versement, le cycle passera
-                automatiquement au tour suivant.
+                verser le pot à {currentName}. Après ce versement, le cycle passera automatiquement
+                au tour suivant.
               </p>
             </div>
           ) : null}
@@ -402,8 +412,8 @@ export default async function GroupCycleDetailPage({
             <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-brand-900">
               <p className="text-sm font-semibold">🎉 Cycle terminé avec succès</p>
               <p className="mt-1 text-xs">
-                Tous les tours ont été soldés et les pots distribués. Vous pouvez relancer un nouveau
-                cycle dès maintenant ou à tout moment depuis la liste des cycles.
+                Tous les tours ont été soldés et les pots distribués. Vous pouvez relancer un
+                nouveau cycle dès maintenant ou à tout moment depuis la liste des cycles.
               </p>
               <RelancerCycleSheet groupId={groupId} />
             </div>
@@ -411,9 +421,7 @@ export default async function GroupCycleDetailPage({
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
-              <p className="text-xs font-medium uppercase text-gray-500">
-                Total attendu du tour
-              </p>
+              <p className="text-xs font-medium uppercase text-gray-500">Total attendu du tour</p>
               <p className="mt-1 text-2xl font-bold text-gray-900">
                 {tresorerie.totalAttendu.toLocaleString("fr-FR")} {membership.groupe.devise}
               </p>
@@ -457,11 +465,15 @@ export default async function GroupCycleDetailPage({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
               <p className="text-xs font-medium uppercase text-gray-500">Membres en retard</p>
-              <p className="mt-1 text-2xl font-bold text-rose-600">{globalStats.totalLateMembers}</p>
+              <p className="mt-1 text-2xl font-bold text-rose-600">
+                {globalStats.totalLateMembers}
+              </p>
               <p className="text-xs text-gray-400">{globalStats.totalDaysLate} jours cumulés</p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs font-medium uppercase text-amber-700">Caisse pénalités (tour)</p>
+              <p className="text-xs font-medium uppercase text-amber-700">
+                Caisse pénalités (tour)
+              </p>
               <p className="mt-1 text-2xl font-bold text-amber-700">
                 {tresorerie.caissePenalitesTour.toLocaleString("fr-FR")} {membership.groupe.devise}
               </p>
@@ -474,13 +486,16 @@ export default async function GroupCycleDetailPage({
               )}
             </div>
             <div className="rounded-lg border border-amber-200 bg-white p-4">
-              <p className="text-xs font-medium uppercase text-amber-700">Caisse pénalités (cycle)</p>
+              <p className="text-xs font-medium uppercase text-amber-700">
+                Caisse pénalités (cycle)
+              </p>
               <p className="mt-1 text-2xl font-bold text-amber-700">
                 {tresorerie.caissePenalitesCycle.toLocaleString("fr-FR")} {membership.groupe.devise}
               </p>
               {tresorerie.penalitesEnAttenteCycle > 0 ? (
                 <p className="text-xs text-rose-600">
-                  + {tresorerie.penalitesEnAttenteCycle.toLocaleString("fr-FR")} en attente de collecte
+                  + {tresorerie.penalitesEnAttenteCycle.toLocaleString("fr-FR")} en attente de
+                  collecte
                 </p>
               ) : (
                 <p className="text-xs text-amber-700/70">Disponible après retraits</p>
@@ -491,11 +506,13 @@ export default async function GroupCycleDetailPage({
               <p className="mt-1 text-2xl font-bold text-brand-600">
                 {Math.round((tresorerie.toursVerses / Math.max(totalTours, 1)) * 100)}%
               </p>
-              <p className="text-xs text-gray-400">{tresorerie.toursVerses} / {totalTours} tours soldés</p>
+              <p className="text-xs text-gray-400">
+                {tresorerie.toursVerses} / {totalTours} tours soldés
+              </p>
             </div>
           </div>
 
-          {(tresorerie.caissePenalitesTour > 0 || tresorerie.caissePenalitesCycle > 0) ? (
+          {tresorerie.caissePenalitesTour > 0 || tresorerie.caissePenalitesCycle > 0 ? (
             <PenaltyWithdrawalForm
               groupId={groupId}
               cycleId={cycleId}
@@ -601,11 +618,7 @@ export default async function GroupCycleDetailPage({
           <p className="mb-4 text-sm text-gray-500">
             Validez ou refusez les échanges de tour acceptés par les deux membres.
           </p>
-          <EchangesAdmin
-            groupId={groupId}
-            cycleId={cycleId}
-            echanges={echangesAdmin}
-          />
+          <EchangesAdmin groupId={groupId} cycleId={cycleId} echanges={echangesAdmin} />
         </div>
       </div>
     ) : null;
@@ -635,92 +648,40 @@ export default async function GroupCycleDetailPage({
   // Panneau admin : toutes les cotisations de tous les membres avec dates
   const allCotisationsContent =
     membership.role === "ADMIN" ? (
-      <div className="space-y-4">
-        <p className="text-xs text-muted-foreground">
-          Toutes les cotisations du cycle, par membre et par tour, avec les dates de versement.
-        </p>
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Membre</TableHead>
-                <TableHead>Tour</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Cotisation</TableHead>
-                <TableHead className="hidden sm:table-cell">Pénalité</TableHead>
-                <TableHead>Statut</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    Aucune cotisation enregistrée pour ce cycle.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                payments
-                  .filter((p) => p.numero_tour !== null)
-                  .sort((a, b) => {
-                    if ((a.numero_tour ?? 0) !== (b.numero_tour ?? 0))
-                      return (a.numero_tour ?? 0) - (b.numero_tour ?? 0);
-                    return b.date_de_paiement.getTime() - a.date_de_paiement.getTime();
-                  })
-                  .map((payment) => {
-                    const isPenaltyOnly = Number(payment.montant) === 0 && payment.penalite_appliquee;
-                    const participant = cycle.participants.find(
-                      (par) => par.id_membre_groupe === payment.id_membre_groupe,
-                    );
-                    const memberName = participant
-                      ? `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`
-                      : payment.id_membre_groupe.slice(0, 8);
-                    return (
-                      <TableRow
-                        key={payment.id_cotisation}
-                        className={isPenaltyOnly ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
-                      >
-                        <TableCell className="font-medium">{memberName}</TableCell>
-                        <TableCell>Tour {payment.numero_tour}</TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {payment.date_de_paiement.toLocaleDateString("fr-FR", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className={isPenaltyOnly ? "text-muted-foreground italic" : "font-medium text-emerald-600"}>
-                          {isPenaltyOnly
-                            ? "—"
-                            : `${Number(payment.montant).toLocaleString("fr-FR")} ${devise}`}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-amber-600">
-                          {payment.montant_penalite
-                            ? `${Number(payment.montant_penalite).toLocaleString("fr-FR")} ${devise}`
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {isPenaltyOnly ? (
-                            <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100 text-[11px]">
-                              ⚠️ Pénalité auto
-                            </Badge>
-                          ) : payment.penalite_appliquee ? (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 text-[11px]">
-                              Retard
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[11px]">
-                              À l'heure
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <CyclePaymentsHistory
+        payments={payments
+          .filter((p) => p.numero_tour !== null)
+          .sort((a, b) => {
+            if ((a.numero_tour ?? 0) !== (b.numero_tour ?? 0)) {
+              return (a.numero_tour ?? 0) - (b.numero_tour ?? 0);
+            }
+            return b.date_de_paiement.getTime() - a.date_de_paiement.getTime();
+          })
+          .map((payment) => {
+            const participant = cycle.participants.find(
+              (par) => par.id_membre_groupe === payment.id_membre_groupe,
+            );
+            const memberName = participant
+              ? `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`
+              : payment.id_membre_groupe.slice(0, 8);
+
+            return {
+              id_cotisation: payment.id_cotisation,
+              memberName,
+              numero_tour: payment.numero_tour,
+              date_de_paiement: payment.date_de_paiement.toISOString(),
+              montant: Number(payment.montant),
+              penalite_appliquee: payment.penalite_appliquee,
+              montant_penalite: payment.montant_penalite ? Number(payment.montant_penalite) : null,
+            };
+          })}
+        devise={devise}
+        historyScope={`cycles:${cycleId}:cotisations-admin`}
+        historyTargetId={cycleId}
+        showMember
+        description="Toutes les cotisations du cycle, par membre et par tour, avec les dates de versement."
+        emptyLabel="Aucune cotisation visible pour ce cycle."
+      />
     ) : null;
 
   const historyContent =
@@ -734,6 +695,8 @@ export default async function GroupCycleDetailPage({
         tours={toursForHistory}
         totalTours={totalTours}
         devise={membership.groupe.devise}
+        historyScope={`cycles:${cycleId}:distributions`}
+        historyTargetId={cycleId}
       />
     ) : null;
 
@@ -741,99 +704,22 @@ export default async function GroupCycleDetailPage({
   const myMemberPayments = paymentsByMember.get(membership.id_membre_groupe) ?? [];
 
   const myPaymentsContent = (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Vos cotisations enregistrées dans ce cycle, avec les dates exactes de paiement.
-      </p>
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tour</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Cotisation</TableHead>
-              <TableHead className="hidden sm:table-cell">Pénalité</TableHead>
-              <TableHead>Statut</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {myMemberPayments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                  Aucune cotisation enregistrée pour vous dans ce cycle.
-                </TableCell>
-              </TableRow>
-            ) : (
-              myMemberPayments.map((payment) => {
-                const isPenaltyOnly = payment.montant === 0 && payment.penalite_appliquee;
-                return (
-                  <TableRow
-                    key={payment.id_cotisation}
-                    className={isPenaltyOnly ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
-                  >
-                    <TableCell className="font-medium">
-                      Tour {payment.numero_tour ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-700">
-                      {payment.date_de_paiement.toLocaleDateString("fr-FR", {
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className={isPenaltyOnly ? "text-muted-foreground italic" : "font-medium text-emerald-600"}>
-                      {isPenaltyOnly
-                        ? "Pas encore payé"
-                        : `${payment.montant.toLocaleString("fr-FR")} ${devise}`}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-amber-600 font-medium">
-                      {payment.montant_penalite
-                        ? `${payment.montant_penalite.toLocaleString("fr-FR")} ${devise}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {isPenaltyOnly ? (
-                        <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100">
-                          ⚠️ Pénalité due
-                        </Badge>
-                      ) : payment.penalite_appliquee ? (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                          En retard
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                          À l'heure
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {myMemberPayments.length > 0 ? (
-        <div className="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
-          <span>
-            <span className="font-medium text-gray-700">Total versé : </span>
-            <span className="font-bold text-emerald-600">
-              {myMemberPayments.reduce((acc, p) => acc + p.montant, 0).toLocaleString("fr-FR")} {devise}
-            </span>
-          </span>
-          <span>
-            <span className="font-medium text-gray-700">Pénalités : </span>
-            <span className="font-bold text-amber-600">
-              {myMemberPayments.reduce((acc, p) => acc + (p.montant_penalite ?? 0), 0).toLocaleString("fr-FR")} {devise}
-            </span>
-          </span>
-          <span>
-            <span className="font-medium text-gray-700">Nb de versements : </span>
-            <span className="font-bold text-gray-900">{myMemberPayments.length}</span>
-          </span>
-        </div>
-      ) : null}
-    </div>
+    <CyclePaymentsHistory
+      payments={myMemberPayments.map((payment) => ({
+        id_cotisation: payment.id_cotisation,
+        numero_tour: payment.numero_tour,
+        date_de_paiement: payment.date_de_paiement.toISOString(),
+        montant: payment.montant,
+        penalite_appliquee: payment.penalite_appliquee,
+        montant_penalite: payment.montant_penalite,
+      }))}
+      devise={devise}
+      historyScope={`cycles:${cycleId}:mes-paiements`}
+      historyTargetId={cycleId}
+      description="Vos cotisations enregistrées dans ce cycle, avec les dates exactes de paiement."
+      emptyLabel="Aucune cotisation visible pour vous dans ce cycle."
+      showSummary
+    />
   );
 
   return (
@@ -842,7 +728,8 @@ export default async function GroupCycleDetailPage({
         <div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{cycle.nom_cycle}</h1>
           <p className="text-sm text-muted-foreground">
-            Du {cycle.date_debut.toLocaleDateString("fr-FR")} au {cycle.date_fin.toLocaleDateString("fr-FR")}
+            Du {cycle.date_debut.toLocaleDateString("fr-FR")} au{" "}
+            {cycle.date_fin.toLocaleDateString("fr-FR")}
           </p>
         </div>
       </div>
@@ -856,16 +743,16 @@ export default async function GroupCycleDetailPage({
         history={historyContent}
         allCotisations={allCotisationsContent}
         participants={
-          <CycleParticipantsTable
-            participants={participantsForTable}
-            devise={devise}
-          />
+          <CycleParticipantsTable participants={participantsForTable} devise={devise} />
         }
         myPayments={myPaymentsContent}
         ordrePassage={
           <div className="space-y-4">
             <p className="text-sm text-gray-500">
-              Ordre de passage des bénéficiaires dans ce cycle. {!cycleTermine && membership.role === "MEMBRE" && "Vous pouvez demander un échange de place avec un autre membre."}
+              Ordre de passage des bénéficiaires dans ce cycle.{" "}
+              {!cycleTermine &&
+                membership.role === "MEMBRE" &&
+                "Vous pouvez demander un échange de place avec un autre membre."}
             </p>
             <OrdrePassage
               groupId={groupId}

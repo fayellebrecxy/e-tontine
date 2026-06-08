@@ -3,7 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Users, UserCircle, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  Landmark,
+  Plus,
+  UserCircle,
+  Users,
+} from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 
@@ -29,9 +37,10 @@ export function AppSidebar() {
 
     const load = async () => {
       const res = await fetch("/api/groups", { cache: "no-store" });
-      const body = (await res.json().catch(() => null)) as
-        | null
-        | { ok?: boolean; groups?: GroupApiItem[] };
+      const body = (await res.json().catch(() => null)) as null | {
+        ok?: boolean;
+        groups?: GroupApiItem[];
+      };
       if (!isMounted) return;
       if (res.ok && body?.ok && body.groups) {
         setGroups(body.groups.map((item) => item.groupe));
@@ -55,7 +64,7 @@ export function AppSidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen border-r border-gray-200 bg-white px-3 py-4 transition-all duration-200 dark:border-gray-800 dark:bg-gray-900 lg:translate-x-0 ${
+      className={`fixed left-0 top-0 z-50 h-screen border-r border-slate-200 bg-slate-950 px-3 py-4 text-white transition-all duration-200 dark:border-white/10 dark:bg-slate-950 lg:translate-x-0 ${
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       } ${sidebarWidth}`}
       onMouseEnter={() => setIsHovered(true)}
@@ -63,13 +72,13 @@ export function AppSidebar() {
     >
       <div className="flex h-full flex-col gap-6">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white">
-            ET
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-slate-950">
+            <Landmark className="h-5 w-5" />
           </div>
           {(isExpanded || isHovered || isMobileOpen) && (
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">E-Tontine</p>
-              <p className="text-xs text-gray-500">Gestion des groupes</p>
+              <p className="text-sm font-semibold text-white">E-Tontine</p>
+              <p className="text-xs text-slate-400">Gestion des groupes</p>
             </div>
           )}
         </div>
@@ -95,7 +104,11 @@ export function AppSidebar() {
               {(isExpanded || isHovered || isMobileOpen) && <span>Groupes</span>}
             </span>
             {(isExpanded || isHovered || isMobileOpen) &&
-              (groupsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+              (groupsOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              ))}
           </button>
 
           {groupsOpen && (isExpanded || isHovered || isMobileOpen) && (
@@ -118,7 +131,10 @@ export function AppSidebar() {
                     : "menu-dropdown-item-inactive"
                 }`}
               >
-                Creer un groupe
+                <span className="inline-flex items-center gap-2">
+                  <Plus className="h-3.5 w-3.5" />
+                  Créer un groupe
+                </span>
               </Link>
               {groups.map((group) => (
                 <Link

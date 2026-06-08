@@ -2,9 +2,9 @@ import { SiteHeader } from "@/components/site-header";
 
 export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#f7f4ee] text-slate-950 dark:bg-slate-950 dark:text-white">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }

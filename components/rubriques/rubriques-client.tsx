@@ -45,6 +45,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FrequenceRubrique, TypeRubriqueCotisation } from "@/lib/rubrique-dates";
+import { useHistoryVisibility } from "@/hooks/use-history-visibility";
 
 type Props = {
   groupId: string;
@@ -62,13 +63,7 @@ function getMemberBalance(rubrique: any, membreId: string) {
   return Math.max(0, Math.round((due - paid) * 100) / 100);
 }
 
-export function RubriquesClient({
-  groupId,
-  rubriques,
-  members,
-  isAdmin,
-  adminId,
-}: Props) {
+export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId }: Props) {
   const router = useRouter();
   const [selectedRubriqueId, setSelectedRubriqueId] = React.useState<string | null>(
     rubriques.length > 0 ? rubriques[0].id_rubrique : null,
@@ -82,8 +77,12 @@ export function RubriquesClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [relaunching, setRelaunching] = React.useState(false);
+  const historyVisibility = useHistoryVisibility(`rubriques:${groupId}:historique`);
 
   const selectedRubrique = rubriques.find((r) => r.id_rubrique === selectedRubriqueId);
+  const isSelectedHistoryHidden = selectedRubriqueId
+    ? historyVisibility.isHidden(selectedRubriqueId)
+    : false;
 
   const memberReste = selectedRubrique ? getMemberBalance(selectedRubrique, adminId) : 0;
 
@@ -92,6 +91,21 @@ export function RubriquesClient({
       setTab("solde");
     }
   }, [isAdmin, tab]);
+
+  const hideSelectedHistory = () => {
+    if (!selectedRubriqueId) return;
+    historyVisibility.hide(selectedRubriqueId, "Historique masqué pour cette rubrique.");
+  };
+
+  const restoreSelectedHistory = () => {
+    if (!selectedRubriqueId) return;
+    historyVisibility.restore(selectedRubriqueId, "Historique réaffiché.");
+  };
+
+  const requestDeleteRubrique = (rubriqueId: string) => {
+    setSelectedRubriqueId(rubriqueId);
+    setShowDeleteConfirm(true);
+  };
 
   const filteredRubriques = rubriques.filter((r) =>
     r.nom.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -152,6 +166,7 @@ export function RubriquesClient({
       const remaining = rubriques.filter((r) => r.id_rubrique !== selectedRubrique.id_rubrique);
       setSelectedRubriqueId(remaining.length > 0 ? remaining[0].id_rubrique : null);
       setShowDeleteConfirm(false);
+      toast.success("Rubrique et historique supprimés.");
       router.refresh();
     } finally {
       setDeleting(false);
@@ -201,45 +216,63 @@ export function RubriquesClient({
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher..."
-            className="pl-8 h-9"
+            className="h-9 pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex-1 overflow-y-auto space-y-1">
+        <div className="flex-1 space-y-1 overflow-y-auto">
           {filteredRubriques.map((rubrique) => (
-            <button
+            <div
               key={rubrique.id_rubrique}
-              onClick={() => setSelectedRubriqueId(rubrique.id_rubrique)}
               className={cn(
-                "flex w-full flex-col items-start gap-1 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                "group flex items-start gap-1 rounded-lg transition-colors hover:bg-accent",
                 selectedRubriqueId === rubrique.id_rubrique
                   ? "bg-accent text-accent-foreground shadow-sm"
                   : "text-muted-foreground",
               )}
             >
-              <div className="flex w-full items-center justify-between">
-                <span className="font-medium text-foreground">{rubrique.nom}</span>
-                {rubrique.est_obligatoire && (
-                  <div className="h-1.5 w-1.5 rounded-full bg-brand-600" />
-                )}
-              </div>
-              <span className="text-xs truncate">{rubrique.montant_fixe} XAF</span>
-              <RubriquePlanningBanner
-                rubrique={{
-                  type_rubrique: rubrique.type_rubrique,
-                  frequence: rubrique.frequence,
-                  date_debut: rubrique.date_debut,
-                  duree_jours: rubrique.duree_jours,
-                  date_limite: rubrique.date_limite,
-                  date_fin: rubrique.date_fin,
-                }}
-                compact
-              />
-            </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRubriqueId(rubrique.id_rubrique)}
+                className="min-w-0 flex-1 px-3 py-2 text-left text-sm"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="truncate font-medium text-foreground">{rubrique.nom}</span>
+                  {rubrique.est_obligatoire && (
+                    <div className="ml-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
+                  )}
+                </div>
+                <span className="truncate text-xs">{rubrique.montant_fixe} XAF</span>
+                <RubriquePlanningBanner
+                  rubrique={{
+                    type_rubrique: rubrique.type_rubrique,
+                    frequence: rubrique.frequence,
+                    date_debut: rubrique.date_debut,
+                    duree_jours: rubrique.duree_jours,
+                    date_limite: rubrique.date_limite,
+                    date_fin: rubrique.date_fin,
+                  }}
+                  compact
+                />
+              </button>
+              {isAdmin ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="mr-1 mt-1 h-8 w-8 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+                  onClick={() => requestDeleteRubrique(rubrique.id_rubrique)}
+                  aria-label={`Supprimer la rubrique ${rubrique.nom}`}
+                  title="Supprimer la rubrique"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
           ))}
           {filteredRubriques.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground py-4">Aucune rubrique</p>
+            <p className="py-4 text-center text-xs text-muted-foreground">Aucune rubrique</p>
           )}
         </div>
       </div>
@@ -247,22 +280,22 @@ export function RubriquesClient({
       <div className="flex-1 overflow-y-auto pr-2">
         {selectedRubrique && planningRubrique ? (
           <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-3xl font-bold tracking-tight">{selectedRubrique.nom}</h1>
                   <Badge variant={selectedRubrique.est_obligatoire ? "default" : "secondary"}>
                     {selectedRubrique.est_obligatoire ? "Obligatoire" : "Facultative"}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground mt-1">
+                <p className="mt-1 text-muted-foreground">
                   {isAdmin
                     ? "Gestion et suivi de la rubrique de cotisation"
                     : "Votre situation sur cette rubrique"}
                 </p>
               </div>
               {isAdmin && (
-                <div className="flex flex-wrap gap-2 shrink-0">
+                <div className="grid w-full gap-2 sm:grid-cols-2 xl:flex xl:w-auto xl:shrink-0 xl:grid-cols-none xl:flex-wrap">
                   {canRelaunch ? (
                     <Button
                       variant="outline"
@@ -282,14 +315,6 @@ export function RubriquesClient({
                     <History className="mr-2 h-4 w-4" />
                     Retrait
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               )}
             </div>
@@ -301,9 +326,9 @@ export function RubriquesClient({
 
             {isAdmin && (
               <div className="grid gap-4 md:grid-cols-3">
-                <Card className="bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/20 shadow-none">
-                  <CardHeader className="pb-2 px-4">
-                    <CardDescription className="text-green-600 dark:text-green-400 font-semibold uppercase text-xs">
+                <Card className="border-green-100 bg-green-50/50 shadow-none dark:border-green-900/20 dark:bg-green-900/10">
+                  <CardHeader className="px-4 pb-2">
+                    <CardDescription className="text-xs font-semibold uppercase text-green-600 dark:text-green-400">
                       Fonds Collectés
                     </CardDescription>
                     <CardTitle className="text-2xl">
@@ -311,9 +336,9 @@ export function RubriquesClient({
                     </CardTitle>
                   </CardHeader>
                 </Card>
-                <Card className="bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/20 shadow-none">
-                  <CardHeader className="pb-2 px-4">
-                    <CardDescription className="text-red-600 dark:text-red-400 font-semibold uppercase text-xs">
+                <Card className="border-red-100 bg-red-50/50 shadow-none dark:border-red-900/20 dark:bg-red-900/10">
+                  <CardHeader className="px-4 pb-2">
+                    <CardDescription className="text-xs font-semibold uppercase text-red-600 dark:text-red-400">
                       Total Retraits
                     </CardDescription>
                     <CardTitle className="text-2xl">
@@ -321,9 +346,9 @@ export function RubriquesClient({
                     </CardTitle>
                   </CardHeader>
                 </Card>
-                <Card className="bg-brand-50/50 border-brand-100 dark:bg-brand-900/10 dark:border-brand-900/20 shadow-none">
-                  <CardHeader className="pb-2 px-4">
-                    <CardDescription className="text-brand-600 dark:text-brand-400 font-semibold uppercase text-xs">
+                <Card className="border-brand-100 bg-brand-50/50 shadow-none dark:border-brand-900/20 dark:bg-brand-900/10">
+                  <CardHeader className="px-4 pb-2">
+                    <CardDescription className="text-xs font-semibold uppercase text-brand-600 dark:text-brand-400">
                       Solde Disponible
                     </CardDescription>
                     <CardTitle className="text-2xl">
@@ -342,7 +367,7 @@ export function RubriquesClient({
                     className={cn(
                       "text-sm font-medium transition-colors hover:text-primary",
                       tab === "solde"
-                        ? "text-primary border-b-2 border-primary pb-2 -mb-2.5"
+                        ? "-mb-2.5 border-b-2 border-primary pb-2 text-primary"
                         : "text-muted-foreground",
                     )}
                   >
@@ -354,7 +379,7 @@ export function RubriquesClient({
                       className={cn(
                         "text-sm font-medium transition-colors hover:text-primary",
                         tab === "historique"
-                          ? "text-primary border-b-2 border-primary pb-2 -mb-2.5"
+                          ? "-mb-2.5 border-b-2 border-primary pb-2 text-primary"
                           : "text-muted-foreground",
                       )}
                     >
@@ -373,6 +398,20 @@ export function RubriquesClient({
                       Payer
                     </Button>
                   </div>
+                )}
+                {tab === "historique" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={isSelectedHistoryHidden ? restoreSelectedHistory : hideSelectedHistory}
+                  >
+                    {isSelectedHistoryHidden ? (
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    {isSelectedHistoryHidden ? "Restaurer l'historique" : "Supprimer l'historique"}
+                  </Button>
                 )}
               </div>
 
@@ -398,10 +437,7 @@ export function RubriquesClient({
                             const due = parseFloat(selectedRubrique.montant_fixe);
                             const paid = selectedRubrique.paiements
                               .filter((p: any) => p.id_membre_groupe === mc.id_membre_groupe)
-                              .reduce(
-                                (acc: number, p: any) => acc + parseFloat(p.montant_paye),
-                                0,
-                              );
+                              .reduce((acc: number, p: any) => acc + parseFloat(p.montant_paye), 0);
                             const balance = due - paid;
 
                             return (
@@ -409,31 +445,31 @@ export function RubriquesClient({
                                 <TableCell className="font-medium">
                                   {mc.membre.user.prenom} {mc.membre.user.nom}
                                   {mc.membre.id_membre_groupe === adminId && (
-                                    <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                                    <Badge variant="outline" className="ml-2 h-4 text-[10px]">
                                       Vous
                                     </Badge>
                                   )}
                                 </TableCell>
                                 <TableCell>{due.toLocaleString()} XAF</TableCell>
-                                <TableCell className="text-green-600 font-medium">
+                                <TableCell className="font-medium text-green-600">
                                   {paid.toLocaleString()} XAF
                                 </TableCell>
                                 <TableCell
                                   className={
-                                    balance > 0 ? "text-red-500 font-bold" : "text-muted-foreground"
+                                    balance > 0 ? "font-bold text-red-500" : "text-muted-foreground"
                                   }
                                 >
                                   {balance > 0 ? `${balance.toLocaleString()} XAF` : "0 XAF"}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   {balance <= 0 ? (
-                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10">
+                                    <Badge className="border-green-500/20 bg-green-500/10 text-green-500 hover:bg-green-500/10">
                                       À jour
                                     </Badge>
                                   ) : (
                                     <Badge
                                       variant="destructive"
-                                      className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/10"
+                                      className="border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/10"
                                     >
                                       Incomplet
                                     </Badge>
@@ -453,110 +489,145 @@ export function RubriquesClient({
                     );
                     if (myPayments.length === 0) return null;
                     return (
-                      <div className="rounded-xl border bg-card p-4 space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Historique de mes versements
-                        </p>
-                        <div className="space-y-2">
-                          {myPayments
-                            .slice()
-                            .sort(
-                              (a: any, b: any) =>
-                                new Date(b.date_paiement).getTime() -
-                                new Date(a.date_paiement).getTime(),
-                            )
-                            .map((p: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between rounded-lg border bg-green-50/40 px-4 py-2.5 dark:bg-green-900/10"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-                                    <Calendar className="h-3.5 w-3.5 text-green-600" />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-medium text-foreground">
-                                      {format(new Date(p.date_paiement), "PPP", { locale: fr })}
-                                    </p>
-                                    {p.note && (
-                                      <p className="text-[11px] text-muted-foreground">{p.note}</p>
-                                    )}
-                                  </div>
-                                </div>
-                                <p className="text-sm font-bold text-green-600">
-                                  +{parseFloat(p.montant_paye).toLocaleString()} XAF
-                                </p>
-                              </div>
-                            ))}
+                      <div className="space-y-3 rounded-xl border bg-card p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Historique de mes versements
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={
+                              isSelectedHistoryHidden ? restoreSelectedHistory : hideSelectedHistory
+                            }
+                          >
+                            {isSelectedHistoryHidden ? (
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            {isSelectedHistoryHidden
+                              ? "Restaurer l'historique"
+                              : "Supprimer l'historique"}
+                          </Button>
                         </div>
+                        {isSelectedHistoryHidden ? (
+                          <div className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                            Historique masqué pour cette rubrique.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {myPayments
+                              .slice()
+                              .sort(
+                                (a: any, b: any) =>
+                                  new Date(b.date_paiement).getTime() -
+                                  new Date(a.date_paiement).getTime(),
+                              )
+                              .map((p: any, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between rounded-lg border bg-green-50/40 px-4 py-2.5 dark:bg-green-900/10"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
+                                      <Calendar className="h-3.5 w-3.5 text-green-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-medium text-foreground">
+                                        {format(new Date(p.date_paiement), "PPP", { locale: fr })}
+                                      </p>
+                                      {p.note && (
+                                        <p className="text-[11px] text-muted-foreground">
+                                          {p.note}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm font-bold text-green-600">
+                                    +{parseFloat(p.montant_paye).toLocaleString()} XAF
+                                  </p>
+                                </div>
+                              ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {[...selectedRubrique.paiements, ...(selectedRubrique.retraits ?? [])]
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date_paiement || b.date_retrait).getTime() -
-                        new Date(a.date_paiement || a.date_retrait).getTime(),
-                    )
-                    .map((op: any, i) => {
-                      const isRetrait = !!op.id_retrait;
-                      const date = new Date(op.date_paiement || op.date_retrait);
+                  {isSelectedHistoryHidden ? (
+                    <div className="rounded-xl border-2 border-dashed py-12 text-center">
+                      <History className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-20" />
+                      <p className="text-muted-foreground">
+                        Historique masqué pour cette rubrique.
+                      </p>
+                    </div>
+                  ) : (
+                    [...selectedRubrique.paiements, ...(selectedRubrique.retraits ?? [])]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.date_paiement || b.date_retrait).getTime() -
+                          new Date(a.date_paiement || a.date_retrait).getTime(),
+                      )
+                      .map((op: any, i) => {
+                        const isRetrait = !!op.id_retrait;
+                        const date = new Date(op.date_paiement || op.date_retrait);
 
-                      return (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between p-4 border rounded-xl bg-card hover:shadow-sm transition-shadow"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={cn(
-                                "p-2.5 rounded-full",
-                                isRetrait
-                                  ? "bg-red-50 text-red-600 dark:bg-red-900/20"
-                                  : "bg-green-50 text-green-600 dark:bg-green-900/20",
-                              )}
-                            >
-                              {isRetrait ? (
-                                <Download className="h-5 w-5 rotate-180" />
-                              ) : (
-                                <Download className="h-5 w-5" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-semibold">
-                                {isRetrait
-                                  ? `Retrait : ${op.motif}`
-                                  : `Paiement : ${op.membre.user.prenom} ${op.membre.user.nom}`}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                <Calendar className="h-3 w-3" />
-                                {format(date, "PPP", { locale: fr })}
-                                {op.note && <span>• {op.note}</span>}
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between rounded-xl border bg-card p-4 transition-shadow hover:shadow-sm"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div
+                                className={cn(
+                                  "rounded-full p-2.5",
+                                  isRetrait
+                                    ? "bg-red-50 text-red-600 dark:bg-red-900/20"
+                                    : "bg-green-50 text-green-600 dark:bg-green-900/20",
+                                )}
+                              >
+                                {isRetrait ? (
+                                  <Download className="h-5 w-5 rotate-180" />
+                                ) : (
+                                  <Download className="h-5 w-5" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-semibold">
+                                  {isRetrait
+                                    ? `Retrait : ${op.motif}`
+                                    : `Paiement : ${op.membre.user.prenom} ${op.membre.user.nom}`}
+                                </p>
+                                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  {format(date, "PPP", { locale: fr })}
+                                  {op.note && <span>• {op.note}</span>}
+                                </div>
                               </div>
                             </div>
+                            <p
+                              className={cn(
+                                "text-lg font-bold",
+                                isRetrait ? "text-red-600" : "text-green-600",
+                              )}
+                            >
+                              {isRetrait ? "-" : "+"}
+                              {parseFloat(op.montant_paye || op.montant).toLocaleString()} XAF
+                            </p>
                           </div>
-                          <p
-                            className={cn(
-                              "text-lg font-bold",
-                              isRetrait ? "text-red-600" : "text-green-600",
-                            )}
-                          >
-                            {isRetrait ? "-" : "+"}
-                            {parseFloat(op.montant_paye || op.montant).toLocaleString()} XAF
-                          </p>
-                        </div>
-                      );
-                    })}
-                  {[...selectedRubrique.paiements, ...selectedRubrique.retraits].length ===
-                    0 && (
-                    <div className="text-center py-12 border-2 border-dashed rounded-xl">
-                      <History className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-20" />
-                      <p className="text-muted-foreground">Aucune transaction enregistrée</p>
-                    </div>
+                        );
+                      })
                   )}
+                  {!isSelectedHistoryHidden &&
+                    [...selectedRubrique.paiements, ...selectedRubrique.retraits].length === 0 && (
+                      <div className="rounded-xl border-2 border-dashed py-12 text-center">
+                        <History className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-20" />
+                        <p className="text-muted-foreground">Aucune transaction enregistrée</p>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -564,7 +635,7 @@ export function RubriquesClient({
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <LayoutDashboard className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+              <LayoutDashboard className="mx-auto mb-4 h-12 w-12 text-muted-foreground opacity-20" />
               <h3 className="text-lg font-medium">Sélectionnez une rubrique</h3>
               <p className="text-muted-foreground">
                 Choisissez une rubrique dans la liste pour voir son dashboard.
@@ -601,9 +672,8 @@ export function RubriquesClient({
           <DialogHeader>
             <DialogTitle>Supprimer cette rubrique ?</DialogTitle>
             <DialogDescription>
-              La rubrique « {selectedRubrique?.nom} » et toutes les données associées
-              (paiements, retraits liés) seront définitivement supprimées. Cette action est
-              irréversible.
+              La rubrique « {selectedRubrique?.nom} » et toutes les données associées (paiements,
+              retraits liés) seront définitivement supprimées. Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

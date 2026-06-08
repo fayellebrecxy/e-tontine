@@ -298,9 +298,29 @@ export async function deleteRubrique(rubriqueId: string, groupId: string) {
     return auth;
   }
 
-  await prisma.rubriqueCotisation.delete({
-    where: { id_rubrique: rubriqueId },
+  const rubrique = await prisma.rubriqueCotisation.findFirst({
+    where: { id_rubrique: rubriqueId, id_groupe: groupId },
+    select: { id_rubrique: true },
   });
+
+  if (!rubrique) {
+    return { ok: false as const, error: "Rubrique introuvable." };
+  }
+
+  await prisma.$transaction([
+    prisma.retrait.deleteMany({
+      where: { id_rubrique: rubriqueId, id_groupe: groupId },
+    }),
+    prisma.paiementRubrique.deleteMany({
+      where: { id_rubrique: rubriqueId },
+    }),
+    prisma.membreRubrique.deleteMany({
+      where: { id_rubrique: rubriqueId },
+    }),
+    prisma.rubriqueCotisation.delete({
+      where: { id_rubrique: rubriqueId },
+    }),
+  ]);
 
   revalidatePath(`/dashboard/groups/${groupId}/rubriques`);
   return { ok: true as const };
@@ -347,10 +367,7 @@ export async function enregistrerPaiement(data: {
   }
 
   const due = Number(rubrique.montant_fixe);
-  const alreadyPaid = rubrique.paiements.reduce(
-    (acc, p) => acc + Number(p.montant_paye),
-    0,
-  );
+  const alreadyPaid = rubrique.paiements.reduce((acc, p) => acc + Number(p.montant_paye), 0);
   const remaining = Math.round((due - alreadyPaid) * 100) / 100;
 
   if (remaining <= 0) {

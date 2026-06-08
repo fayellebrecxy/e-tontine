@@ -11,37 +11,53 @@ datasource db {
 }
 
 model User {
-  id_user            String               @id @db.Uuid
-  nom                String
-  prenom             String
-  email              String               @unique
-  telephone          String               @unique
-  photo_de_profil    String?
-  date_creation      DateTime             @default(now())
-  date_mise_a_jour   DateTime             @updatedAt
-  invitations_creees InvitationGroupe[]   @relation("user_invitations_creees")
-  memberships        MembreGroupe[]
-  notifications      NotificationGroupe[]
+  id_user             String               @id @db.Uuid
+  nom                 String
+  prenom              String
+  email               String               @unique
+  telephone           String               @unique
+  photo_de_profil     String?
+  date_creation       DateTime             @default(now())
+  date_mise_a_jour    DateTime             @updatedAt
+  invitations_creees  InvitationGroupe[]   @relation("user_invitations_creees")
+  memberships         MembreGroupe[]
+  notifications       NotificationGroupe[]
+  historiques_masques HistoriqueMasque[]
 
   @@map("users")
   @@schema("public")
 }
 
+model HistoriqueMasque {
+  id_masquage   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_user       String   @db.Uuid
+  scope         String
+  target_id     String
+  date_masquage DateTime @default(now())
+  user          User     @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@unique([id_user, scope, target_id])
+  @@index([id_user])
+  @@index([scope, target_id])
+  @@map("historiques_masques")
+  @@schema("public")
+}
+
 model Groupes {
-  id_groupe            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom                  String
-  description          String?
-  devise               String               @default("XAF")
-  lien_invitation      String?              @unique
-  date_de_creation     DateTime             @default(now())
-  date_mise_a_jour     DateTime             @updatedAt
-  cycles               CycleTontine[]
-  invitations          InvitationGroupe[]
-  membres              MembreGroupe[]
-  notifications        NotificationGroupe[]
-  rubriques_cotisation RubriqueCotisation[]
-  retraits             Retrait[]
-  reunions             Reunion[]
+  id_groupe                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom                       String
+  description               String?
+  devise                    String                 @default("XAF")
+  lien_invitation           String?                @unique
+  date_de_creation          DateTime               @default(now())
+  date_mise_a_jour          DateTime               @updatedAt
+  cycles                    CycleTontine[]
+  invitations               InvitationGroupe[]
+  membres                   MembreGroupe[]
+  notifications             NotificationGroupe[]
+  rubriques_cotisation      RubriqueCotisation[]
+  retraits                  Retrait[]
+  reunions                  Reunion[]
   retraits_amendes_reunions RetraitAmendeReunion[]
 
   @@map("groupes")
@@ -133,25 +149,25 @@ model InvitationGroupe {
 }
 
 model MembreGroupe {
-  id_membre_groupe      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  role                  RoleGroupe         @default(MEMBRE)
-  statut_adhesion       StatutAdhesion     @default(ACTIF)
-  date_adhesion         DateTime           @default(now())
-  date_depart           DateTime?
-  statut_visuel         StatutVisuel       @default(VERT)
-  id_user               String             @db.Uuid
-  id_groupe             String             @db.Uuid
-  cotisations           Cotisations[]
-  cycles_participations CycleParticipant[]
-  groupe                Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  user                  User               @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
-  penalites             Penalite[]
-  versements_recus      Versement[]        @relation("versements_recus")
-  versements_effectues  Versement[]        @relation("versements_effectues")
-  membres_rubriques     MembreRubrique[]
-  paiements_rubriques   PaiementRubrique[]
-  retraits_valides      Retrait[]          @relation("retraits_valides")
-  retraits_penalites    RetraitPenalite[]  @relation("retraits_penalites_valides")
+  id_membre_groupe          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role                      RoleGroupe             @default(MEMBRE)
+  statut_adhesion           StatutAdhesion         @default(ACTIF)
+  date_adhesion             DateTime               @default(now())
+  date_depart               DateTime?
+  statut_visuel             StatutVisuel           @default(VERT)
+  id_user                   String                 @db.Uuid
+  id_groupe                 String                 @db.Uuid
+  cotisations               Cotisations[]
+  cycles_participations     CycleParticipant[]
+  groupe                    Groupes                @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  user                      User                   @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  penalites                 Penalite[]
+  versements_recus          Versement[]            @relation("versements_recus")
+  versements_effectues      Versement[]            @relation("versements_effectues")
+  membres_rubriques         MembreRubrique[]
+  paiements_rubriques       PaiementRubrique[]
+  retraits_valides          Retrait[]              @relation("retraits_valides")
+  retraits_penalites        RetraitPenalite[]      @relation("retraits_penalites_valides")
   presences_reunions        PresenceReunion[]
   retraits_amendes_reunions RetraitAmendeReunion[] @relation("retraits_amendes_reunions")
   echanges_demandes         DemandeEchange[]       @relation("echanges_demandes")
@@ -286,15 +302,15 @@ model Versement {
 }
 
 model RetraitAmendeReunion {
-  id_retrait_amende String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_groupe         String       @db.Uuid
-  id_admin_valideur String       @db.Uuid
-  montant           Decimal      @db.Decimal(15, 2)
+  id_retrait_amende String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe         String   @db.Uuid
+  id_admin_valideur String   @db.Uuid
+  montant           Decimal  @db.Decimal(15, 2)
   motif             String
-  date_retrait      DateTime     @default(now())
+  date_retrait      DateTime @default(now())
 
-  groupe            Groupes      @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  valideur          MembreGroupe @relation("retraits_amendes_reunions", fields: [id_admin_valideur], references: [id_membre_groupe])
+  groupe   Groupes      @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  valideur MembreGroupe @relation("retraits_amendes_reunions", fields: [id_admin_valideur], references: [id_membre_groupe])
 
   @@index([id_groupe])
   @@map("retraits_amendes_reunions")
@@ -302,21 +318,21 @@ model RetraitAmendeReunion {
 }
 
 model Reunion {
-  id_reunion      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_groupe       String           @db.Uuid
-  titre           String
-  description     String?
-  date_reunion    DateTime
-  lieu            String?
-  type_reunion    TypeReunion      @default(ORDINAIRE)
-  statut          StatutReunion    @default(PLANIFIEE)
-  montant_amende  Decimal?         @db.Decimal(15, 2)
-  compte_rendu    String?
-  date_creation   DateTime         @default(now())
-  date_mise_a_jour DateTime        @updatedAt
+  id_reunion       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe        String        @db.Uuid
+  titre            String
+  description      String?
+  date_reunion     DateTime
+  lieu             String?
+  type_reunion     TypeReunion   @default(ORDINAIRE)
+  statut           StatutReunion @default(PLANIFIEE)
+  montant_amende   Decimal?      @db.Decimal(15, 2)
+  compte_rendu     String?
+  date_creation    DateTime      @default(now())
+  date_mise_a_jour DateTime      @updatedAt
 
-  groupe          Groupes          @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  presences       PresenceReunion[]
+  groupe    Groupes           @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  presences PresenceReunion[]
 
   @@index([id_groupe])
   @@map("reunions")
@@ -324,16 +340,16 @@ model Reunion {
 }
 
 model PresenceReunion {
-  id_presence      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_reunion       String          @db.Uuid
-  id_membre_groupe String          @db.Uuid
-  statut_presence  StatutPresence  @default(ABSENT)
-  amende_payee     Boolean         @default(false)
-  note_absence     String?
-  date_enregistrement DateTime     @default(now())
+  id_presence         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_reunion          String         @db.Uuid
+  id_membre_groupe    String         @db.Uuid
+  statut_presence     StatutPresence @default(ABSENT)
+  amende_payee        Boolean        @default(false)
+  note_absence        String?
+  date_enregistrement DateTime       @default(now())
 
-  reunion          Reunion         @relation(fields: [id_reunion], references: [id_reunion], onDelete: Cascade)
-  membre_groupe    MembreGroupe    @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+  reunion       Reunion      @relation(fields: [id_reunion], references: [id_reunion], onDelete: Cascade)
+  membre_groupe MembreGroupe @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
 
   @@unique([id_reunion, id_membre_groupe])
   @@index([id_reunion])

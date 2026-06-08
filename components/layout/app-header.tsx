@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { LogOut, Menu, PlusCircle, UserCircle } from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
@@ -20,36 +20,53 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-white/90 backdrop-blur dark:border-gray-800 dark:bg-gray-900/80">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 lg:px-6">
+    <header className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
+      <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
             onClick={handleToggle}
             aria-label="Toggle sidebar"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/dashboard" className="text-base font-semibold text-gray-900 dark:text-white">
-            E-Tontine
-          </Link>
+          <div>
+            <Link
+              href="/dashboard"
+              className="text-base font-semibold text-slate-950 dark:text-white"
+            >
+              E-Tontine
+            </Link>
+            <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
+              Votre espace de gestion
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-end gap-3">
-          <nav className="flex items-center gap-2">
-            <JoinGroupDialog variant="ghost" className="hidden sm:flex" />
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <nav className="flex items-center gap-1 sm:gap-2">
+            <JoinGroupDialog variant="ghost" className="hidden h-9 rounded-md sm:flex" />
             <NotificationCenter />
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/account">Compte</Link>
+            <Button asChild variant="ghost" size="icon" title="Compte">
+              <Link href="/account" aria-label="Compte">
+                <UserCircle className="h-4 w-4" />
+              </Link>
             </Button>
             <form action="/logout" method="post">
-              <Button type="submit" variant="outline" size="sm">
-                Se deconnecter
+              <Button type="submit" variant="outline" size="icon" title="Se déconnecter">
+                <LogOut className="h-4 w-4" />
               </Button>
             </form>
+            <Button
+              asChild
+              size="sm"
+              className="hidden bg-slate-950 text-white hover:bg-slate-800 md:inline-flex"
+            >
+              <Link href="/dashboard/groups/new">
+                <PlusCircle className="h-4 w-4" />
+                Nouveau groupe
+              </Link>
+            </Button>
           </nav>
         </div>
       </div>

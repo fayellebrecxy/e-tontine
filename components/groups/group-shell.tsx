@@ -2,7 +2,10 @@
 
 import * as React from "react";
 
+import { Crown, Landmark, ShieldAlert } from "lucide-react";
+
 import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import { GroupNav } from "./group-nav";
 
 export type GroupShellGroup = {
@@ -30,16 +33,14 @@ type GroupSummaryBody = {
 function GroupShellSkeleton({ children }: { children?: React.ReactNode }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
         <div className="h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
         <div className="mt-3 h-4 w-64 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <div className="hidden h-64 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-900 lg:block" />
+      <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="hidden h-64 animate-pulse rounded-xl bg-white dark:bg-white/5 lg:block" />
         <div className="min-h-64 min-w-0">
-          {children ?? (
-            <div className="h-64 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-900" />
-          )}
+          {children ?? <div className="h-64 animate-pulse rounded-xl bg-white dark:bg-white/5" />}
         </div>
       </div>
     </div>
@@ -70,9 +71,7 @@ export function GroupShell({
     const load = async () => {
       try {
         const summaryRes = await fetch(`/api/groups/${groupId}`, { cache: "no-store" });
-        const summaryBody = (await summaryRes.json().catch(() => null)) as
-          | null
-          | GroupSummaryBody;
+        const summaryBody = (await summaryRes.json().catch(() => null)) as null | GroupSummaryBody;
 
         if (!isMounted) return;
 
@@ -104,9 +103,11 @@ export function GroupShell({
 
     fetch(`/api/groups/${groupId}/rejoin`, { method: "POST" })
       .then(async (res) => {
-        const body = (await res.json().catch(() => null)) as
-          | null
-          | { ok?: boolean; error?: string; pending?: boolean };
+        const body = (await res.json().catch(() => null)) as null | {
+          ok?: boolean;
+          error?: string;
+          pending?: boolean;
+        };
 
         if (!res.ok || !body?.ok) {
           return;
@@ -130,11 +131,14 @@ export function GroupShell({
   if (!loading && membership && !isActive) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+            <ShieldAlert className="h-6 w-6" />
+          </div>
+          <h1 className="mt-4 text-xl font-bold text-slate-950 dark:text-white">
             {group?.nom ?? "Groupe"}
           </h1>
-          <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             {isInactive ? (
               <p>Vous avez été exclu de ce groupe.</p>
             ) : isPending ? (
@@ -164,31 +168,45 @@ export function GroupShell({
 
   return (
     <div className="space-y-6">
-      <header className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase text-muted-foreground">
-              Groupe
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
-              {group?.nom}
-            </h1>
+      <header className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+        <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_auto]">
+          <div className="flex gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+              <Landmark className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                Groupe
+              </p>
+              <h1 className="mt-1 truncate text-2xl font-semibold tracking-normal text-slate-950 dark:text-white">
+                {group?.nom}
+              </h1>
+              {group?.description ? (
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-300">
+                  {group.description}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+            <Badge className="bg-slate-950 text-white hover:bg-slate-950 dark:bg-white dark:text-slate-950">
+              <Crown className="mr-1 h-3.5 w-3.5" />
               {membership?.role === "ADMIN" ? "Administrateur" : "Membre"}
-            </span>
+            </Badge>
             {group?.devise ? (
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <Badge
+                variant="outline"
+                className="bg-[#f6f4ef] text-slate-700 dark:bg-white/10 dark:text-white"
+              >
                 {group.devise}
-              </span>
+              </Badge>
             ) : null}
           </div>
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <aside className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
           <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />
         </aside>
         <section className="min-w-0">{children}</section>

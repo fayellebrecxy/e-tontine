@@ -292,7 +292,7 @@ export async function POST(
         type: "PAIEMENT_RECU",
         message: `Votre versement de ${montant.toLocaleString("fr-FR")} pour le tour ${numeroTour} du cycle "${cycle.id_cycle}" (Groupe: ${targetMember.groupe.nom}) a été enregistré.`,
       });
-      
+
       if (montantPenalite > 0) {
         await createNotification({
           userId: targetMember.id_user,
@@ -304,7 +304,7 @@ export async function POST(
     }
 
     // Recalcul statut visuel du membre (en arrière-plan, non bloquant)
-    majStatutMembre(targetMemberId).catch(() => null);
+    majStatutMembre(id_membre_groupe).catch(() => null);
 
     return NextResponse.json({ ok: true, payment }, { status: 201 });
   } catch {

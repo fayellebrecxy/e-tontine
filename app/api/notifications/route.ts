@@ -13,6 +13,7 @@ export async function GET() {
   const notifications = await prisma.notificationGroupe.findMany({
     where: { id_user: user.id },
     orderBy: { date_creation: "desc" },
+    take: 30,
     include: {
       groupe: {
         select: {

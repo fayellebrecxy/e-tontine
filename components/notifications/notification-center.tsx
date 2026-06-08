@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import * as React from "react";
 import { Bell, Trash2, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 type Notification = {
@@ -26,30 +22,32 @@ type Notification = {
 };
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [hasLoaded, setHasLoaded] = React.useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = React.useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/notifications");
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
+        setHasLoaded(true);
       }
     } catch (error) {
       console.error("Failed to fetch notifications", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    // Rafraîchir toutes les 2 minutes
-    const interval = setInterval(fetchNotifications, 2 * 60 * 1000);
-    return () => clearInterval(interval);
   }, []);
+
+  React.useEffect(() => {
+    if (open && !hasLoaded) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, hasLoaded, open]);
 
   const unreadCount = notifications.filter((n) => !n.date_lecture).length;
 
@@ -61,8 +59,8 @@ export function NotificationCenter() {
       if (res.ok) {
         setNotifications((prev) =>
           prev.map((n) =>
-            n.id_notification === id ? { ...n, date_lecture: new Date().toISOString() } : n
-          )
+            n.id_notification === id ? { ...n, date_lecture: new Date().toISOString() } : n,
+          ),
         );
       }
     } catch (error) {
@@ -95,7 +93,7 @@ export function NotificationCenter() {
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -119,7 +117,7 @@ export function NotificationCenter() {
             {notifications.length > 0 && (
               <button
                 onClick={deleteAll}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-rose-500 hover:bg-rose-50 transition-colors"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-rose-500 transition-colors hover:bg-rose-50"
                 title="Tout supprimer"
               >
                 <X className="h-3 w-3" />
@@ -129,10 +127,10 @@ export function NotificationCenter() {
           </div>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-xs text-muted-foreground">
-              Aucune notification
-            </div>
+          {loading ? (
+            <div className="p-4 text-center text-xs text-muted-foreground">Chargement...</div>
+          ) : notifications.length === 0 ? (
+            <div className="p-4 text-center text-xs text-muted-foreground">Aucune notification</div>
           ) : (
             <div className="grid">
               {notifications.map((notification) => (
@@ -140,9 +138,11 @@ export function NotificationCenter() {
                   key={notification.id_notification}
                   className={cn(
                     "group relative flex flex-col gap-1 border-b p-4 transition-colors hover:bg-muted/50",
-                    !notification.date_lecture && "bg-brand-50/50 dark:bg-brand-950/20"
+                    !notification.date_lecture && "dark:bg-brand-950/20 bg-brand-50/50",
                   )}
-                  onClick={() => !notification.date_lecture && markAsRead(notification.id_notification)}
+                  onClick={() =>
+                    !notification.date_lecture && markAsRead(notification.id_notification)
+                  }
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
@@ -158,10 +158,8 @@ export function NotificationCenter() {
                       <Trash2 className="h-3 w-3 text-muted-foreground hover:text-rose-500" />
                     </button>
                   </div>
-                  <p className="text-xs leading-relaxed text-foreground">
-                    {notification.message}
-                  </p>
-                  <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs leading-relaxed text-foreground">{notification.message}</p>
+                  <div className="mt-1 flex items-center justify-between">
                     {notification.groupe && (
                       <span className="text-[10px] font-medium text-muted-foreground">
                         {notification.groupe.nom}
