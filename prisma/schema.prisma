@@ -52,9 +52,11 @@ model Groupes {
   date_de_creation          DateTime               @default(now())
   date_mise_a_jour          DateTime               @updatedAt
   caisses_financieres       CaisseFinanciere[]
+  comptes_epargne           CompteEpargne[]
   cycles                    CycleTontine[]
   invitations               InvitationGroupe[]
   membres                   MembreGroupe[]
+  mouvements_epargne        MouvementEpargne[]
   mouvements_financiers     MouvementFinancier[]
   notifications             NotificationGroupe[]
   retraits                  Retrait[]
@@ -167,6 +169,10 @@ model MembreGroupe {
   groupe                    Groupes                @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
   user                      User                   @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   membres_rubriques         MembreRubrique[]
+  compte_epargne            CompteEpargne?
+  epargne_mouvements        MouvementEpargne[]
+  epargne_mouvements_operes MouvementEpargne[]     @relation("epargne_mouvements_operateur")
+  epargne_signalements      SignalementEpargne[]
   mouvements_crees          MouvementFinancier[]   @relation("mouvements_financiers_admin")
   mouvements_concernes      MouvementFinancier[]   @relation("mouvements_financiers_concernes")
   paiements_rubriques       PaiementRubrique[]
@@ -375,6 +381,72 @@ model MouvementFinancier {
   @@schema("public")
 }
 
+model CompteEpargne {
+  id_compte          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero_compte      String              @unique
+  id_groupe          String              @db.Uuid
+  id_membre_groupe   String              @unique @db.Uuid
+  solde_actuel       Decimal             @default(0) @db.Decimal(15, 2)
+  statut             StatutCompteEpargne @default(ACTIF)
+  date_ouverture     DateTime            @default(now())
+  date_mise_a_jour   DateTime            @updatedAt
+  groupe             Groupes             @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  membre             MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+  mouvements         MouvementEpargne[]
+  signalements       SignalementEpargne[]
+
+  @@index([id_groupe])
+  @@index([id_membre_groupe])
+  @@map("comptes_epargne")
+  @@schema("public")
+}
+
+model MouvementEpargne {
+  id_mouvement       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_compte          String             @db.Uuid
+  id_groupe          String             @db.Uuid
+  id_membre_groupe   String             @db.Uuid
+  id_operateur       String?            @db.Uuid
+  role_acteur        RoleActeurEpargne  @default(ADMIN)
+  type_operation     TypeOperationEpargne
+  montant            Decimal            @db.Decimal(15, 2)
+  motif              String
+  solde_avant        Decimal            @db.Decimal(15, 2)
+  solde_apres        Decimal            @db.Decimal(15, 2)
+  date_operation     DateTime           @default(now())
+  compte             CompteEpargne      @relation(fields: [id_compte], references: [id_compte], onDelete: Cascade)
+  groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  membre             MembreGroupe       @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+  operateur          MembreGroupe?      @relation("epargne_mouvements_operateur", fields: [id_operateur], references: [id_membre_groupe])
+  signalements       SignalementEpargne[]
+
+  @@index([id_compte, date_operation])
+  @@index([id_groupe, date_operation])
+  @@index([id_membre_groupe])
+  @@index([id_operateur])
+  @@map("mouvements_epargne")
+  @@schema("public")
+}
+
+model SignalementEpargne {
+  id_signalement     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_compte          String              @db.Uuid
+  id_mouvement       String              @db.Uuid
+  id_membre_groupe   String              @db.Uuid
+  motif              String
+  statut             StatutSignalementEpargne @default(OUVERT)
+  date_signalement   DateTime            @default(now())
+  compte             CompteEpargne       @relation(fields: [id_compte], references: [id_compte], onDelete: Cascade)
+  mouvement          MouvementEpargne    @relation(fields: [id_mouvement], references: [id_mouvement], onDelete: Cascade)
+  membre             MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@index([id_compte])
+  @@index([id_mouvement])
+  @@index([id_membre_groupe])
+  @@map("signalements_epargne")
+  @@schema("public")
+}
+
 model Reunion {
   id_reunion       String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id_groupe        String            @db.Uuid
@@ -472,6 +544,35 @@ enum StatutVisuel {
   VERT
   ORANGE
   ROUGE
+
+  @@schema("public")
+}
+
+enum StatutCompteEpargne {
+  ACTIF
+  BLOQUE
+  CLOTURE
+
+  @@schema("public")
+}
+
+enum TypeOperationEpargne {
+  DEPOT
+  RETRAIT
+
+  @@schema("public")
+}
+
+enum RoleActeurEpargne {
+  ADMIN
+  SYSTEME
+
+  @@schema("public")
+}
+
+enum StatutSignalementEpargne {
+  OUVERT
+  TRAITE
 
   @@schema("public")
 }

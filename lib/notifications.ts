@@ -16,7 +16,11 @@ export type NotificationType =
   | "REUNION_COMPTE_RENDU"
   | "RAPPEL_REUNION_J1"
   | "RAPPEL_REUNION_J2"
-  | "AMENDE_PAYEE";
+  | "AMENDE_PAYEE"
+  // Épargne
+  | "EPARGNE_COMPTE_OUVERT"
+  | "EPARGNE_OPERATION"
+  | "EPARGNE_SIGNALEMENT";
 
 export async function createNotification({
   userId,

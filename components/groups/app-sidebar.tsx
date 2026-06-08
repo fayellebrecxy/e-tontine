@@ -11,6 +11,8 @@ import {
   Repeat,
   Landmark,
   Wallet,
+  CalendarDays,
+  PiggyBank,
 } from "lucide-react";
 
 import {
@@ -31,6 +33,8 @@ const items = [
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Rubriques", href: "rubriques", icon: Landmark },
   { label: "Cycles", href: "cycles", icon: Repeat },
+  { label: "Réunions", href: "reunions", icon: CalendarDays },
+  { label: "Épargne", href: "epargne", icon: PiggyBank },
   { label: "Finances", href: "finances", icon: Wallet },
   { label: "Paramètres", href: "settings", icon: Settings },
 ];

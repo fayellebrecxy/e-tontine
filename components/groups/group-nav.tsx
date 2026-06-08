@@ -11,6 +11,7 @@ import {
   Landmark,
   CalendarDays,
   Wallet,
+  PiggyBank,
 } from "lucide-react";
 
 const allItems = [
@@ -20,6 +21,7 @@ const allItems = [
   { label: "Rubriques", href: "rubriques", icon: Landmark, adminOnly: false },
   { label: "Cycles", href: "cycles", icon: Repeat, adminOnly: false },
   { label: "Réunions", href: "reunions", icon: CalendarDays, adminOnly: false },
+  { label: "Épargne", href: "epargne", icon: PiggyBank, adminOnly: false },
   { label: "Finances", href: "finances", icon: Wallet, adminOnly: false },
   { label: "Parametres", href: "settings", icon: Settings, adminOnly: true },
 ];
