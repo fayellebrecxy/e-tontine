@@ -23,6 +23,7 @@ export type CyclePaymentHistoryItem = {
   montant: number;
   penalite_appliquee: boolean;
   montant_penalite: number | null;
+  penalite_collectee: boolean;
 };
 
 type CyclePaymentsHistoryProps = {
@@ -105,11 +106,18 @@ export function CyclePaymentsHistory({
                 </TableRow>
               ) : (
                 visiblePayments.map((payment) => {
-                  const isPenaltyOnly = payment.montant === 0 && payment.penalite_appliquee;
+                  const isPendingPenalty =
+                    payment.montant === 0 &&
+                    payment.penalite_appliquee &&
+                    !payment.penalite_collectee;
+                  const isCollectedPenaltyOnly =
+                    payment.montant === 0 &&
+                    payment.penalite_appliquee &&
+                    payment.penalite_collectee;
                   return (
                     <TableRow
                       key={payment.id_cotisation}
-                      className={isPenaltyOnly ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
+                      className={isPendingPenalty ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}
                     >
                       {showMember ? (
                         <TableCell className="font-medium">{payment.memberName ?? "—"}</TableCell>
@@ -126,15 +134,17 @@ export function CyclePaymentsHistory({
                       </TableCell>
                       <TableCell
                         className={
-                          isPenaltyOnly
+                          isPendingPenalty || isCollectedPenaltyOnly
                             ? "italic text-muted-foreground"
                             : "font-medium text-emerald-600"
                         }
                       >
-                        {isPenaltyOnly
+                        {isPendingPenalty
                           ? showMember
                             ? "—"
                             : "Pas encore payé"
+                          : isCollectedPenaltyOnly
+                            ? "Payée à part"
                           : `${payment.montant.toLocaleString("fr-FR")} ${devise}`}
                       </TableCell>
                       <TableCell className="hidden font-medium text-amber-600 sm:table-cell">
@@ -143,12 +153,19 @@ export function CyclePaymentsHistory({
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        {isPenaltyOnly ? (
+                        {isPendingPenalty ? (
                           <Badge
                             variant="secondary"
                             className="bg-red-100 text-red-700 hover:bg-red-100"
                           >
                             {showMember ? "Pénalité auto" : "Pénalité due"}
+                          </Badge>
+                        ) : isCollectedPenaltyOnly ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-amber-100 text-amber-700 hover:bg-amber-100"
+                          >
+                            Pénalité payée
                           </Badge>
                         ) : payment.penalite_appliquee ? (
                           <Badge

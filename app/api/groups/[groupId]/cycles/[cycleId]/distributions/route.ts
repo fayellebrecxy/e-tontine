@@ -12,6 +12,7 @@ import {
   getVersementsCycle,
 } from "@/lib/cycle-distributions";
 import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
+import { caisseCycle, recordMouvementFinancier } from "@/lib/financial-journal";
 
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
@@ -151,28 +152,46 @@ export async function POST(
   const idBeneficiaire = beneficiaireParticipant.id_membre_groupe;
 
   try {
-    const versement = await prisma.versement.create({
-      data: {
-        id_cycle: cycleId,
-        id_beneficiaire: idBeneficiaire,
-        numero_tour,
-        montant_verse,
-        date_versement: dateVersement,
-        mode_versement: mode_versement ?? null,
-        reference_externe: reference_externe ?? null,
-        id_admin_valideur: adminMembership.id_membre_groupe,
-      },
-      select: {
-        id_versement: true,
-        numero_tour: true,
-        montant_verse: true,
-        date_versement: true,
-        mode_versement: true,
-        reference_externe: true,
-        beneficiaire: {
-          select: { user: { select: { nom: true, prenom: true } } },
+    const versement = await prisma.$transaction(async (tx) => {
+      const created = await tx.versement.create({
+        data: {
+          id_cycle: cycleId,
+          id_beneficiaire: idBeneficiaire,
+          numero_tour,
+          montant_verse,
+          date_versement: dateVersement,
+          mode_versement: mode_versement ?? null,
+          reference_externe: reference_externe ?? null,
+          id_admin_valideur: adminMembership.id_membre_groupe,
         },
-      },
+        select: {
+          id_versement: true,
+          numero_tour: true,
+          montant_verse: true,
+          date_versement: true,
+          mode_versement: true,
+          reference_externe: true,
+          beneficiaire: {
+            select: { user: { select: { nom: true, prenom: true } } },
+          },
+        },
+      });
+
+      await recordMouvementFinancier(tx, {
+        groupId,
+        caisse: caisseCycle(cycleId, cycle.nom_cycle),
+        type: "SORTIE",
+        source: "VERSEMENT_BENEFICIAIRE",
+        montant: montant_verse,
+        motif: `Versement au bénéficiaire du tour ${numero_tour} - ${cycle.nom_cycle}`,
+        adminId: adminMembership.id_membre_groupe,
+        membreId: idBeneficiaire,
+        referenceType: "versements",
+        referenceId: created.id_versement,
+        dateMouvement: created.date_versement,
+      });
+
+      return created;
     });
 
     // Calculer le pot du tour pour l'inclure dans la notification

@@ -78,6 +78,7 @@ export async function GET(
           montant: true,
           montant_penalite: true,
           penalite_appliquee: true,
+          penalite_collectee: true,
           membre_groupe: {
             select: { user: { select: { nom: true, prenom: true } } },
           },
@@ -110,18 +111,18 @@ export async function GET(
 
     const totalDistribue = c.versements.reduce((a, v) => a + Number(v.montant_verse), 0);
 
-    // Pénalités collectées = cotisations avec montant_penalite > 0 ET montant > 0 (payées)
+    // Pénalités collectées, y compris celles payées à part.
     const totalPenalitesCollectees = c.cotisations
-      .filter((co) => Number(co.montant) > 0 && Number(co.montant_penalite ?? 0) > 0)
+      .filter((co) => co.penalite_collectee && Number(co.montant_penalite ?? 0) > 0)
       .reduce((a, co) => a + Number(co.montant_penalite ?? 0), 0);
 
     // Regrouper par membre
     const membreMap = new Map<string, { nom: string; cotise: number; penalites: number }>();
-    for (const co of c.cotisations.filter((co) => Number(co.montant) > 0)) {
+    for (const co of c.cotisations.filter((co) => Number(co.montant) > 0 || co.penalite_collectee)) {
       const nom = `${co.membre_groupe.user.prenom} ${co.membre_groupe.user.nom}`;
       const existing = membreMap.get(co.id_membre_groupe) ?? { nom, cotise: 0, penalites: 0 };
       existing.cotise += Number(co.montant);
-      existing.penalites += Number(co.montant_penalite ?? 0);
+      existing.penalites += co.penalite_collectee ? Number(co.montant_penalite ?? 0) : 0;
       membreMap.set(co.id_membre_groupe, existing);
     }
     // Ajouter membres sans paiement mais bénéficiaires

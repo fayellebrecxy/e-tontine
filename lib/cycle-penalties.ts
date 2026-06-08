@@ -97,6 +97,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
       montant: true,
       penalite_appliquee: true,
       montant_penalite: true,
+      penalite_collectee: true,
       penalites: { select: { id_penalite: true } },
     },
   });
@@ -130,7 +131,7 @@ export async function applyAutomaticOverduePenalties(cycleId: string) {
       if (montantPenalite <= 0) continue;
 
       const pendingPenaltyRecord = records.find(
-        (item) => Number(item.montant) === 0 && item.penalite_appliquee,
+        (item) => Number(item.montant) === 0 && item.penalite_appliquee && !item.penalite_collectee,
       );
 
       if (pendingPenaltyRecord) {

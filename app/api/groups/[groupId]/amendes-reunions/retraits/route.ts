@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { caisseAmendesReunion, recordMouvementFinancier } from "@/lib/financial-journal";
 
 const retraitSchema = z.object({
   montant: z.number().positive("Le montant doit être positif."),
@@ -72,19 +73,36 @@ export async function POST(
   }
 
   // ─── Créer le retrait ───
-  const retrait = await prisma.retraitAmendeReunion.create({
-    data: {
-      id_groupe: groupId,
-      id_admin_valideur: membership.id_membre_groupe,
+  const retrait = await prisma.$transaction(async (tx) => {
+    const created = await tx.retraitAmendeReunion.create({
+      data: {
+        id_groupe: groupId,
+        id_admin_valideur: membership.id_membre_groupe,
+        montant,
+        motif,
+      },
+      select: {
+        id_retrait_amende: true,
+        montant: true,
+        motif: true,
+        date_retrait: true,
+      },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId,
+      caisse: caisseAmendesReunion(),
+      type: "SORTIE",
+      source: "RETRAIT_AMENDES_REUNION",
       montant,
       motif,
-    },
-    select: {
-      id_retrait_amende: true,
-      montant: true,
-      motif: true,
-      date_retrait: true,
-    },
+      adminId: membership.id_membre_groupe,
+      referenceType: "retraits_amendes_reunions",
+      referenceId: created.id_retrait_amende,
+      dateMouvement: created.date_retrait,
+    });
+
+    return created;
   });
 
   return NextResponse.json({ ok: true, retrait, nouveauSolde: solde - montant }, { status: 201 });

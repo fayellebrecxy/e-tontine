@@ -54,6 +54,7 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
           numero_tour: true,
           montant: true,
           montant_penalite: true,
+          penalite_collectee: true,
         },
       },
       versements: {
@@ -135,16 +136,16 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
       }).length
     : totalTours;
 
-  // Pénalités effectivement collectées = enregistrées sur un vrai paiement (montant > 0)
+  // Pénalités effectivement collectées, même si elles ont été payées séparément.
   const penaltiesCurrentTurn = roundCurrency(
     currentCotisations
-      .filter((c) => Number(c.montant) > 0)
+      .filter((c) => c.penalite_collectee)
       .reduce((acc, c) => acc + Number(c.montant_penalite ?? 0), 0),
   );
-  // Pénalités en attente = enregistrées automatiquement avant paiement (montant = 0)
+  // Pénalités en attente = enregistrées automatiquement avant paiement.
   const pendingPenaltiesCurrentTurn = roundCurrency(
     currentCotisations
-      .filter((c) => Number(c.montant) === 0 && c.montant_penalite !== null)
+      .filter((c) => !c.penalite_collectee && c.montant_penalite !== null)
       .reduce((acc, c) => acc + Number(c.montant_penalite ?? 0), 0),
   );
   const penaltyWithdrawalsCurrentTurn = roundCurrency(
@@ -156,12 +157,12 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
   );
   const penaltiesCycle = roundCurrency(
     cycle.cotisations
-      .filter((c) => Number(c.montant) > 0)
+      .filter((c) => c.penalite_collectee)
       .reduce((acc, c) => acc + Number(c.montant_penalite ?? 0), 0),
   );
   const pendingPenaltiesCycle = roundCurrency(
     cycle.cotisations
-      .filter((c) => Number(c.montant) === 0 && c.montant_penalite !== null)
+      .filter((c) => !c.penalite_collectee && c.montant_penalite !== null)
       .reduce((acc, c) => acc + Number(c.montant_penalite ?? 0), 0),
   );
   const penaltyWithdrawalsCycle = roundCurrency(

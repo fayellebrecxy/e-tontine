@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
+import { caissePenalitesCycle, recordMouvementFinancier } from "@/lib/financial-journal";
 
 export type PenaltyWithdrawalScope = "TOUR" | "CYCLE";
 
@@ -54,7 +55,7 @@ export async function enregistrerRetraitPenalite(data: {
 
   const cycle = await prisma.cycleTontine.findFirst({
     where: { id_cycle: data.cycleId, id_groupe: data.groupId },
-    select: { id_cycle: true },
+    select: { id_cycle: true, nom_cycle: true },
   });
 
   if (!cycle) {
@@ -76,14 +77,31 @@ export async function enregistrerRetraitPenalite(data: {
     };
   }
 
-  const retrait = await prisma.retraitPenalite.create({
-    data: {
-      id_cycle: data.cycleId,
-      id_admin_valideur: auth.adminId,
+  const retrait = await prisma.$transaction(async (tx) => {
+    const created = await tx.retraitPenalite.create({
+      data: {
+        id_cycle: data.cycleId,
+        id_admin_valideur: auth.adminId,
+        montant: data.montant,
+        motif: data.motif.trim(),
+        numero_tour: data.scope === "TOUR" ? snapshot.activeTour : null,
+      },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId: data.groupId,
+      caisse: caissePenalitesCycle(cycle.id_cycle, cycle.nom_cycle),
+      type: "SORTIE",
+      source: "RETRAIT_PENALITE_CYCLE",
       montant: data.montant,
       motif: data.motif.trim(),
-      numero_tour: data.scope === "TOUR" ? snapshot.activeTour : null,
-    },
+      adminId: auth.adminId,
+      referenceType: "retraits_penalites",
+      referenceId: created.id_retrait_penalite,
+      dateMouvement: created.date_retrait,
+    });
+
+    return created;
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/cycles/${data.cycleId}`);

@@ -6,6 +6,11 @@ import { createNotification } from "@/lib/notifications";
 import { majStatutMembre } from "@/lib/membre-statut";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  caisseGenerale,
+  caisseRubrique,
+  recordMouvementFinancier,
+} from "@/lib/financial-journal";
+import {
   computeStoredDateFin,
   getDefaultDureeJours,
   resolveFrequenceForType,
@@ -34,14 +39,14 @@ async function requireGroupAdmin(groupId: string) {
         id_groupe: groupId,
       },
     },
-    select: { role: true, statut_adhesion: true },
+    select: { id_membre_groupe: true, role: true, statut_adhesion: true },
   });
 
   if (!membership || membership.statut_adhesion !== "ACTIF" || membership.role !== "ADMIN") {
     return { ok: false as const, error: "Action réservée aux administrateurs." };
   }
 
-  return { ok: true as const };
+  return { ok: true as const, adminId: membership.id_membre_groupe };
 }
 
 function buildRubriqueDates(input: {
@@ -384,18 +389,36 @@ export async function enregistrerPaiement(data: {
     };
   }
 
-  const paiement = await prisma.paiementRubrique.create({
-    data: {
-      id_rubrique: data.rubriqueId,
-      id_membre_groupe: data.membreId,
-      montant_paye: data.montant,
-      note: data.note,
-      // date_paiement est enregistrée automatiquement via @default(now())
-    },
-    include: {
-      membre: true,
-      rubrique: true,
-    },
+  const paiement = await prisma.$transaction(async (tx) => {
+    const created = await tx.paiementRubrique.create({
+      data: {
+        id_rubrique: data.rubriqueId,
+        id_membre_groupe: data.membreId,
+        montant_paye: data.montant,
+        note: data.note,
+        // date_paiement est enregistrée automatiquement via @default(now())
+      },
+      include: {
+        membre: true,
+        rubrique: true,
+      },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId: data.groupId,
+      caisse: caisseRubrique(data.rubriqueId, rubrique.nom),
+      type: "ENTREE",
+      source: "PAIEMENT_RUBRIQUE",
+      montant: data.montant,
+      motif: `Paiement de la rubrique ${rubrique.nom}`,
+      adminId: auth.adminId,
+      membreId: data.membreId,
+      referenceType: "paiements_rubrique",
+      referenceId: created.id_paiement,
+      dateMouvement: created.date_paiement,
+    });
+
+    return created;
   });
 
   await createNotification({
@@ -424,14 +447,44 @@ export async function enregistrerRetrait(data: {
     return auth;
   }
 
-  const retrait = await prisma.retrait.create({
-    data: {
-      id_groupe: data.groupId,
-      id_admin_valideur: data.adminId,
+  const rubrique = data.rubriqueId
+    ? await prisma.rubriqueCotisation.findFirst({
+        where: { id_rubrique: data.rubriqueId, id_groupe: data.groupId },
+        select: { id_rubrique: true, nom: true },
+      })
+    : null;
+
+  if (data.rubriqueId && !rubrique) {
+    return { ok: false as const, error: "Rubrique introuvable." };
+  }
+
+  const retrait = await prisma.$transaction(async (tx) => {
+    const created = await tx.retrait.create({
+      data: {
+        id_groupe: data.groupId,
+        id_admin_valideur: auth.adminId,
+        montant: data.montant,
+        motif: data.motif,
+        id_rubrique: data.rubriqueId,
+      },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId: data.groupId,
+      caisse: rubrique
+        ? caisseRubrique(rubrique.id_rubrique, rubrique.nom)
+        : caisseGenerale(data.groupId),
+      type: "SORTIE",
+      source: rubrique ? "RETRAIT_RUBRIQUE" : "RETRAIT_GENERAL",
       montant: data.montant,
       motif: data.motif,
-      id_rubrique: data.rubriqueId,
-    },
+      adminId: auth.adminId,
+      referenceType: "retraits",
+      referenceId: created.id_retrait,
+      dateMouvement: created.date_retrait,
+    });
+
+    return created;
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
@@ -453,16 +506,48 @@ export async function enregistrerVersementPot(data: {
     return auth;
   }
 
-  const versement = await prisma.versement.create({
-    data: {
-      id_cycle: data.cycleId,
-      id_beneficiaire: data.beneficiaireId,
-      id_admin_valideur: data.adminId,
-      montant_verse: data.montant,
-      numero_tour: data.tour,
-      mode_versement: data.mode,
-      reference_externe: data.reference,
-    },
+  const cycle = await prisma.cycleTontine.findFirst({
+    where: { id_cycle: data.cycleId, id_groupe: data.groupId },
+    select: { id_cycle: true, nom_cycle: true },
+  });
+
+  if (!cycle) {
+    return { ok: false as const, error: "Cycle introuvable." };
+  }
+
+  const versement = await prisma.$transaction(async (tx) => {
+    const created = await tx.versement.create({
+      data: {
+        id_cycle: data.cycleId,
+        id_beneficiaire: data.beneficiaireId,
+        id_admin_valideur: auth.adminId,
+        montant_verse: data.montant,
+        numero_tour: data.tour,
+        mode_versement: data.mode,
+        reference_externe: data.reference,
+      },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId: data.groupId,
+      caisse: {
+        type: "CYCLE",
+        referenceKey: data.cycleId,
+        nom: `Cycle ${cycle.nom_cycle}`,
+        cycleId: data.cycleId,
+      },
+      type: "SORTIE",
+      source: "VERSEMENT_POT",
+      montant: data.montant,
+      motif: `Versement du pot - tour ${data.tour}`,
+      adminId: auth.adminId,
+      membreId: data.beneficiaireId,
+      referenceType: "versements",
+      referenceId: created.id_versement,
+      dateMouvement: created.date_versement,
+    });
+
+    return created;
   });
 
   revalidatePath(`/dashboard/groups/${data.groupId}/cycles/${data.cycleId}`);

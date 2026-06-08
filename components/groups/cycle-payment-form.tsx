@@ -42,7 +42,11 @@ export function CyclePaymentForm({
 }: CyclePaymentFormProps) {
   const router = useRouter();
   const [selected, setSelected] = React.useState(
-    participants.find((participant) => (participant.remainingForActiveTour ?? 1) > 0)
+    participants.find(
+      (participant) =>
+        (participant.remainingForActiveTour ?? 0) > 0 ||
+        (participant.pendingPenaltyForActiveTour ?? 0) > 0,
+    )
       ?.id_membre_groupe ??
       participants[0]?.id_membre_groupe ??
       "",
@@ -52,6 +56,9 @@ export function CyclePaymentForm({
   const [datePaiement, setDatePaiement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const selectedParticipant = participants.find((participant) => participant.id_membre_groupe === selected);
+  const selectedRemaining = selectedParticipant?.remainingForActiveTour ?? 0;
+  const selectedPenalty = selectedParticipant?.pendingPenaltyForActiveTour ?? 0;
+  const selectedTotalToCollect = selectedRemaining + selectedPenalty;
 
   const submit = async () => {
     const montantValue = Number(montant);
@@ -112,7 +119,10 @@ export function CyclePaymentForm({
               <option
                 key={member.id_membre_groupe}
                 value={member.id_membre_groupe}
-                disabled={(member.remainingForActiveTour ?? 1) <= 0}
+                disabled={
+                  (member.remainingForActiveTour ?? 0) <= 0 &&
+                  !(member.pendingPenaltyForActiveTour && member.pendingPenaltyForActiveTour > 0)
+                }
               >
                 {member.prenom} {member.nom}
                 {typeof member.remainingForActiveTour === "number"
@@ -128,7 +138,7 @@ export function CyclePaymentForm({
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">
                 Déjà versé : {(selectedParticipant.paidForActiveTour ?? 0).toLocaleString("fr-FR")} ·
-                Reste à cotiser : <span className="font-medium text-gray-700">{(selectedParticipant.remainingForActiveTour ?? 0).toLocaleString("fr-FR")}</span>
+                Reste à cotiser : <span className="font-medium text-gray-700">{selectedRemaining.toLocaleString("fr-FR")}</span>
               </p>
               {selectedParticipant.pendingPenaltyForActiveTour ? (
                 <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -139,7 +149,7 @@ export function CyclePaymentForm({
                   la cotisation ira dans la caisse principale et la pénalité dans la caisse pénalités.
                   <br />
                   <span className="font-semibold">Total à collecter :{" "}
-                    {((selectedParticipant.remainingForActiveTour ?? 0) + selectedParticipant.pendingPenaltyForActiveTour).toLocaleString("fr-FR")}
+                    {selectedTotalToCollect.toLocaleString("fr-FR")}
                   </span>
                 </div>
               ) : null}
@@ -167,7 +177,7 @@ export function CyclePaymentForm({
             <Input
               type="number"
               min={0}
-              max={selectedParticipant?.remainingForActiveTour}
+              max={selectedTotalToCollect || selectedParticipant?.remainingForActiveTour}
               step="0.01"
               value={montant}
               onChange={(event) => setMontant(event.target.value)}

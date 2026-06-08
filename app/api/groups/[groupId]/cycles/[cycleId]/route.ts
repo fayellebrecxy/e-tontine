@@ -105,6 +105,7 @@ export async function GET(
       date_echeance: true,
       penalite_appliquee: true,
       montant_penalite: true,
+      penalite_collectee: true,
       penalites: {
         select: {
           id_penalite: true,

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
 import { majStatutMembre } from "@/lib/membre-statut";
+import { caisseAmendesReunion, recordMouvementFinancier } from "@/lib/financial-journal";
 
 // Admin marque une amende comme payée
 export async function PATCH(
@@ -48,9 +49,27 @@ export async function PATCH(
   if (!presence) return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
   if (presence.amende_payee) return NextResponse.json({ ok: false, error: "Déjà marquée payée." }, { status: 409 });
 
-  await prisma.presenceReunion.update({
-    where: { id_presence: presenceId },
-    data: { amende_payee: true },
+  const montantAmende = Number(presence.reunion.montant_amende ?? 0);
+
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.presenceReunion.update({
+      where: { id_presence: presenceId },
+      data: { amende_payee: true },
+    });
+
+    await recordMouvementFinancier(tx, {
+      groupId,
+      caisse: caisseAmendesReunion(),
+      type: "ENTREE",
+      source: "AMENDE_REUNION",
+      montant: montantAmende,
+      motif: `Amende payée - ${presence.reunion.titre}`,
+      adminId: membership.id_membre_groupe,
+      membreId: presence.id_membre_groupe,
+      referenceType: "presences_reunion",
+      referenceId: updated.id_presence,
+      dateMouvement: new Date(),
+    });
   });
 
   // Notifier le membre

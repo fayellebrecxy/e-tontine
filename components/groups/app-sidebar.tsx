@@ -10,30 +10,20 @@ import {
   Settings,
   Repeat,
   Landmark,
-  ChevronRight,
-  ChevronDown,
+  Wallet,
 } from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 const items = [
   { label: "Aperçu", href: "", icon: LayoutDashboard },
@@ -41,6 +31,7 @@ const items = [
   { label: "Invitations", href: "invitations", icon: Mail },
   { label: "Rubriques", href: "rubriques", icon: Landmark },
   { label: "Cycles", href: "cycles", icon: Repeat },
+  { label: "Finances", href: "finances", icon: Wallet },
   { label: "Paramètres", href: "settings", icon: Settings },
 ];
 

@@ -7,6 +7,11 @@ import { createCyclePaymentSchema } from "@/lib/validations";
 import { createNotification } from "@/lib/notifications";
 import { getCycleTurnSnapshot, getMemberRemainingForTurn } from "@/lib/cycle-turns";
 import { majStatutMembre } from "@/lib/membre-statut";
+import {
+  caisseCycle,
+  caissePenalitesCycle,
+  recordMouvementFinancier,
+} from "@/lib/financial-journal";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -79,6 +84,7 @@ export async function POST(
     where: { id_cycle: cycleId, id_groupe: groupId },
     select: {
       id_cycle: true,
+      nom_cycle: true,
       date_debut: true,
       duree_tour_de_gain: true,
       montant_cotisation: true,
@@ -139,28 +145,27 @@ export async function POST(
       return NextResponse.json({ ok: false, error: "Cycle not found." }, { status: 404 });
     }
 
-    if (remaining.remaining <= 0) {
-      return NextResponse.json(
-        { ok: false, error: "Ce membre a déjà soldé sa cotisation pour ce tour." },
-        { status: 409 },
-      );
-    }
-
-    if (roundCurrency(montant) > remaining.remaining) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Montant trop élevé. Reste à cotiser pour ce membre : ${remaining.remaining.toLocaleString("fr-FR")}.`,
-        },
-        { status: 400 },
-      );
-    }
+    const previousRealPayments = await prisma.cotisations.findMany({
+      where: {
+        id_cycle: cycle.id_cycle,
+        id_membre_groupe,
+        numero_tour,
+        montant: { gt: 0 },
+      },
+      orderBy: { date_de_paiement: "asc" },
+      select: { date_de_paiement: true },
+    });
 
     const dateEcheance =
       snapshot.activeTourEnd ?? addDays(cycle.date_debut, cycle.duree_tour_de_gain * numeroTour);
+    const dateReferencePenalite =
+      remaining.remaining <= 0
+        ? (previousRealPayments.find((payment) => payment.date_de_paiement > dateEcheance)
+            ?.date_de_paiement ?? datePaiement)
+        : datePaiement;
     const joursRetard = Math.max(
       0,
-      Math.ceil((datePaiement.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),
+      Math.ceil((dateReferencePenalite.getTime() - dateEcheance.getTime()) / ONE_DAY_MS),
     );
     const valeurPenalite = cycle.valeur_penalite ? Number(cycle.valeur_penalite) : 0;
     const montantCotisation = Number(cycle.montant_cotisation);
@@ -174,6 +179,7 @@ export async function POST(
         penalite_appliquee: true,
         montant_penalite: { not: null },
         montant: 0, // pénalité automatique non encore collectée
+        penalite_collectee: false,
       },
       select: {
         id_cotisation: true,
@@ -190,17 +196,17 @@ export async function POST(
         numero_tour: numeroTour,
         penalite_appliquee: true,
         montant_penalite: { not: null },
-        montant: { gt: 0 }, // pénalité déjà collectée avec un vrai paiement
+        penalite_collectee: true,
       },
       select: { id_cotisation: true },
     });
 
     // Calculer le montant de pénalité à appliquer sur CE paiement
-    let montantPenalite = 0;
+    let montantPenaliteDue = 0;
 
     if (!paidWithPenalty && autoPenaltyRecord) {
       // La pénalité auto est en attente → on la collecte maintenant avec ce paiement
-      montantPenalite = Number(autoPenaltyRecord.montant_penalite ?? 0);
+      montantPenaliteDue = Number(autoPenaltyRecord.montant_penalite ?? 0);
     } else if (!paidWithPenalty && !autoPenaltyRecord) {
       // Pas de pénalité auto → calculer si le paiement est en retard
       if (
@@ -210,13 +216,51 @@ export async function POST(
         joursRetard > 0
       ) {
         if (cycle.mode_penalite === "FIXE") {
-          montantPenalite = valeurPenalite;
+          montantPenaliteDue = valeurPenalite;
         } else if (cycle.mode_penalite === "POURCENTAGE") {
-          montantPenalite = roundCurrency((montantCotisation * valeurPenalite) / 100);
+          montantPenaliteDue = roundCurrency((montantCotisation * valeurPenalite) / 100);
         } else {
-          montantPenalite = roundCurrency(valeurPenalite * joursRetard);
+          montantPenaliteDue = roundCurrency(valeurPenalite * joursRetard);
         }
       }
+    }
+
+    const remainingCotisation = roundCurrency(remaining.remaining);
+    const totalDu = roundCurrency(remainingCotisation + montantPenaliteDue);
+    const montantRecu = roundCurrency(montant);
+
+    if (totalDu <= 0) {
+      return NextResponse.json(
+        { ok: false, error: "Ce membre a déjà soldé sa cotisation et ses pénalités pour ce tour." },
+        { status: 409 },
+      );
+    }
+
+    if (montantRecu > totalDu) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Montant trop élevé. Total à payer : ${totalDu.toLocaleString("fr-FR")}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    const montantCotisationPaye = roundCurrency(Math.min(montantRecu, remainingCotisation));
+    const montantPenaliteCollecte = roundCurrency(montantRecu - montantCotisationPaye);
+
+    if (
+      montantPenaliteCollecte > 0 &&
+      montantPenaliteDue > 0 &&
+      montantPenaliteCollecte < montantPenaliteDue
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `La pénalité doit être payée en totalité : ${montantPenaliteDue.toLocaleString("fr-FR")}.`,
+        },
+        { status: 400 },
+      );
     }
 
     const payment = await prisma.$transaction(async (tx) => {
@@ -229,9 +273,10 @@ export async function POST(
           date_de_paiement: datePaiement,
           numero_tour: numeroTour,
           date_echeance: dateEcheance,
-          montant,
-          penalite_appliquee: montantPenalite > 0,
-          montant_penalite: montantPenalite > 0 ? montantPenalite : null,
+          montant: montantCotisationPaye,
+          penalite_appliquee: montantPenaliteCollecte > 0,
+          montant_penalite: montantPenaliteCollecte > 0 ? montantPenaliteCollecte : null,
+          penalite_collectee: montantPenaliteCollecte > 0,
         },
         select: {
           id_cotisation: true,
@@ -242,10 +287,11 @@ export async function POST(
           date_echeance: true,
           penalite_appliquee: true,
           montant_penalite: true,
+          penalite_collectee: true,
         },
       });
 
-      if (montantPenalite > 0) {
+      if (montantPenaliteCollecte > 0) {
         if (autoPenaltyRecord) {
           // Supprimer l'enregistrement auto en attente (il est maintenant collecté via ce paiement)
           await tx.penalite.deleteMany({
@@ -267,12 +313,77 @@ export async function POST(
             taux_augmentation_heure: 0,
             seuil_heure_augmentation: 24,
             date_application: datePaiement,
-            montant_final: montantPenalite,
+            montant_final: montantPenaliteCollecte,
             mode_penalite: cycle.mode_penalite,
             valeur_configuree: valeurPenalite,
             jours_retard: joursRetard,
             date_echeance: dateEcheance,
           },
+        });
+      }
+
+      if (montantPenaliteDue > 0 && montantPenaliteCollecte === 0 && !autoPenaltyRecord) {
+        const pending = await tx.cotisations.create({
+          data: {
+            id_cycle: cycle.id_cycle,
+            id_membre_groupe,
+            date_debut: cycle.date_debut,
+            date_de_paiement: datePaiement,
+            numero_tour: numeroTour,
+            date_echeance: dateEcheance,
+            montant: 0,
+            penalite_appliquee: true,
+            montant_penalite: montantPenaliteDue,
+            penalite_collectee: false,
+          },
+          select: { id_cotisation: true },
+        });
+
+        await tx.penalite.create({
+          data: {
+            id_cotisation: pending.id_cotisation,
+            id_membre_groupe,
+            montant_base: valeurPenalite,
+            motif: "Pénalité de retard en attente de paiement",
+            taux_augmentation_heure: 0,
+            seuil_heure_augmentation: 24,
+            date_application: datePaiement,
+            montant_final: montantPenaliteDue,
+            mode_penalite: cycle.mode_penalite,
+            valeur_configuree: valeurPenalite,
+            jours_retard: joursRetard,
+            date_echeance: dateEcheance,
+          },
+        });
+      }
+
+      await recordMouvementFinancier(tx, {
+        groupId,
+        caisse: caisseCycle(cycle.id_cycle, cycle.nom_cycle),
+        type: "ENTREE",
+        source: "COTISATION_CYCLE",
+        montant: montantCotisationPaye,
+        motif: `Cotisation du tour ${numeroTour} - ${cycle.nom_cycle}`,
+        adminId: membership.id_membre_groupe,
+        membreId: id_membre_groupe,
+        referenceType: "cotisations",
+        referenceId: created.id_cotisation,
+        dateMouvement: created.date_de_paiement,
+      });
+
+      if (montantPenaliteCollecte > 0) {
+        await recordMouvementFinancier(tx, {
+          groupId,
+          caisse: caissePenalitesCycle(cycle.id_cycle, cycle.nom_cycle),
+          type: "ENTREE",
+          source: "PENALITE_CYCLE",
+          montant: montantPenaliteCollecte,
+          motif: `Pénalité du tour ${numeroTour} - ${cycle.nom_cycle}`,
+          adminId: membership.id_membre_groupe,
+          membreId: id_membre_groupe,
+          referenceType: "cotisations",
+          referenceId: created.id_cotisation,
+          dateMouvement: created.date_de_paiement,
         });
       }
 
@@ -293,12 +404,12 @@ export async function POST(
         message: `Votre versement de ${montant.toLocaleString("fr-FR")} pour le tour ${numeroTour} du cycle "${cycle.id_cycle}" (Groupe: ${targetMember.groupe.nom}) a été enregistré.`,
       });
 
-      if (montantPenalite > 0) {
+      if (montantPenaliteCollecte > 0) {
         await createNotification({
           userId: targetMember.id_user,
           groupId,
           type: "PENALITE_APPLIQUEE",
-          message: `Une pénalité de ${montantPenalite.toLocaleString("fr-FR")} a été appliquée à votre versement du tour ${numeroTour} pour retard (${joursRetard} jours).`,
+          message: `Une pénalité de ${montantPenaliteCollecte.toLocaleString("fr-FR")} a été appliquée à votre versement du tour ${numeroTour} pour retard (${joursRetard} jours).`,
         });
       }
     }

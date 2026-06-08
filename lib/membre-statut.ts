@@ -7,7 +7,7 @@
  * VERT   → Tout est à jour
  *
  * Points :
- * +1 par pénalité de cycle en attente (montant=0, penalite_appliquee=true)
+ * +1 par pénalité de cycle en attente (penalite_appliquee=true, penalite_collectee=false)
  * +1 par cotisation de cycle en retard (deadline dépassée, pas encore payée, pas de pénalité auto)
  * +1 par amende de réunion non payée
  * +1 si rubrique dont la date_fin est dépassée et solde > 0
@@ -30,12 +30,12 @@ export async function calculerStatutMembre(
   const now = new Date();
 
   // ─── 1. Pénalités de cycle déjà auto-appliquées non payées ───
-  // cotisation avec penalite_appliquee=true ET montant=0 (créée par le cron, pas encore payée)
+  // cotisation avec penalite_appliquee=true ET penalite_collectee=false
   const penalitesEnAttente = await prisma.cotisations.count({
     where: {
       id_membre_groupe: membreId,
       penalite_appliquee: true,
-      montant: 0,
+      penalite_collectee: false,
     },
   });
 
@@ -103,7 +103,7 @@ export async function calculerStatutMembre(
             id_cycle: p.id_cycle,
             numero_tour: tour,
             penalite_appliquee: true,
-            montant: 0,
+            penalite_collectee: false,
           },
         });
         if (!penaliteAuto) {

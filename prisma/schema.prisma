@@ -59,29 +59,32 @@ model Groupes {
   retraits                  Retrait[]
   reunions                  Reunion[]
   retraits_amendes_reunions RetraitAmendeReunion[]
+  caisses_financieres       CaisseFinanciere[]
+  mouvements_financiers     MouvementFinancier[]
 
   @@map("groupes")
   @@schema("public")
 }
 
 model RubriqueCotisation {
-  id_rubrique       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom               String
-  montant_fixe      Decimal                @db.Decimal(15, 2)
-  type_rubrique     TypeRubriqueCotisation @default(PONCTUELLE)
-  frequence         FrequenceRubrique      @default(MENSUEL)
-  duree             String? // Conservé pour migration / affichage legacy
-  duree_jours       Int                    @default(1)
-  est_obligatoire   Boolean                @default(true)
-  id_groupe         String                 @db.Uuid
-  groupe            Groupes                @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
-  membres_concernes MembreRubrique[]
-  paiements         PaiementRubrique[]
-  retraits          Retrait[]
-  date_debut        DateTime               @default(now())
-  date_fin          DateTime?
-  date_limite       DateTime?
-  date_creation     DateTime               @default(now())
+  id_rubrique         String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom                 String
+  montant_fixe        Decimal                @db.Decimal(15, 2)
+  type_rubrique       TypeRubriqueCotisation @default(PONCTUELLE)
+  frequence           FrequenceRubrique      @default(MENSUEL)
+  duree               String? // Conservé pour migration / affichage legacy
+  duree_jours         Int                    @default(1)
+  est_obligatoire     Boolean                @default(true)
+  id_groupe           String                 @db.Uuid
+  groupe              Groupes                @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  membres_concernes   MembreRubrique[]
+  paiements           PaiementRubrique[]
+  retraits            Retrait[]
+  caisses_financieres CaisseFinanciere[]
+  date_debut          DateTime               @default(now())
+  date_fin            DateTime?
+  date_limite         DateTime?
+  date_creation       DateTime               @default(now())
 
   @@index([id_groupe])
   @@map("rubriques_cotisation")
@@ -172,6 +175,8 @@ model MembreGroupe {
   retraits_amendes_reunions RetraitAmendeReunion[] @relation("retraits_amendes_reunions")
   echanges_demandes         DemandeEchange[]       @relation("echanges_demandes")
   echanges_cibles           DemandeEchange[]       @relation("echanges_cibles")
+  mouvements_crees          MouvementFinancier[]   @relation("mouvements_financiers_admin")
+  mouvements_concernes      MouvementFinancier[]   @relation("mouvements_financiers_concernes")
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -181,23 +186,24 @@ model MembreGroupe {
 }
 
 model CycleTontine {
-  id_cycle           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom_cycle          String
-  date_debut         DateTime           @default(now())
-  date_fin           DateTime
-  duree_tour_de_gain Int
-  ordre_beneficiaire String?
-  id_groupe          String             @db.Uuid
-  montant_cotisation Decimal            @db.Decimal(15, 2)
-  penalites_activees Boolean            @default(false)
-  mode_penalite      ModePenalite?
-  valeur_penalite    Decimal?           @db.Decimal(15, 2)
-  cotisations        Cotisations[]
-  participants       CycleParticipant[]
-  versements         Versement[]
-  retraits_penalites RetraitPenalite[]
-  demandes_echange   DemandeEchange[]
-  groupe             Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  id_cycle            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom_cycle           String
+  date_debut          DateTime           @default(now())
+  date_fin            DateTime
+  duree_tour_de_gain  Int
+  ordre_beneficiaire  String?
+  id_groupe           String             @db.Uuid
+  montant_cotisation  Decimal            @db.Decimal(15, 2)
+  penalites_activees  Boolean            @default(false)
+  mode_penalite       ModePenalite?
+  valeur_penalite     Decimal?           @db.Decimal(15, 2)
+  cotisations         Cotisations[]
+  participants        CycleParticipant[]
+  versements          Versement[]
+  retraits_penalites  RetraitPenalite[]
+  demandes_echange    DemandeEchange[]
+  caisses_financieres CaisseFinanciere[]
+  groupe              Groupes            @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
 
   @@index([id_groupe])
   @@map("cycles_tontine")
@@ -244,6 +250,7 @@ model Cotisations {
   date_de_paiement   DateTime
   penalite_appliquee Boolean      @default(false)
   montant_penalite   Decimal?     @db.Decimal(15, 2)
+  penalite_collectee Boolean      @default(false)
   id_membre_groupe   String       @db.Uuid
   id_cycle           String       @db.Uuid
   numero_tour        Int?
@@ -314,6 +321,58 @@ model RetraitAmendeReunion {
 
   @@index([id_groupe])
   @@map("retraits_amendes_reunions")
+  @@schema("public")
+}
+
+model CaisseFinanciere {
+  id_caisse     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe     String               @db.Uuid
+  type_caisse   TypeCaisseFinanciere
+  nom           String
+  reference_key String
+  id_cycle      String?              @db.Uuid
+  id_rubrique   String?              @db.Uuid
+  solde_actuel  Decimal              @default(0) @db.Decimal(15, 2)
+  date_creation DateTime             @default(now())
+  groupe        Groupes              @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  cycle         CycleTontine?        @relation(fields: [id_cycle], references: [id_cycle], onDelete: Cascade)
+  rubrique      RubriqueCotisation?  @relation(fields: [id_rubrique], references: [id_rubrique], onDelete: Cascade)
+  mouvements    MouvementFinancier[]
+
+  @@unique([id_groupe, type_caisse, reference_key])
+  @@index([id_groupe])
+  @@index([id_cycle])
+  @@index([id_rubrique])
+  @@map("caisses_financieres")
+  @@schema("public")
+}
+
+model MouvementFinancier {
+  id_mouvement       String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe          String                   @db.Uuid
+  id_caisse          String                   @db.Uuid
+  type_mouvement     TypeMouvementFinancier
+  source             SourceMouvementFinancier
+  montant            Decimal                  @db.Decimal(15, 2)
+  motif              String
+  solde_avant        Decimal                  @db.Decimal(15, 2)
+  solde_apres        Decimal                  @db.Decimal(15, 2)
+  id_admin_createur  String?                  @db.Uuid
+  id_membre_concerne String?                  @db.Uuid
+  reference_type     String?
+  reference_id       String?
+  statut             StatutMouvementFinancier @default(VALIDE)
+  date_mouvement     DateTime                 @default(now())
+  groupe             Groupes                  @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  caisse             CaisseFinanciere         @relation(fields: [id_caisse], references: [id_caisse], onDelete: Cascade)
+  admin_createur     MembreGroupe?            @relation("mouvements_financiers_admin", fields: [id_admin_createur], references: [id_membre_groupe])
+  membre_concerne    MembreGroupe?            @relation("mouvements_financiers_concernes", fields: [id_membre_concerne], references: [id_membre_groupe])
+
+  @@index([id_groupe, date_mouvement])
+  @@index([id_caisse, date_mouvement])
+  @@index([id_membre_concerne])
+  @@index([source, reference_id])
+  @@map("mouvements_financiers")
   @@schema("public")
 }
 
@@ -453,6 +512,46 @@ enum StatutPresence {
   ABSENT
   EXCUSE
   EN_RETARD
+
+  @@schema("public")
+}
+
+enum TypeCaisseFinanciere {
+  GENERALE
+  CYCLE
+  RUBRIQUE
+  AMENDES_REUNION
+  PENALITES_CYCLE
+
+  @@schema("public")
+}
+
+enum TypeMouvementFinancier {
+  ENTREE
+  SORTIE
+  CORRECTION
+
+  @@schema("public")
+}
+
+enum SourceMouvementFinancier {
+  COTISATION_CYCLE
+  VERSEMENT_BENEFICIAIRE
+  PAIEMENT_RUBRIQUE
+  RETRAIT_RUBRIQUE
+  AMENDE_REUNION
+  RETRAIT_AMENDES_REUNION
+  PENALITE_CYCLE
+  RETRAIT_PENALITE_CYCLE
+  RETRAIT_GENERAL
+  VERSEMENT_POT
+
+  @@schema("public")
+}
+
+enum StatutMouvementFinancier {
+  VALIDE
+  ANNULE
 
   @@schema("public")
 }

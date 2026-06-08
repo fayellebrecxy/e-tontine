@@ -30,6 +30,24 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function roundCurrency(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function computePenaltyAmount(input: {
+  mode: "FIXE" | "POURCENTAGE" | "PROGRESSIVE" | null;
+  configuredValue: number;
+  montantCotisation: number;
+  joursRetard: number;
+}) {
+  if (!input.mode || input.configuredValue <= 0 || input.joursRetard <= 0) return 0;
+  if (input.mode === "FIXE") return input.configuredValue;
+  if (input.mode === "POURCENTAGE") {
+    return roundCurrency((input.montantCotisation * input.configuredValue) / 100);
+  }
+  return roundCurrency(input.configuredValue * input.joursRetard);
+}
+
 type PaymentItem = {
   id_cotisation: string;
   id_membre_groupe: string;
@@ -39,6 +57,7 @@ type PaymentItem = {
   date_echeance: Date | null;
   penalite_appliquee: boolean;
   montant_penalite: number | null;
+  penalite_collectee: boolean;
 };
 
 export const dynamic = "force-dynamic";
@@ -138,6 +157,7 @@ export default async function GroupCycleDetailPage({
       date_echeance: true,
       penalite_appliquee: true,
       montant_penalite: true,
+      penalite_collectee: true,
     },
   });
 
@@ -153,6 +173,7 @@ export default async function GroupCycleDetailPage({
       date_echeance: payment.date_echeance,
       penalite_appliquee: payment.penalite_appliquee,
       montant_penalite: payment.montant_penalite ? Number(payment.montant_penalite) : null,
+      penalite_collectee: payment.penalite_collectee,
     });
     paymentsByMember.set(payment.id_membre_groupe, entry);
   });
@@ -190,9 +211,35 @@ export default async function GroupCycleDetailPage({
     // Pénalité automatique en attente (montant = 0) pour ce membre
     const pendingPenaltyRecord = activeTourPayments.find(
       (payment) =>
-        payment.montant === 0 && payment.penalite_appliquee && payment.montant_penalite !== null,
+        payment.montant === 0 &&
+        payment.penalite_appliquee &&
+        payment.montant_penalite !== null &&
+        !payment.penalite_collectee,
     );
-    const pendingPenaltyForActiveTour = pendingPenaltyRecord?.montant_penalite ?? null;
+    const penaltyAlreadyCollected = activeTourPayments.some((payment) => payment.penalite_collectee);
+    const latePaymentWithoutPenalty =
+      !pendingPenaltyRecord && !penaltyAlreadyCollected
+        ? activeTourPayments.find(
+            (payment) => payment.montant > 0 && payment.date_de_paiement > tourEnd,
+          )
+        : null;
+    const computedLatePenalty = latePaymentWithoutPenalty
+      ? computePenaltyAmount({
+          mode: cycle.mode_penalite,
+          configuredValue: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : 0,
+          montantCotisation: montantFixe,
+          joursRetard: Math.max(
+            0,
+            Math.ceil(
+              (latePaymentWithoutPenalty.date_de_paiement.getTime() - tourEnd.getTime()) /
+                (24 * 60 * 60 * 1000),
+            ),
+          ),
+        })
+      : 0;
+    const pendingPenaltyForActiveTour =
+      pendingPenaltyRecord?.montant_penalite ??
+      (computedLatePenalty > 0 ? computedLatePenalty : null);
 
     return {
       id_membre_groupe: participant.id_membre_groupe,
@@ -673,6 +720,7 @@ export default async function GroupCycleDetailPage({
               montant: Number(payment.montant),
               penalite_appliquee: payment.penalite_appliquee,
               montant_penalite: payment.montant_penalite ? Number(payment.montant_penalite) : null,
+              penalite_collectee: payment.penalite_collectee,
             };
           })}
         devise={devise}
@@ -712,6 +760,7 @@ export default async function GroupCycleDetailPage({
         montant: payment.montant,
         penalite_appliquee: payment.penalite_appliquee,
         montant_penalite: payment.montant_penalite,
+        penalite_collectee: payment.penalite_collectee,
       }))}
       devise={devise}
       historyScope={`cycles:${cycleId}:mes-paiements`}

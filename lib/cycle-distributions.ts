@@ -9,12 +9,13 @@ import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
 export async function calculerPotTour(cycleId: string, numeroTour: number) {
   const cotisations = await prisma.cotisations.findMany({
     where: { id_cycle: cycleId, numero_tour: numeroTour },
-    select: { montant: true, montant_penalite: true },
+    select: { montant: true, montant_penalite: true, penalite_collectee: true },
   });
 
   const potCollecte = cotisations.reduce((acc, c) => acc + Number(c.montant), 0);
   const totalPenalites = cotisations.reduce(
-    (acc, c) => acc + (c.montant_penalite ? Number(c.montant_penalite) : 0),
+    (acc, c) =>
+      acc + (c.penalite_collectee && c.montant_penalite ? Number(c.montant_penalite) : 0),
     0,
   );
 

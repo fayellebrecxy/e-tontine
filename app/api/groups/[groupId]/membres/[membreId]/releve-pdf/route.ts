@@ -73,6 +73,7 @@ export async function GET(
               date_de_paiement: true,
               montant: true,
               montant_penalite: true,
+              penalite_collectee: true,
             },
           },
           versements: {
@@ -95,12 +96,12 @@ export async function GET(
     dateFin: fmtDate(p.cycle.date_fin),
     montantCotisation: Number(p.cycle.montant_cotisation),
     cotisations: p.cycle.cotisations
-      .filter((c) => Number(c.montant) > 0)
+      .filter((c) => Number(c.montant) > 0 || c.penalite_collectee)
       .map((c) => ({
         tour: c.numero_tour ?? 0,
         date: fmtDate(c.date_de_paiement),
         montant: Number(c.montant),
-        penalite: Number(c.montant_penalite ?? 0),
+        penalite: c.penalite_collectee ? Number(c.montant_penalite ?? 0) : 0,
       })),
     versementsRecus: p.cycle.versements.map((v) => ({
       tour: v.numero_tour,
