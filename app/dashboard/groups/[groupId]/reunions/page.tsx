@@ -73,7 +73,9 @@ export default async function ReunionsPage({ params }: { params: Promise<{ group
   const myPendingAmendes = !isAdmin
     ? reunions.filter((r) => {
         const p = r.presences[0];
-        return p?.statut_presence === "ABSENT" && !p.amende_payee && r.montant_amende;
+        return (p?.statut_presence === "ABSENT" || p?.statut_presence === "EN_RETARD")
+          && !p.amende_payee
+          && r.montant_amende;
       })
     : [];
 

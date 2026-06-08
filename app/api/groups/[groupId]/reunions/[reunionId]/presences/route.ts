@@ -50,9 +50,74 @@ export async function POST(
   if (reunion.statut === "ANNULEE") {
     return NextResponse.json({ ok: false, error: "Cette réunion est annulée." }, { status: 409 });
   }
+  if (reunion.statut === "TERMINEE") {
+    return NextResponse.json(
+      { ok: false, error: "Les présences de cette réunion sont déjà clôturées." },
+      { status: 409 },
+    );
+  }
+  if (reunion.date_reunion.getTime() > Date.now()) {
+    return NextResponse.json(
+      { ok: false, error: "Impossible d'enregistrer les présences avant que la réunion ait eu lieu." },
+      { status: 409 },
+    );
+  }
 
   const body = recordPresencesSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
+
+  const activeMembers = await prisma.membreGroupe.findMany({
+    where: { id_groupe: groupId, statut_adhesion: "ACTIF" },
+    select: { id_membre_groupe: true },
+  });
+  const activeMemberIds = new Set(activeMembers.map((member) => member.id_membre_groupe));
+  const submittedMemberIds = body.data.presences.map((presence) => presence.id_membre_groupe);
+  const uniqueSubmittedMemberIds = new Set(submittedMemberIds);
+
+  if (uniqueSubmittedMemberIds.size !== submittedMemberIds.length) {
+    return NextResponse.json(
+      { ok: false, error: "Un membre est présent plusieurs fois dans la liste." },
+      { status: 400 },
+    );
+  }
+
+  const unknownMemberId = submittedMemberIds.find((memberId) => !activeMemberIds.has(memberId));
+  if (unknownMemberId) {
+    return NextResponse.json(
+      { ok: false, error: "La liste contient un membre qui n'appartient pas au groupe actif." },
+      { status: 403 },
+    );
+  }
+
+  if (uniqueSubmittedMemberIds.size !== activeMemberIds.size) {
+    return NextResponse.json(
+      { ok: false, error: "Tous les membres actifs doivent avoir un statut de présence." },
+      { status: 400 },
+    );
+  }
+
+  const existingPresences = await prisma.presenceReunion.findMany({
+    where: { id_reunion: reunionId },
+    select: {
+      id_membre_groupe: true,
+      statut_presence: true,
+      amende_payee: true,
+    },
+  });
+  const existingByMember = new Map(
+    existingPresences.map((presence) => [presence.id_membre_groupe, presence]),
+  );
+  const paidFineBeingRemoved = body.data.presences.some((entry) => {
+    const existing = existingByMember.get(entry.id_membre_groupe);
+    return !!existing?.amende_payee
+      && (entry.statut_presence === "PRESENT" || entry.statut_presence === "EXCUSE");
+  });
+  if (paidFineBeingRemoved) {
+    return NextResponse.json(
+      { ok: false, error: "Une présence avec amende déjà payée ne peut pas être changée en présent ou excusé." },
+      { status: 409 },
+    );
+  }
 
   const montantAmende = reunion.montant_amende ? Number(reunion.montant_amende) : 0;
   const dateStr = reunion.date_reunion.toLocaleDateString("fr-FR", {
@@ -159,6 +224,12 @@ export async function PATCH(
       { status: 409 },
     );
   }
+  if (reunion.date_reunion.getTime() <= Date.now()) {
+    return NextResponse.json(
+      { ok: false, error: "La réunion a déjà commencé ou est passée." },
+      { status: 409 },
+    );
+  }
 
   const body = z
     .object({ note_absence: z.string().min(5).max(300) })
@@ -173,13 +244,13 @@ export async function PATCH(
       },
     },
     update: {
-      statut_presence: "EXCUSE",
+      statut_presence: "DEMANDE_EXCUSE",
       note_absence: body.data.note_absence,
     },
     create: {
       id_reunion: reunionId,
       id_membre_groupe: membership.id_membre_groupe,
-      statut_presence: "EXCUSE",
+      statut_presence: "DEMANDE_EXCUSE",
       note_absence: body.data.note_absence,
       amende_payee: false,
     },

@@ -47,23 +47,36 @@ export function ReunionsHistory({ groupId, reunions, isAdmin, devise }: Reunions
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
           Réunions passées ({visibleReunions.length})
         </h2>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            allHistoryHidden
-              ? historyVisibility.restoreAll("Historique des réunions réaffiché.")
-              : historyVisibility.hide(groupId, "Historique des réunions masqué.")
-          }
-        >
-          {allHistoryHidden ? (
-            <RotateCcw className="mr-2 h-4 w-4" />
-          ) : (
-            <X className="mr-2 h-4 w-4" />
+        <div className="flex flex-wrap items-center gap-2">
+          {historyVisibility.hiddenTargetIds.size > 0 && !allHistoryHidden && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => historyVisibility.restoreAll("Historique des réunions réaffiché.")}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Restaurer
+            </Button>
           )}
-          {allHistoryHidden ? "Restaurer" : "Tout masquer"}
-        </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              allHistoryHidden
+                ? historyVisibility.restoreAll("Historique des réunions réaffiché.")
+                : historyVisibility.hide(groupId, "Historique des réunions masqué.")
+            }
+          >
+            {allHistoryHidden ? (
+              <RotateCcw className="mr-2 h-4 w-4" />
+            ) : (
+              <X className="mr-2 h-4 w-4" />
+            )}
+            {allHistoryHidden ? "Restaurer l'historique" : "Masquer tout l'historique"}
+          </Button>
+        </div>
       </div>
 
       {allHistoryHidden ? (
@@ -77,9 +90,9 @@ export function ReunionsHistory({ groupId, reunions, isAdmin, devise }: Reunions
               <div className="absolute right-3 top-3 z-10">
                 <Button
                   type="button"
-                  size="icon"
+                  size="sm"
                   variant="ghost"
-                  className="h-8 w-8 text-gray-400 hover:bg-rose-50 hover:text-rose-600"
+                  className="h-8 border border-white/80 bg-white/90 px-2 text-xs text-gray-500 shadow-sm hover:bg-rose-50 hover:text-rose-600 dark:border-gray-700 dark:bg-gray-900/90"
                   onClick={() =>
                     historyVisibility.hide(
                       reunion.id_reunion,
@@ -90,6 +103,7 @@ export function ReunionsHistory({ groupId, reunions, isAdmin, devise }: Reunions
                   title="Masquer cette réunion"
                 >
                   <Trash2 className="h-4 w-4" />
+                  <span className="ml-1">Masquer</span>
                 </Button>
               </div>
               <ReunionCard
@@ -105,8 +119,19 @@ export function ReunionsHistory({ groupId, reunions, isAdmin, devise }: Reunions
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center text-sm text-muted-foreground">
-          Aucune réunion passée visible.
+        <div className="space-y-3 rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-muted-foreground">
+          <p>Aucune réunion passée visible.</p>
+          {historyVisibility.hiddenTargetIds.size > 0 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => historyVisibility.restoreAll("Historique des réunions réaffiché.")}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Restaurer l'historique
+            </Button>
+          )}
         </div>
       )}
     </section>

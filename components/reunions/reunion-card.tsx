@@ -47,6 +47,7 @@ export function ReunionCard({ reunion, groupId, isAdmin, devise }: ReunionCardPr
     PRESENT: { label: "✅ Présent", className: "text-emerald-600" },
     ABSENT: { label: "❌ Absent", className: "text-rose-600" },
     EXCUSE: { label: "🟡 Excusé", className: "text-amber-600" },
+    DEMANDE_EXCUSE: { label: "🟠 Excuse demandée", className: "text-orange-600" },
     EN_RETARD: { label: "⏰ En retard", className: "text-orange-600" },
   };
 

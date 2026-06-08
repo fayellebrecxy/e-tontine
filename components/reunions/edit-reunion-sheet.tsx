@@ -65,6 +65,10 @@ export function EditReunionSheet({ groupId, reunionId, devise, initial }: Props)
     const [y, mo, d] = dateReunion.split("-").map(Number);
     const [h, min] = heureReunion.split(":").map(Number);
     const dateObj = new Date(y, mo - 1, d, h, min);
+    if (dateObj.getTime() <= Date.now()) {
+      toast.error("La date de la réunion doit être dans le futur.");
+      return;
+    }
 
     setSubmitting(true);
     const res = await fetch(`/api/groups/${groupId}/reunions/${reunionId}`, {

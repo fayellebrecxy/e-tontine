@@ -101,16 +101,87 @@ export async function PATCH(
 
   const reunion = await prisma.reunion.findFirst({
     where: { id_reunion: reunionId, id_groupe: groupId },
-    select: { id_reunion: true, titre: true, statut: true, date_reunion: true },
+    select: {
+      id_reunion: true,
+      titre: true,
+      statut: true,
+      date_reunion: true,
+      compte_rendu: true,
+      presences: {
+        select: {
+          id_presence: true,
+          amende_payee: true,
+          statut_presence: true,
+        },
+      },
+    },
   });
   if (!reunion) return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
 
   const body = updateReunionSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
 
+  const now = new Date();
+  const isCompteRenduUpdate = body.data.compte_rendu !== undefined;
+  const isPlanningUpdate = body.data.titre !== undefined
+    || body.data.description !== undefined
+    || body.data.date_reunion !== undefined
+    || body.data.lieu !== undefined
+    || body.data.type_reunion !== undefined
+    || body.data.montant_amende !== undefined;
+
+  if (body.data.date_reunion !== undefined && new Date(body.data.date_reunion).getTime() <= now.getTime()) {
+    return NextResponse.json(
+      { ok: false, error: "La date de la réunion doit être dans le futur." },
+      { status: 409 },
+    );
+  }
+
+  if (isPlanningUpdate && reunion.statut !== "PLANIFIEE") {
+    return NextResponse.json(
+      { ok: false, error: "Une réunion terminée ou annulée ne peut plus être modifiée." },
+      { status: 409 },
+    );
+  }
+
+  if (body.data.statut === "TERMINEE") {
+    return NextResponse.json(
+      { ok: false, error: "Une réunion doit être terminée en enregistrant les présences." },
+      { status: 409 },
+    );
+  }
+  if (body.data.statut === "ANNULEE" && reunion.statut !== "PLANIFIEE") {
+    return NextResponse.json(
+      { ok: false, error: "Seule une réunion planifiée peut être annulée." },
+      { status: 409 },
+    );
+  }
+  if (body.data.statut === "ANNULEE" && reunion.presences.some((presence) => presence.amende_payee)) {
+    return NextResponse.json(
+      { ok: false, error: "Une réunion avec une amende déjà payée ne peut pas être annulée." },
+      { status: 409 },
+    );
+  }
+
+  if (isCompteRenduUpdate) {
+    if (reunion.statut !== "TERMINEE" || reunion.date_reunion.getTime() > now.getTime()) {
+      return NextResponse.json(
+        { ok: false, error: "Le compte-rendu ne peut être publié qu'après une réunion tenue." },
+        { status: 409 },
+      );
+    }
+    if (!body.data.compte_rendu?.trim()) {
+      return NextResponse.json(
+        { ok: false, error: "Le compte-rendu ne peut pas être vide." },
+        { status: 400 },
+      );
+    }
+  }
+
   const wasAnnulee = body.data.statut === "ANNULEE" && reunion.statut !== "ANNULEE";
-  const compteRenduPublie = body.data.compte_rendu !== undefined && body.data.compte_rendu !== null
-    && !reunion.statut.includes("compte_rendu");
+  const compteRenduPublie = isCompteRenduUpdate
+    && !!body.data.compte_rendu?.trim()
+    && !reunion.compte_rendu;
 
   const updated = await prisma.reunion.update({
     where: { id_reunion: reunionId },
@@ -122,7 +193,7 @@ export async function PATCH(
       ...(body.data.type_reunion !== undefined && { type_reunion: body.data.type_reunion }),
       ...(body.data.montant_amende !== undefined && { montant_amende: body.data.montant_amende }),
       ...(body.data.statut !== undefined && { statut: body.data.statut }),
-      ...(body.data.compte_rendu !== undefined && { compte_rendu: body.data.compte_rendu }),
+      ...(typeof body.data.compte_rendu === "string" && { compte_rendu: body.data.compte_rendu.trim() }),
     },
     select: { id_reunion: true, titre: true, statut: true, date_reunion: true, compte_rendu: true },
   });
@@ -189,9 +260,31 @@ export async function DELETE(
 
   const reunion = await prisma.reunion.findFirst({
     where: { id_reunion: reunionId, id_groupe: groupId },
-    select: { id_reunion: true },
+    select: {
+      id_reunion: true,
+      statut: true,
+      compte_rendu: true,
+      presences: {
+        select: {
+          id_presence: true,
+          amende_payee: true,
+        },
+      },
+    },
   });
   if (!reunion) return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
+
+  const hasTraces = reunion.presences.length > 0 || !!reunion.compte_rendu;
+  const hasPaidFine = reunion.presences.some((presence) => presence.amende_payee);
+  if (reunion.statut !== "PLANIFIEE" || hasTraces || hasPaidFine) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Cette réunion contient déjà un historique. Annule-la plutôt que de la supprimer.",
+      },
+      { status: 409 },
+    );
+  }
 
   await prisma.reunion.delete({ where: { id_reunion: reunionId } });
 

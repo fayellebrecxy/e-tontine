@@ -35,12 +35,14 @@ export async function PATCH(
       id_presence: true,
       amende_payee: true,
       id_membre_groupe: true,
+      statut_presence: true,
       reunion: {
         select: {
           titre: true,
           date_reunion: true,
           montant_amende: true,
           id_groupe: true,
+          statut: true,
         },
       },
       membre_groupe: { select: { id_user: true } },
@@ -48,8 +50,26 @@ export async function PATCH(
   });
   if (!presence) return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
   if (presence.amende_payee) return NextResponse.json({ ok: false, error: "Déjà marquée payée." }, { status: 409 });
+  if (presence.reunion.statut !== "TERMINEE" || presence.reunion.date_reunion.getTime() > Date.now()) {
+    return NextResponse.json(
+      { ok: false, error: "Une amende ne peut être payée qu'après une réunion terminée." },
+      { status: 409 },
+    );
+  }
+  if (presence.statut_presence !== "ABSENT" && presence.statut_presence !== "EN_RETARD") {
+    return NextResponse.json(
+      { ok: false, error: "Seuls les membres absents ou en retard peuvent avoir une amende." },
+      { status: 409 },
+    );
+  }
 
   const montantAmende = Number(presence.reunion.montant_amende ?? 0);
+  if (montantAmende <= 0) {
+    return NextResponse.json(
+      { ok: false, error: "Aucune amende n'est définie pour cette réunion." },
+      { status: 409 },
+    );
+  }
 
   await prisma.$transaction(async (tx) => {
     const updated = await tx.presenceReunion.update({

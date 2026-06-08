@@ -13,7 +13,8 @@ type Member = {
   email: string;
 };
 
-type StatutPresence = "PRESENT" | "ABSENT" | "EXCUSE" | "EN_RETARD";
+type StatutPresence = "PRESENT" | "ABSENT" | "EXCUSE" | "DEMANDE_EXCUSE" | "EN_RETARD";
+type StatutPresenceFinal = Exclude<StatutPresence, "DEMANDE_EXCUSE">;
 
 type Presence = {
   id_presence: string;
@@ -32,16 +33,18 @@ type Props = {
   devise: string;
   statut: "PLANIFIEE" | "TERMINEE" | "ANNULEE";
   compteRenduInitial: string | null;
+  dateReunion: string;
 };
 
 const STATUT_CONFIG: Record<StatutPresence, { label: string; selected: string; unselected: string }> = {
   PRESENT:   { label: "✅ Présent",   selected: "bg-emerald-500 text-white border-emerald-500", unselected: "bg-white text-gray-500 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300" },
   ABSENT:    { label: "❌ Absent",    selected: "bg-rose-500 text-white border-rose-500",       unselected: "bg-white text-gray-500 border-gray-200 hover:bg-rose-50 hover:border-rose-300" },
   EXCUSE:    { label: "🟡 Excusé",   selected: "bg-amber-500 text-white border-amber-500",     unselected: "bg-white text-gray-500 border-gray-200 hover:bg-amber-50 hover:border-amber-300" },
+  DEMANDE_EXCUSE: { label: "🟠 Excuse demandée", selected: "bg-orange-100 text-orange-800 border-orange-200", unselected: "bg-white text-gray-500 border-gray-200" },
   EN_RETARD: { label: "⏰ En retard", selected: "bg-orange-500 text-white border-orange-500",  unselected: "bg-white text-gray-500 border-gray-200 hover:bg-orange-50 hover:border-orange-300" },
 };
 
-const STATUT_ORDER: StatutPresence[] = ["PRESENT", "ABSENT", "EXCUSE", "EN_RETARD"];
+const STATUT_ORDER: StatutPresenceFinal[] = ["PRESENT", "ABSENT", "EXCUSE", "EN_RETARD"];
 
 export function ReunionDetailAdmin({
   groupId,
@@ -52,8 +55,11 @@ export function ReunionDetailAdmin({
   devise,
   statut,
   compteRenduInitial,
+  dateReunion,
 }: Props) {
   const router = useRouter();
+  const reunionDate = React.useMemo(() => new Date(dateReunion), [dateReunion]);
+  const reunionHasHappened = reunionDate.getTime() <= Date.now();
 
   const [presences, setPresences] = React.useState<Record<string, StatutPresence>>(() => {
     const init: Record<string, StatutPresence> = {};
@@ -71,21 +77,31 @@ export function ReunionDetailAdmin({
 
   const absentsCount = Object.values(presences).filter((s) => s === "ABSENT" || s === "EN_RETARD").length;
   const totalAmendePrevisionnelle = absentsCount * montantAmende;
+  const demandesExcuseCount = Object.values(presences).filter((s) => s === "DEMANDE_EXCUSE").length;
 
-  const handleSetStatut = (memberId: string, s: StatutPresence) => {
+  const handleSetStatut = (memberId: string, s: StatutPresenceFinal) => {
     setPresences((prev) => ({ ...prev, [memberId]: s }));
   };
 
   const submitPresences = async () => {
+    if (!reunionHasHappened) {
+      toast.error("Impossible d'enregistrer les présences avant la tenue de la réunion.");
+      return;
+    }
+    if (Object.values(presences).some((s) => s === "DEMANDE_EXCUSE")) {
+      toast.error("Veuillez accepter l'excuse ou choisir un autre statut pour chaque demande.");
+      return;
+    }
+    const presencesFinales = Object.entries(presences).map(([id, s]) => ({
+      id_membre_groupe: id,
+      statut_presence: s as StatutPresenceFinal,
+    }));
     setSubmittingPresences(true);
     const res = await fetch(`/api/groups/${groupId}/reunions/${reunionId}/presences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        presences: Object.entries(presences).map(([id, s]) => ({
-          id_membre_groupe: id,
-          statut_presence: s,
-        })),
+        presences: presencesFinales,
       }),
     });
     setSubmittingPresences(false);
@@ -101,6 +117,10 @@ export function ReunionDetailAdmin({
 
   const publishCompteRendu = async () => {
     if (!compteRendu.trim()) { toast.error("Le compte-rendu est vide."); return; }
+    if (statut !== "TERMINEE" || !reunionHasHappened) {
+      toast.error("Le compte-rendu est possible seulement après une réunion tenue.");
+      return;
+    }
     setSubmittingCR(true);
     const res = await fetch(`/api/groups/${groupId}/reunions/${reunionId}`, {
       method: "PATCH",
@@ -149,15 +169,27 @@ export function ReunionDetailAdmin({
           <h2 className="font-semibold text-gray-900 dark:text-white text-base">
             📋 Enregistrement des présences
           </h2>
-          {statut === "PLANIFIEE" && montantAmende > 0 && absentsCount > 0 && (
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 border border-amber-200">
-              {absentsCount} absent(s) / retard → {totalAmendePrevisionnelle.toLocaleString("fr-FR")} {devise} d'amendes
-            </span>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {statut === "PLANIFIEE" && demandesExcuseCount > 0 && (
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-800 border border-orange-200">
+                {demandesExcuseCount} demande(s) d'excuse à traiter
+              </span>
+            )}
+            {statut === "PLANIFIEE" && montantAmende > 0 && absentsCount > 0 && (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 border border-amber-200">
+                {absentsCount} absent(s) / retard → {totalAmendePrevisionnelle.toLocaleString("fr-FR")} {devise} d'amendes
+              </span>
+            )}
+          </div>
         </div>
 
         {statut === "ANNULEE" && (
           <p className="text-sm text-rose-600 font-medium">❌ Cette réunion a été annulée.</p>
+        )}
+        {statut === "PLANIFIEE" && !reunionHasHappened && (
+          <p className="text-sm text-amber-700 font-medium">
+            Les présences seront enregistrables après la date et l'heure prévues de la réunion.
+          </p>
         )}
 
         {statut !== "PLANIFIEE" && presencesInitiales.length === 0 && statut !== "ANNULEE" && (
@@ -192,23 +224,30 @@ export function ReunionDetailAdmin({
 
                 {/* Boutons de statut */}
                 {!isLocked && (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {STATUT_ORDER.map((opt) => {
-                      const config = STATUT_CONFIG[opt];
-                      const isSelected = statutActuel === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => handleSetStatut(membre.id_membre_groupe, opt)}
-                          className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all duration-150 ${
-                            isSelected ? config.selected : config.unselected
-                          }`}
-                        >
-                          {config.label}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-2">
+                    {statutActuel === "DEMANDE_EXCUSE" && (
+                      <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-medium text-orange-800">
+                        Demande d'excuse en attente : choisissez Excusé si elle est acceptée, sinon Absent ou En retard.
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {STATUT_ORDER.map((opt) => {
+                        const config = STATUT_CONFIG[opt];
+                        const isSelected = statutActuel === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => handleSetStatut(membre.id_membre_groupe, opt)}
+                            className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                              isSelected ? config.selected : config.unselected
+                            }`}
+                          >
+                            {config.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -221,7 +260,7 @@ export function ReunionDetailAdmin({
             <Button
               type="button"
               onClick={submitPresences}
-              disabled={submittingPresences}
+              disabled={submittingPresences || !reunionHasHappened}
               size="lg"
               className="gap-2 font-semibold"
             >

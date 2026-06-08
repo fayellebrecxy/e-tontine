@@ -48,7 +48,15 @@ export function CreateReunionSheet({ groupId, devise }: Props) {
     if (!titre.trim()) { toast.error("Le titre est requis."); return; }
     if (!dateReunion) { toast.error("La date est requise."); return; }
 
-    const dateISO = `${dateReunion}T${heureReunion}:00.000Z`;
+    const [year, month, day] = dateReunion.split("-").map(Number);
+    const [hour, minute] = heureReunion.split(":").map(Number);
+    const dateObj = new Date(year, month - 1, day, hour, minute);
+    if (dateObj.getTime() <= Date.now()) {
+      toast.error("La date de la réunion doit être dans le futur.");
+      return;
+    }
+
+    const dateISO = dateObj.toISOString();
     const amende = montantAmende ? Number(montantAmende) : 0;
 
     setSubmitting(true);

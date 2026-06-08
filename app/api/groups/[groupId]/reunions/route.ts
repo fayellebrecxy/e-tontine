@@ -99,13 +99,20 @@ export async function POST(
   if (!body.success) return NextResponse.json({ ok: false, error: "Invalid input." }, { status: 400 });
 
   const { titre, description, date_reunion, lieu, type_reunion, montant_amende } = body.data;
+  const dateReunion = new Date(date_reunion);
+  if (dateReunion.getTime() <= Date.now()) {
+    return NextResponse.json(
+      { ok: false, error: "La date de la réunion doit être dans le futur." },
+      { status: 409 },
+    );
+  }
 
   const reunion = await prisma.reunion.create({
     data: {
       id_groupe: groupId,
       titre,
       description,
-      date_reunion: new Date(date_reunion),
+      date_reunion: dateReunion,
       lieu,
       type_reunion,
       montant_amende: montant_amende ?? null,

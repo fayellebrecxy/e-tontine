@@ -1,0 +1,1 @@
+ALTER TYPE "public"."StatutPresence" ADD VALUE IF NOT EXISTS 'DEMANDE_EXCUSE';

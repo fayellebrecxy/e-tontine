@@ -92,6 +92,10 @@ export default async function ReunionDetailPage({
   const montantAmende = reunion.montant_amende ? Number(reunion.montant_amende) : 0;
   const typeInfo = TYPE_LABELS[reunion.type_reunion];
   const statutInfo = STATUT_LABELS[reunion.statut];
+  const hasHistory = reunion.presences.length > 0 || !!reunion.compte_rendu;
+  const hasPaidFine = reunion.presences.some((presence) => presence.amende_payee);
+  const canDeleteReunion = reunion.statut === "PLANIFIEE" && !hasHistory && !hasPaidFine;
+  const canCancelReunion = reunion.statut === "PLANIFIEE";
 
   // Ma présence (pour le membre)
   const myPresence = !isAdmin
@@ -141,7 +145,13 @@ export default async function ReunionDetailPage({
                   }}
                 />
               )}
-              <DeleteReunionButton groupId={groupId} reunionId={reunionId} titre={reunion.titre} />
+              <DeleteReunionButton
+                groupId={groupId}
+                reunionId={reunionId}
+                titre={reunion.titre}
+                canDelete={canDeleteReunion}
+                canCancel={canCancelReunion}
+              />
             </div>
           )}
         </div>
@@ -210,6 +220,7 @@ export default async function ReunionDetailPage({
           devise={devise}
           statut={reunion.statut}
           compteRenduInitial={reunion.compte_rendu}
+          dateReunion={reunion.date_reunion.toISOString()}
         />
       )}
 

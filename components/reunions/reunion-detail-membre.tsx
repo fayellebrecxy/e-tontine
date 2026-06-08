@@ -12,7 +12,7 @@ type Props = {
   reunionId: string;
   statut: "PLANIFIEE" | "TERMINEE" | "ANNULEE";
   myPresence: {
-    statut_presence: "PRESENT" | "ABSENT" | "EXCUSE" | "EN_RETARD";
+    statut_presence: "PRESENT" | "ABSENT" | "EXCUSE" | "DEMANDE_EXCUSE" | "EN_RETARD";
     amende_payee: boolean;
     note_absence: string | null;
   } | null;
@@ -25,6 +25,7 @@ const PRESENCE_DISPLAY: Record<string, { label: string; badgeClass: string }> = 
   PRESENT: { label: "✅ Présent(e)", badgeClass: "bg-emerald-100 text-emerald-700" },
   ABSENT: { label: "❌ Absent(e)", badgeClass: "bg-rose-100 text-rose-700" },
   EXCUSE: { label: "🟡 Excusé(e)", badgeClass: "bg-amber-100 text-amber-700" },
+  DEMANDE_EXCUSE: { label: "🟠 Excuse demandée", badgeClass: "bg-orange-100 text-orange-700" },
   EN_RETARD: { label: "⏰ En retard", badgeClass: "bg-orange-100 text-orange-700" },
 };
 
@@ -43,7 +44,7 @@ export function ReunionDetailMembre({
   const [submitting, setSubmitting] = React.useState(false);
 
   const isUpcoming = new Date(dateReunion) > new Date() && statut === "PLANIFIEE";
-  const alreadyExcused = myPresence?.statut_presence === "EXCUSE";
+  const alreadyExcused = myPresence?.statut_presence === "EXCUSE" || myPresence?.statut_presence === "DEMANDE_EXCUSE";
 
   const sendExcuse = async () => {
     if (!note.trim() || note.trim().length < 5) {
@@ -127,13 +128,17 @@ export function ReunionDetailMembre({
             )
           )}
 
-          {/* Message si présent ou excusé : pas d'amende */}
-          {(myPresence.statut_presence === "PRESENT" || myPresence.statut_presence === "EXCUSE") && (
+          {/* Message si présent, excusé ou en attente : pas d'amende appliquée pour l'instant */}
+          {(myPresence.statut_presence === "PRESENT"
+            || myPresence.statut_presence === "EXCUSE"
+            || myPresence.statut_presence === "DEMANDE_EXCUSE") && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
               <p className="text-sm text-emerald-700 font-medium">
                 {myPresence.statut_presence === "PRESENT"
                   ? "✅ Vous étiez présent(e) — aucune amende."
-                  : "🟡 Vous avez été excusé(e) — aucune amende."}
+                  : myPresence.statut_presence === "EXCUSE"
+                    ? "🟡 Vous avez été excusé(e) — aucune amende."
+                    : "🟠 Votre demande d'excuse est en attente de validation."}
               </p>
             </div>
           )}
@@ -185,7 +190,7 @@ export function ReunionDetailMembre({
 
       {alreadyExcused && statut === "PLANIFIEE" && (
         <p className="text-sm text-amber-600 font-medium">
-          🟡 Vous avez déjà signalé votre absence. L'administrateur en a été informé.
+          🟠 Vous avez déjà signalé votre absence. L'administrateur doit encore décider du statut final.
         </p>
       )}
     </div>
