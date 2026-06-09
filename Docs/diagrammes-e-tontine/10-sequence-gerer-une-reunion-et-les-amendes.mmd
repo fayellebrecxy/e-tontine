@@ -1,0 +1,22 @@
+sequenceDiagram
+  actor A as Administrateur
+  actor M as Membre
+  participant API as API Reunions
+  participant DB as Prisma/PostgreSQL
+  participant J as Journal financier
+  participant N as Notifications
+
+  A->>API: Creer reunion avec date et amende
+  API->>DB: Creer Reunion
+  API->>N: Notifier membres actifs
+  M->>API: Signaler absence avant la reunion
+  API->>DB: Upsert PresenceReunion = DEMANDE_EXCUSE
+  API->>N: Notifier admins
+  A->>API: Enregistrer presences apres reunion
+  API->>DB: Upsert presences et cloturer reunion
+  alt Absent ou en retard avec amende
+    A->>API: Marquer amende payee
+    API->>DB: amende_payee = true
+    API->>J: Entree caisse amendes reunion
+  end
+  API->>N: Notifier les membres concernes

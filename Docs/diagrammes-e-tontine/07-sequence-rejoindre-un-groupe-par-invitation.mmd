@@ -1,0 +1,26 @@
+sequenceDiagram
+  actor U as Utilisateur
+  participant Page as Page invitation
+  participant API as POST /api/invitations/:code/join
+  participant Auth as Supabase Auth
+  participant DB as Prisma/PostgreSQL
+  participant N as Notifications
+
+  U->>Page: Ouvre le lien d'invitation
+  Page->>API: Envoyer profil + code
+  API->>Auth: getUser()
+  Auth-->>API: user.id
+  API->>DB: Chercher invitation ou groupe.lien_invitation
+  API->>DB: Upsert users
+  API->>DB: Chercher membership existant
+  alt Deja actif
+    API-->>Page: deja membre
+  else Ancien membre inactif
+    API->>DB: statut_adhesion = EN_ATTENTE
+    API->>N: Notifier admins
+    API-->>Page: demande en attente
+  else Nouveau membre
+    API->>DB: Creer MembreGroupe role MEMBRE
+    API->>N: Notifier membre et admins
+    API-->>Page: Adhesion confirmee
+  end

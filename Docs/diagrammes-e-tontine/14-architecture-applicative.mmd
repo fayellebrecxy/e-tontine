@@ -1,0 +1,23 @@
+flowchart TB
+  Browser[Navigateur web]
+  UI[Pages et composants React]
+  Actions[Server Actions]
+  API[API Routes Next.js]
+  Services[Services metier]
+  Prisma[Prisma Client]
+  DB[(Supabase PostgreSQL)]
+  Auth[Supabase Auth]
+  PDF[Generation PDF]
+  XLSX[Generation Excel]
+
+  Browser --> UI
+  UI --> Actions
+  UI --> API
+  Actions --> Services
+  API --> Services
+  Actions --> Auth
+  API --> Auth
+  Services --> Prisma
+  Prisma --> DB
+  Services --> PDF
+  Services --> XLSX

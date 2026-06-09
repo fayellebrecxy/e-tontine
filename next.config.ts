@@ -130,6 +130,11 @@ const nextConfig: NextConfig = {
         pathname: "/api/**",
       },
       {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
         protocol: "http",
         hostname: "ui-avatars.com",
         pathname: "/api/**",

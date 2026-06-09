@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
+// import { Toaster } from "@/components/ui/sonner";
 
 const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
@@ -21,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={outfit.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
-          <Toaster />
+          {/* <Toaster /> */}
+          <ToastContainer position='top-right' autoClose={3500} closeOnClick pauseOnHover />
+
         </ThemeProvider>
       </body>
     </html>

@@ -1,0 +1,33 @@
+flowchart TB
+  Admin([Administrateur])
+  G1[Creer groupe]
+  G2[Modifier parametres]
+  I1[Generer invitation]
+  I2[Revoquer invitation]
+  M1[Attribuer role]
+  M2[Exclure membre]
+  M3[Valider reintegration]
+  C1[Creer cycle]
+  C2[Modifier ordre de passage]
+  C3[Enregistrer cotisation]
+  C4[Appliquer ou collecter penalite]
+  C5[Verser pot au beneficiaire]
+  R1[Gerer rubriques]
+  RE1[Planifier reunion]
+  RE2[Enregistrer presences]
+  RE3[Encaisser amendes]
+  E1[Ouvrir compte epargne]
+  E2[Enregistrer depot ou retrait]
+  F1[Consulter journal financier]
+  F2[Exporter rapport PDF/Excel]
+
+  Admin --> G1 --> G2
+  Admin --> I1 --> I2
+  Admin --> M1
+  Admin --> M2
+  Admin --> M3
+  Admin --> C1 --> C2 --> C3 --> C4 --> C5
+  Admin --> R1
+  Admin --> RE1 --> RE2 --> RE3
+  Admin --> E1 --> E2
+  Admin --> F1 --> F2

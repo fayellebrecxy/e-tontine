@@ -1,0 +1,128 @@
+classDiagram
+  class User {
+    uuid id_user
+    string nom
+    string prenom
+    string email
+    string telephone
+  }
+
+  class Groupes {
+    uuid id_groupe
+    string nom
+    string devise
+    string lien_invitation
+  }
+
+  class MembreGroupe {
+    uuid id_membre_groupe
+    RoleGroupe role
+    StatutAdhesion statut_adhesion
+    StatutVisuel statut_visuel
+  }
+
+  class InvitationGroupe {
+    uuid id_invitation
+    string code
+    datetime date_revocation
+  }
+
+  class CycleTontine {
+    uuid id_cycle
+    string nom_cycle
+    decimal montant_cotisation
+    int duree_tour_de_gain
+    ModePenalite mode_penalite
+  }
+
+  class CycleParticipant {
+    uuid id_cycle_participant
+    int ordre
+  }
+
+  class Cotisations {
+    uuid id_cotisation
+    decimal montant
+    int numero_tour
+    bool penalite_appliquee
+  }
+
+  class Penalite {
+    uuid id_penalite
+    decimal montant_final
+    string motif
+  }
+
+  class Versement {
+    uuid id_versement
+    int numero_tour
+    decimal montant_verse
+  }
+
+  class RubriqueCotisation {
+    uuid id_rubrique
+    string nom
+    decimal montant_fixe
+    TypeRubriqueCotisation type_rubrique
+  }
+
+  class PaiementRubrique {
+    uuid id_paiement
+    decimal montant_paye
+  }
+
+  class Reunion {
+    uuid id_reunion
+    string titre
+    StatutReunion statut
+    decimal montant_amende
+  }
+
+  class PresenceReunion {
+    uuid id_presence
+    StatutPresence statut_presence
+    bool amende_payee
+  }
+
+  class CompteEpargne {
+    uuid id_compte
+    string numero_compte
+    decimal solde_actuel
+    StatutCompteEpargne statut
+  }
+
+  class MouvementFinancier {
+    uuid id_mouvement
+    TypeMouvementFinancier type_mouvement
+    SourceMouvementFinancier source
+    decimal montant
+    decimal solde_avant
+    decimal solde_apres
+  }
+
+  class NotificationGroupe {
+    uuid id_notification
+    string type_notification
+    string message
+  }
+
+  User "1" --> "0..*" MembreGroupe
+  Groupes "1" --> "0..*" MembreGroupe
+  Groupes "1" --> "0..*" InvitationGroupe
+  Groupes "1" --> "0..*" CycleTontine
+  CycleTontine "1" --> "1..*" CycleParticipant
+  MembreGroupe "1" --> "0..*" CycleParticipant
+  CycleTontine "1" --> "0..*" Cotisations
+  MembreGroupe "1" --> "0..*" Cotisations
+  Cotisations "1" --> "0..*" Penalite
+  CycleTontine "1" --> "0..*" Versement
+  MembreGroupe "1" --> "0..*" Versement : beneficiaire
+  Groupes "1" --> "0..*" RubriqueCotisation
+  RubriqueCotisation "1" --> "0..*" PaiementRubrique
+  MembreGroupe "1" --> "0..*" PaiementRubrique
+  Groupes "1" --> "0..*" Reunion
+  Reunion "1" --> "0..*" PresenceReunion
+  MembreGroupe "1" --> "0..*" PresenceReunion
+  MembreGroupe "1" --> "0..1" CompteEpargne
+  Groupes "1" --> "0..*" MouvementFinancier
+  User "1" --> "0..*" NotificationGroupe

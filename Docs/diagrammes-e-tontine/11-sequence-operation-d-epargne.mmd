@@ -1,0 +1,22 @@
+sequenceDiagram
+  actor A as Administrateur
+  actor M as Membre
+  participant UI as Module epargne
+  participant API as API Epargne
+  participant DB as Prisma/PostgreSQL
+  participant N as Notifications
+
+  A->>UI: Ouvre ou consulte un compte epargne
+  UI->>API: Depot ou retrait
+  API->>DB: Verifier admin actif et compte actif
+  API->>DB: Calculer solde avant/apres
+  alt Solde insuffisant pour retrait
+    API-->>UI: Erreur
+  else Operation valide
+    API->>DB: Creer MouvementEpargne
+    API->>DB: Mettre a jour CompteEpargne.solde_actuel
+    API->>N: Notifier membre
+    API-->>UI: Operation enregistree
+  end
+  M->>API: Signaler mouvement suspect
+  API->>DB: Creer SignalementEpargne

@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Mail, Send } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { z } from "zod";
 
 import { resetPasswordAction } from "@/app/auth/actions";
@@ -48,27 +49,38 @@ export function ResetPasswordForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Email</FormLabel>
               <FormControl>
-                <Input placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25"
+                    placeholder="vous@example.com"
+                    type="email"
+                    autoComplete="email"
+                    {...field}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button className="w-full" type="submit" disabled={pending}>
+        <Button className="h-12 w-full rounded-lg bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700" type="submit" disabled={pending}>
           {pending ? "Envoi..." : "Envoyer le lien"}
+          {!pending ? <Send className="h-4 w-4" /> : null}
         </Button>
 
-        <p className="text-sm text-muted-foreground">
-          <Link href="/auth/login" className="text-foreground underline underline-offset-4">
+        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          <Link href="/auth/login" className="inline-flex items-center gap-2 font-bold text-slate-950 underline underline-offset-4 transition hover:text-emerald-700">
+            <ArrowLeft className="h-4 w-4" />
             Retour à la connexion
           </Link>
         </p>
