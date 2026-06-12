@@ -20,12 +20,10 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex justify-center">
-      <AuthCard title="Connexion" description="Connecte-toi avec ton email et ton mot de passe.">
-        <Suspense fallback={null}>
-          <LoginForm />
-        </Suspense>
-      </AuthCard>
-    </div>
+    <AuthCard title="Connexion" description="Connecte-toi avec ton email et ton mot de passe.">
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
+    </AuthCard>
   );
 }

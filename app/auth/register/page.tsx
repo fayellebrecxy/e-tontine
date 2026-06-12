@@ -20,15 +20,13 @@ export default async function RegisterPage({
   }
 
   return (
-    <div className="flex justify-center">
-      <AuthCard
-        title="Créer un compte"
-        description="Ton compte donne accès à tes groupes de tontine."
-      >
-        <Suspense fallback={null}>
-          <RegisterForm />
-        </Suspense>
-      </AuthCard>
-    </div>
+    <AuthCard
+      title="Créer un compte"
+      description="Ton compte donne accès à tes groupes de tontine."
+    >
+      <Suspense fallback={null}>
+        <RegisterForm />
+      </Suspense>
+    </AuthCard>
   );
 }

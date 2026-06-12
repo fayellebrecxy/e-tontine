@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Invitation à rejoindre une Tontine - TontinePro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#3f0016",
+                        "on-background": "#171d16",
+                        "inverse-on-surface": "#ecf3e7",
+                        "on-secondary-container": "#1d3989",
+                        "on-primary-fixed": "#002109",
+                        "on-secondary-fixed-variant": "#264191",
+                        "warning": "#F97316",
+                        "surface": "#f4fcf0",
+                        "tertiary-fixed": "#ffd9de",
+                        "primary-container": "#00873a",
+                        "on-tertiary-fixed-variant": "#8a143c",
+                        "surface-container-highest": "#dde5d9",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#8fa7fe",
+                        "tertiary": "#a72d51",
+                        "surface-bright": "#f4fcf0",
+                        "surface-container": "#e9f0e5",
+                        "on-secondary-fixed": "#00164e",
+                        "on-surface-variant": "#3e4a3d",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d5dcd1",
+                        "destructive": "#DC2626",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#171d16",
+                        "surface-tint": "#006e2d",
+                        "tertiary-container": "#c74668",
+                        "primary-fixed": "#7ffc97",
+                        "surface-container-low": "#eff6ea",
+                        "secondary": "#4059aa",
+                        "surface-light": "#F8FAFC",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#62df7d",
+                        "text-muted": "#64748B",
+                        "inverse-surface": "#2b322b",
+                        "surface-variant": "#dde5d9",
+                        "secondary-fixed": "#dce1ff",
+                        "primary": "#006b2c",
+                        "outline-variant": "#bdcaba",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f7fff2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f4fcf0",
+                        "border-light": "#E2E8F0",
+                        "text-main": "#0F172A",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e3eadf",
+                        "on-primary-fixed-variant": "#005320",
+                        "outline": "#6e7b6c",
+                        "tertiary-fixed-dim": "#ffb2bf",
+                        "primary-fixed-dim": "#62df7d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "display": ["Poppins"],
+                        "h1": ["Poppins"],
+                        "h4": ["Poppins"],
+                        "caption": ["Inter"],
+                        "h2": ["Poppins"],
+                        "h1-mobile": ["Poppins"],
+                        "body-base": ["Inter"],
+                        "label": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h3": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h1": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "h4": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "caption": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "h2": ["30px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "h1-mobile": ["30px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-base": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label": ["14px", { "lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "h3": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .shadow-xs { box-shadow: 0 1px 2px 0 rgba(30, 58, 138, 0.05); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.1); }
+    </style>
+</head>
+<body class="bg-surface-light text-text-main font-body-base min-h-screen flex flex-col antialiased">
+<!-- TopNavBar Omitted: Linear/Transactional Intent (Accept Invitation) implies a focused flow. Suppressing global nav. -->
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-low via-surface-light to-surface-light">
+<div class="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-lg border border-border-light overflow-hidden flex flex-col md:flex-row relative z-10">
+<!-- Left Branding / Illustration Panel -->
+<div class="hidden md:flex md:w-5/12 bg-primary-container p-8 flex-col justify-between relative overflow-hidden" data-alt="A modern, high-quality photograph showing a diverse group of professionals or community members gathered around a table, smiling and collaborating. The scene is warmly lit with natural daylight, conveying trust, solidarity, and financial cooperation. The color palette incorporates subtle green and blue tones to align with a professional, benevolent fintech brand aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuANTamgSr1BWs08rTYJ_7ZMZotex2zIoRiIzHb3H8EZWPP6kKCjZZHQx5fNoP6U2EngVH8WMwgw0bOTq1v7WPE_brpOHwXlhm9ARZTYbIif7pspWWAlcCpUVZwY4buHrC1KQl8V10FLF0tN5iG2wZdOhIzcHh0KLmR5V14EWYvGHV7jiOkzh3oTecZeh-cjsWag0YZJdKit14VTXMjmmJM5WhF4_B-QD8ta9revWIBWVtd-S5XrMvI016EhaP8WnELJ6grZ-ydJcs_K'); background-size: cover; background-position: center;">
+<div class="absolute inset-0 bg-primary/80 mix-blend-multiply"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-on-primary-fixed via-transparent to-transparent opacity-60"></div>
+<div class="relative z-10">
+<span class="font-h3 text-h3 text-on-primary font-bold tracking-tight">TontinePro</span>
+</div>
+<div class="relative z-10 mt-auto">
+<p class="font-h4 text-h4 text-on-primary font-medium mb-2">Rejoignez le cercle.</p>
+<p class="font-body-sm text-body-sm text-on-primary/90">Sécurisé, transparent et solidaire. Gérer vos finances en communauté n'a jamais été aussi simple.</p>
+</div>
+</div>
+<!-- Right Content Panel -->
+<div class="w-full md:w-7/12 p-8 md:p-10 flex flex-col">
+<div class="mb-8 text-center md:text-left">
+<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container mb-4">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+</div>
+<h1 class="font-h2 text-h2 text-on-surface mb-2">Vous avez été invité !</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">
+<strong class="text-on-surface font-semibold">Marie Dupont</strong> vous invite à rejoindre le groupe de tontine ci-dessous.
+                    </p>
+</div>
+<!-- Group Details Card -->
+<div class="bg-surface rounded-lg border border-outline-variant p-6 mb-8 shadow-xs relative overflow-hidden">
+<!-- Decorative subtle background pattern -->
+<div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-primary-container/10 rounded-full blur-xl"></div>
+<div class="flex items-start justify-between mb-4 relative z-10">
+<div>
+<h2 class="font-h4 text-h4 text-on-surface">Les Épargnants Solidaires</h2>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-caption text-caption mt-1">
+<span class="material-symbols-outlined text-[14px] mr-1">public</span>
+                                Tontine Mensuelle
+                            </span>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-h4 text-h4 flex-shrink-0">
+                            ES
+                        </div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4 relative z-10">
+                        Un groupe dédié à l'épargne pour des projets immobiliers. Les contributions sont fixes et mensuelles.
+                    </p>
+<div class="grid grid-cols-2 gap-4 relative z-10">
+<div class="flex flex-col">
+<span class="font-caption text-caption text-text-muted mb-1 flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">group</span>
+                                Membres
+                            </span>
+<span class="font-label text-label text-on-surface">12 / 15</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-text-muted mb-1 flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">payments</span>
+                                Devise
+                            </span>
+<span class="font-label text-label text-on-surface">FCFA</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-text-muted mb-1 flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">admin_panel_settings</span>
+                                Administrateur
+                            </span>
+<span class="font-label text-label text-on-surface">Jean K.</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-text-muted mb-1 flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">event_repeat</span>
+                                Cycle
+                            </span>
+<span class="font-label text-label text-on-surface">12 Mois</span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-3 mt-auto">
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary font-label text-label py-3 px-6 rounded-lg transition-colors duration-200 active:scale-[0.98] flex justify-center items-center">
+<span class="material-symbols-outlined mr-2">login</span>
+                        Rejoindre le groupe
+                    </button>
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-border-light"></div>
+<span class="flex-shrink-0 mx-4 font-caption text-caption text-text-muted">Nouveau sur TontinePro ?</span>
+<div class="flex-grow border-t border-border-light"></div>
+</div>
+<button class="w-full bg-secondary hover:bg-secondary/90 text-on-secondary font-label text-label py-3 px-6 rounded-lg transition-colors duration-200 active:scale-[0.98]">
+                        Créer un compte
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer JSON Anchor Execution -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-12 border-t border-outline-variant dark:border-outline">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<!-- Brand & Copyright Column -->
+<div class="col-span-1 md:col-span-2 flex flex-col justify-center">
+<span class="text-h4 font-h4 font-bold text-primary mb-2">TontinePro</span>
+<p class="font-body-sm text-body-sm text-secondary dark:text-secondary-fixed">
+                    © 2024 TontinePro. Sécurisé et Transparent.
+                </p>
+</div>
+<!-- Links Column (Span 2 for distribution) -->
+<div class="col-span-1 md:col-span-2 flex flex-wrap gap-x-6 gap-y-2 items-center justify-start md:justify-end">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Conditions Générales</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Confidentialité</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Sécurité</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body></html>

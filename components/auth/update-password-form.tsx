@@ -6,9 +6,9 @@ import { ArrowRight, LockKeyhole } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-
 import { z } from "zod";
 
+import { updatePasswordSchema } from "@/lib/validations";
 import { updatePasswordAction } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { updatePasswordSchema } from "@/lib/validations";
 
 type Values = z.infer<typeof updatePasswordSchema>;
 
@@ -28,7 +27,7 @@ export function UpdatePasswordForm() {
   const router = useRouter();
   const form = useForm<Values>({
     resolver: zodResolver(updatePasswordSchema),
-    defaultValues: { password: "", confirmPassword: "" },
+    defaultValues: { password: "" },
   });
 
   const [pending, startTransition] = React.useTransition();
@@ -40,8 +39,7 @@ export function UpdatePasswordForm() {
         toast.error(res.error);
         return;
       }
-
-      toast.success(res.message ?? "Mot de passe mis à jour.");
+      toast.success(res.message);
       router.push(res.redirectTo);
       router.refresh();
     });
@@ -49,39 +47,19 @@ export function UpdatePasswordForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Nouveau mot de passe</FormLabel>
+              <FormLabel className="block font-medium text-sm text-slate-900">Nouveau mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
-                    className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25"
-                    type="password"
-                    autoComplete="new-password"
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Confirmer le mot de passe</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25"
+                    className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900"
+                    placeholder="Au moins 8 caractères"
                     type="password"
                     autoComplete="new-password"
                     {...field}
@@ -93,9 +71,13 @@ export function UpdatePasswordForm() {
           )}
         />
 
-        <Button className="h-12 w-full rounded-lg bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700" type="submit" disabled={pending}>
+        <Button 
+          type="submit" 
+          disabled={pending}
+          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+        >
           {pending ? "Mise à jour..." : "Mettre à jour"}
-          {!pending ? <ArrowRight className="h-4 w-4" /> : null}
+          {!pending && <ArrowRight className="h-5 w-5" />}
         </Button>
       </form>
     </Form>

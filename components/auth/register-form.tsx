@@ -51,18 +51,18 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="nom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Nom</FormLabel>
+                <FormLabel className="block font-medium text-sm text-slate-900">Nom</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25" placeholder="Tedom" autoComplete="family-name" {...field} />
+                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="Tedom" autoComplete="family-name" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -74,11 +74,11 @@ export function RegisterForm() {
             name="prenom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Prénom</FormLabel>
+                <FormLabel className="block font-medium text-sm text-slate-900">Prénom</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25" placeholder="Dimitri" autoComplete="given-name" {...field} />
+                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="Dimitri" autoComplete="given-name" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -91,11 +91,11 @@ export function RegisterForm() {
           name="telephone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Téléphone</FormLabel>
+              <FormLabel className="block font-medium text-sm text-slate-900">Téléphone</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25" placeholder="+237 6 00 00 00 00" type="tel" autoComplete="tel" {...field} />
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="+237 6 00 00 00 00" type="tel" autoComplete="tel" {...field} />
                 </div>
               </FormControl>
               <FormMessage />
@@ -107,11 +107,11 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Email</FormLabel>
+              <FormLabel className="block font-medium text-sm text-slate-900">Email</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25" placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
                 </div>
               </FormControl>
               <FormMessage />
@@ -123,12 +123,12 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Mot de passe</FormLabel>
+              <FormLabel className="block font-medium text-sm text-slate-900">Mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
-                    className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25"
+                    className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900"
                     placeholder="Au moins 8 caractères"
                     type="password"
                     autoComplete="new-password"
@@ -141,17 +141,20 @@ export function RegisterForm() {
           )}
         />
 
-        <Button className="h-12 w-full rounded-lg bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700" type="submit" disabled={pending}>
+        <Button 
+          type="submit" 
+          disabled={pending}
+          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+        >
           {pending ? "Création..." : "Créer le compte"}
-          {!pending ? <ArrowRight className="h-4 w-4" /> : null}
+          {!pending && <ArrowRight className="h-5 w-5" />}
         </Button>
 
-        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+        <p className="mt-8 text-center text-sm text-slate-600">
           Déjà un compte ?{" "}
-          <Link href={`/auth/login?next=${nextParam}`} className="font-bold text-slate-950 underline underline-offset-4 transition hover:text-emerald-700">
+          <Link href={`/auth/login?next=${nextParam}`} className="font-medium text-green-600 hover:underline transition-all">
             Se connecter
           </Link>
-          .
         </p>
       </form>
     </Form>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Connexion - TontinePro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;family=Inter:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#3f0016",
+                        "on-background": "#171d16",
+                        "inverse-on-surface": "#ecf3e7",
+                        "on-secondary-container": "#1d3989",
+                        "on-primary-fixed": "#002109",
+                        "on-secondary-fixed-variant": "#264191",
+                        "warning": "#F97316",
+                        "surface": "#f4fcf0",
+                        "tertiary-fixed": "#ffd9de",
+                        "primary-container": "#00873a",
+                        "on-tertiary-fixed-variant": "#8a143c",
+                        "surface-container-highest": "#dde5d9",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#8fa7fe",
+                        "tertiary": "#a72d51",
+                        "surface-bright": "#f4fcf0",
+                        "surface-container": "#e9f0e5",
+                        "on-secondary-fixed": "#00164e",
+                        "on-surface-variant": "#3e4a3d",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d5dcd1",
+                        "destructive": "#DC2626",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#171d16",
+                        "surface-tint": "#006e2d",
+                        "tertiary-container": "#c74668",
+                        "primary-fixed": "#7ffc97",
+                        "surface-container-low": "#eff6ea",
+                        "secondary": "#4059aa",
+                        "surface-light": "#F8FAFC",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#62df7d",
+                        "text-muted": "#64748B",
+                        "inverse-surface": "#2b322b",
+                        "surface-variant": "#dde5d9",
+                        "secondary-fixed": "#dce1ff",
+                        "primary": "#006b2c",
+                        "outline-variant": "#bdcaba",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f7fff2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f4fcf0",
+                        "border-light": "#E2E8F0",
+                        "text-main": "#0F172A",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e3eadf",
+                        "on-primary-fixed-variant": "#005320",
+                        "outline": "#6e7b6c",
+                        "tertiary-fixed-dim": "#ffb2bf",
+                        "primary-fixed-dim": "#62df7d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "display": ["Poppins"],
+                        "h1": ["Poppins"],
+                        "h4": ["Poppins"],
+                        "caption": ["Inter"],
+                        "h2": ["Poppins"],
+                        "h1-mobile": ["Poppins"],
+                        "body-base": ["Inter"],
+                        "label": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h3": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "h4": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "h2": ["30px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "h1-mobile": ["30px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-surface-light text-on-surface font-body-base min-h-screen flex flex-col">
+<!-- TopNavBar Suppressed: Transactional page logic -->
+<main class="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop bg-surface-container-low">
+<div class="max-w-[1000px] w-full grid grid-cols-1 md:grid-cols-2 gap-0 bg-surface-container-lowest rounded-xl shadow-lg overflow-hidden border border-outline-variant">
+<!-- Left Side: Form -->
+<div class="p-8 md:p-12 flex flex-col justify-center">
+<div class="mb-8">
+<h1 class="font-h2 text-h2 text-primary font-bold mb-2">TontinePro</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">Bon retour parmi nous. Gérez vos finances communautaires.</p>
+</div>
+<form class="space-y-6">
+<div>
+<label class="block font-label text-label text-on-surface mb-2" for="email">Adresse Email</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">mail</span>
+<input class="w-full pl-10 pr-4 py-3 rounded-DEFAULT border border-outline-variant bg-surface focus:ring-2 focus:ring-primary focus:border-primary transition-colors font-body-base text-body-base text-on-surface" id="email" name="email" placeholder="vous@exemple.com" required="" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="block font-label text-label text-on-surface" for="password">Mot de passe</label>
+<a class="font-label text-label text-primary hover:underline transition-all" href="#">Mot de passe oublié ?</a>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">lock</span>
+<input class="w-full pl-10 pr-4 py-3 rounded-DEFAULT border border-outline-variant bg-surface focus:ring-2 focus:ring-primary focus:border-primary transition-colors font-body-base text-body-base text-on-surface" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-outline-variant rounded" id="remember" name="remember" type="checkbox"/>
+<label class="ml-2 block font-body-sm text-body-sm text-on-surface-variant" for="remember">
+                            Se souvenir de moi
+                        </label>
+</div>
+<button class="w-full bg-primary text-on-primary font-label text-label py-3 px-4 rounded-DEFAULT hover:bg-surface-tint active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
+                        Connexion
+                        <span class="material-symbols-outlined text-[20px]">login</span>
+</button>
+</form>
+<div class="mt-8">
+<div class="relative">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-outline-variant"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-2 bg-surface-container-lowest text-on-surface-variant font-caption text-caption">Ou continuer avec</span>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-2 gap-4">
+<button class="w-full flex justify-center items-center gap-2 px-4 py-2 border border-outline-variant rounded-DEFAULT bg-surface hover:bg-surface-container-low transition-colors font-label text-label text-on-surface" type="button">
+<img alt="Google logo" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6bX2f_KzLUhFlKrFTf8_vue-1kUzKOY-oIa-KoM2f98y23JZjabyrhWLfBuoA9UJk_NkPutY1152O2Cj9-X4tfvPCvJx2jSUBO0rJJX7D3hfRrPmgBcVlGB1P5EDvyaVrc2ULRPb6g6OF1P-IsRKgZZd4Evs2LXgvb6XU4UHts4H8YcU-DMrqLxdK9RuqNeGLVS7Dru4PN0gS7GWcGoVVM-XcuxlxflmN2kBGfuxrP78Kgjtx6tq-OkDbcHmaFl5VYkPju6ohb61z"/>
+                            Google
+                        </button>
+<button class="w-full flex justify-center items-center gap-2 px-4 py-2 border border-outline-variant rounded-DEFAULT bg-surface hover:bg-surface-container-low transition-colors font-label text-label text-on-surface" type="button">
+<svg aria-hidden="true" class="w-5 h-5 text-[#1877F2]" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" fill-rule="evenodd"></path>
+</svg>
+                            Facebook
+                        </button>
+</div>
+</div>
+<p class="mt-8 text-center font-body-sm text-body-sm text-on-surface-variant">
+                    Nouveau sur TontinePro ? <a class="font-label text-label text-primary hover:underline transition-all" href="#">Créer un compte</a>
+</p>
+</div>
+<!-- Right Side: Illustration/Branding -->
+<div class="hidden md:block relative bg-primary-container overflow-hidden">
+<img alt="" class="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply" data-alt="A modern, high-key photograph showing a diverse group of professionals collaborating over financial charts on a sleek glass table in a bright, sunlit office setting. The mood is collaborative, trustworthy, and organized, reflecting a corporate fintech aesthetic. The color palette emphasizes clean whites, professional blues, and subtle green accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcFpIU-Ehgxc_IAWyyKDHUpy86a-xhSoKUtInNhnsrzf2uOkRMzeBJEHc3Ca5pCLbNCw1RmhLh1I2KEFWZltwjJd2NMAx2IGquLQYuT-THDex3r5lDdVowTRAW47iEWlglDo-S2fUljEDCpqdw0ynubDGilrgUF9hEDe9jaaeFYbYRZdA6DUGHpvV2aY0K9OwMAxICWONEQTSBT282cLpqngdjS1zlk2RZKRggJrHwcBrV5uwnc12bX7MmpMkUQssQ1HzLoxs5k9yD"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent"></div>
+<div class="absolute bottom-0 left-0 right-0 p-12 text-on-primary-container">
+<div class="glass-panel p-6 rounded-lg shadow-lg">
+<span class="material-symbols-outlined text-[32px] text-primary mb-4 block" style="font-variation-settings: 'FILL' 1;">shield_locked</span>
+<h2 class="font-h3 text-h3 font-bold mb-2 text-on-surface">Sécurité de niveau bancaire</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Vos fonds communautaires sont protégés par des protocoles de chiffrement avancés, garantissant une transparence totale pour tous les membres de votre tontine.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Suppressed: Transactional page logic -->
+</body></html>

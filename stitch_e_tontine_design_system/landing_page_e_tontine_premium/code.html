@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>E-Tontine | La tontine traditionnelle, réinventée</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#16a34a",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#dcfce7",
+                    "on-primary-container": "#14532d",
+                    "secondary": "#4059aa",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#dbeafe",
+                    "on-secondary-container": "#1e3a8a",
+                    "surface": "#f8f9ff",
+                    "on-surface": "#171d16",
+                    "surface-variant": "#f1f5f9",
+                    "on-surface-variant": "#3e4a3d",
+                    "background": "#ffffff",
+                    "on-background": "#0f172a",
+                    "outline": "#6e7b6c",
+                    "outline-variant": "#e2e8f0",
+                    "error": "#ba1a1a",
+                    "border-light": "#E2E8F0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "8px",
+                    "lg": "12px",
+                    "xl": "16px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "margin-desktop": "32px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "container-max": "1280px"
+            },
+            "fontFamily": {
+                    "display": ["Poppins", "sans-serif"],
+                    "body-base": ["Hanken Grotesk", "sans-serif"],
+                    "h1": ["Poppins", "sans-serif"],
+                    "h2": ["Poppins", "sans-serif"],
+                    "h3": ["Poppins", "sans-serif"]
+            },
+            "animation": {
+                "marquee": "marquee 25s linear infinite",
+            },
+            "keyframes": {
+                "marquee": {
+                    "0%": { transform: "translateX(0%)" },
+                    "100%": { transform: "translateX(-50%)" },
+                },
+            },
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
+        }
+        .shadow-ambient {
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+        }
+        .mask-fade-edges {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="w-full sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-outline-variant">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-20">
+<!-- Brand -->
+<a class="text-h3 font-display font-bold text-primary tracking-tight flex items-center gap-2" href="#">
+<span class="bg-primary text-white p-1 rounded-lg">ET</span>
+                E-Tontine
+            </a>
+<!-- Desktop Navigation -->
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors" href="#features">Fonctionnalités</a>
+<a class="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors" href="#how">Comment ça marche</a>
+<a class="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors" href="#trust">Confiance</a>
+</div>
+<!-- Actions -->
+<div class="flex items-center space-x-4">
+<a class="hidden sm:block text-sm font-medium text-on-surface-variant hover:text-primary transition-colors" href="#">Connexion</a>
+<a class="bg-primary text-on-primary text-sm font-semibold px-6 py-3 rounded-lg shadow-sm hover:shadow-md hover:bg-primary/90 transition-all active:scale-95" href="#">
+                    Démarrer gratuitement
+                </a>
+</div>
+</div>
+</nav>
+<main class="flex-grow">
+<!-- Hero Section -->
+<section class="relative pt-16 pb-24 lg:pt-32 lg:pb-40 overflow-hidden">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<div class="space-y-8 relative z-10">
+<div class="inline-flex items-center space-x-2 bg-primary-container/50 px-4 py-2 rounded-full border border-primary/20">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-ping"></span>
+<span class="text-xs font-bold text-on-primary-container uppercase tracking-wider">Plateforme n°1 en Afrique</span>
+</div>
+<h1 class="text-4xl md:text-6xl font-display font-bold text-on-background leading-[1.1]">
+                        La tontine traditionnelle, <span class="text-primary italic">réinventée</span> pour l'ère numérique.
+                    </h1>
+<p class="text-lg md:text-xl text-on-surface-variant/80 max-w-xl leading-relaxed">
+                        Gérez vos cercles d'épargne avec une transparence totale, une sécurité bancaire et la solidarité qui nous définit.
+                    </p>
+<div class="flex flex-col sm:flex-row items-center gap-4">
+<button class="w-full sm:w-auto bg-primary text-on-primary font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                            Créer ma tontine
+                            <span class="material-symbols-outlined">rocket_launch</span>
+</button>
+<button class="w-full sm:w-auto bg-surface-variant text-on-background font-bold px-8 py-4 rounded-xl border border-outline-variant hover:bg-white transition-all">
+                            Voir comment ça marche
+                        </button>
+</div>
+<div class="flex items-center gap-4 pt-4">
+<div class="flex -space-x-3">
+<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+<img alt="User" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG0oVLvif_X7JuueE9_K6VzXluPgxm3RFL1NaVEW16kpQxrMACBiNcPlTWxNi3yJxLJrLYHv8mCl0ND1YWxUzt5fZIiFQ3JjaN625Hkl1HLO06RvtGBumXUBnaGovFxYbAqFwybRcwO-spb8VpUUojk0fagxg3fwZY_9GcmTt8q_bZEgVwECBT-y3OZd38LN8l3rSGJlntqfsYz2gcVVB_6XG4pt_FcdHZX2jJlwOrD3Du7a4jC9iTAdZwDiBK6vTqf3fcIZ7B1Ra9"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+<img alt="User" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoUbcC_BxN5gUYUx3YW6CPU4aUt51BpZ2YAl8PIZw9wtN2j791Xzm5xO4L7N96XgwJYZ2EKfSVxDqG3zMinxkz6Q7jWijm2sH4BdhhQoL2SL_YXSFJWolpf6u8298pGW3bPF5tRVKMzH3JsoSFW2PxEZP4NvqkWEHqEe6cmTaYpw9hf13CZ8AY7esZSAuBocAnGvGAO070l8MhEh7nL1dgZVjDhoXXpv_zG6xKR85YL0L-m34wm9R3gfTwNDwLCWFj5RwziNQbNPkq"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+<img alt="User" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnjF6PNvIolxn6q687J9dbbE7Kh9CqUVFvuOkcToz3afceBtAB2druSOpsId1MM-AaprStujW5c-_6nn0Y58f3HThHMGSK5BNLDGOCt5H2C0rQbHyabwczxew-QOsDrbyNNwDmeNemc7dRlBURaxiIn2NQXlGhq9hZLu-Crq52uFzkzVvns23zLIHQERwhv6WOiY9mgBmoyWYC4lR50QY3mzjsz8mLebukxtyFHOw7jPCvLgzdV8-z53hgNZADBhbAcKvRyeaMCl0h"/>
+</div>
+</div>
+<p class="text-sm font-medium text-on-surface-variant italic">Rejoint par +10,000 membres ce mois-ci</p>
+</div>
+</div>
+<div class="relative">
+<div class="absolute -top-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10"></div>
+<div class="absolute -bottom-12 -right-12 w-64 h-64 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
+<div class="rounded-3xl overflow-hidden shadow-ambient border-8 border-white">
+<img alt="Équipe E-Tontine utilisant la plateforme" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqxd81FpQH8QBTa_gufYExxSWf2MZHUkXsCFLBUzOPp4uYuhO-x1mYEqyhhlnp1TACGPmGawOrHDSb23hDwGopFdTvX5BDKQXZgVpIqUT-HLZZnt3c6wvE7jwv-IJpObqqCwif8TFJ98LmECstpCSLS5scOOAJtsh0QXq-Y-aigOM6zQ7VX85AICyJNPLyle2R8IZHXJgEtJ-LowOVzVL8rW1S4DqcoANCozy_U9UYMnPpYwKwcIY5yH4M1DaMWSM0KMtTIoO7cu05"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Marquee Testimonials -->
+<section class="py-12 bg-surface-variant/30 border-y border-outline-variant/50 overflow-hidden">
+<div class="mask-fade-edges relative flex">
+<div class="flex space-x-12 animate-marquee whitespace-nowrap py-4">
+<!-- Testimonial Items -->
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">AD</div>
+<div>
+<p class="text-sm font-bold">Amina Diop</p>
+<p class="text-xs text-primary font-semibold">Sécurisé</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">KA</div>
+<div>
+<p class="text-sm font-bold">Kwame Asante</p>
+<p class="text-xs text-primary font-semibold">Transparent</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">NB</div>
+<div>
+<p class="text-sm font-bold">Nia Bekele</p>
+<p class="text-xs text-primary font-semibold">Indispensable</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">JO</div>
+<div>
+<p class="text-sm font-bold">Jabari Osei</p>
+<p class="text-xs text-primary font-semibold">Sécurisé</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">ZH</div>
+<div>
+<p class="text-sm font-bold">Zari Hassan</p>
+<p class="text-xs text-primary font-semibold">Transparent</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">MM</div>
+<div>
+<p class="text-sm font-bold">Mosi Molefe</p>
+<p class="text-xs text-primary font-semibold">Indispensable</p>
+</div>
+</div>
+<!-- Duplicate for infinite scroll -->
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">AD</div>
+<div>
+<p class="text-sm font-bold">Amina Diop</p>
+<p class="text-xs text-primary font-semibold">Sécurisé</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">KA</div>
+<div>
+<p class="text-sm font-bold">Kwame Asante</p>
+<p class="text-xs text-primary font-semibold">Transparent</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-outline-variant">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-bold text-primary">NB</div>
+<div>
+<p class="text-sm font-bold">Nia Bekele</p>
+<p class="text-xs text-primary font-semibold">Indispensable</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 flex justify-center">
+<img alt="Nos membres" class="h-16 opacity-50 grayscale hover:grayscale-0 transition-all" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDT4UHQ5RSi8xoVMWRkjaDh6jYLuEYi8xJZsOafEck0iJi2g1lDgf7v-THVx4n6gIpZpn-vKONlratxOaN-Nx6VjYtz8CLPvipdEyat9O3FnfowycByOwUuTWnkleFOfESSLOKGGP2tzyuXYBRwf7w6MJx9c0CPDdspLEJxcqHHrNYVxWRRCr1Z5h9xv7yXLq9Nurg4laR6sfPyjmvLhve-3kXe4i0k49oucdpPqYgZ1EvMVVUgrTNb38dGoasEPRlBy2mU3EHOyVNt"/>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-24 bg-white" id="features">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="text-3xl md:text-4xl font-display font-bold text-on-background mb-6">Conçu pour votre tranquillité d'esprit</h2>
+<p class="text-lg text-on-surface-variant/80">E-Tontine apporte la rigueur technologique à la confiance communautaire.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Feature 1 -->
+<div class="p-8 rounded-3xl bg-surface-variant/40 hover:bg-white border border-transparent hover:border-primary/20 hover:shadow-xl transition-all group">
+<div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">visibility</span>
+</div>
+<h3 class="text-xl font-display font-bold mb-4">Transparence totale</h3>
+<p class="text-on-surface-variant leading-relaxed">Suivez chaque contribution, chaque retrait et l'ordre de passage en temps réel. Historique complet et immuable pour tous les membres.</p>
+</div>
+<!-- Feature 2 -->
+<div class="p-8 rounded-3xl bg-surface-variant/40 hover:bg-white border border-transparent hover:border-primary/20 hover:shadow-xl transition-all group">
+<div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">shield</span>
+</div>
+<h3 class="text-xl font-display font-bold mb-4">Sécurité bancaire</h3>
+<p class="text-on-surface-variant leading-relaxed">Vos fonds sont protégés par des protocoles de sécurité de niveau bancaire et des partenaires financiers agréés. Chiffrement de bout en bout.</p>
+</div>
+<!-- Feature 3 -->
+<div class="p-8 rounded-3xl bg-surface-variant/40 hover:bg-white border border-transparent hover:border-primary/20 hover:shadow-xl transition-all group">
+<div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">groups</span>
+</div>
+<h3 class="text-xl font-display font-bold mb-4">Solidarité numérique</h3>
+<p class="text-on-surface-variant leading-relaxed">Renforcez les liens de votre communauté. Notifications automatiques, rappels de paiement et chat intégré pour rester soudés.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-20 bg-primary overflow-hidden relative">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center relative z-10">
+<h2 class="text-3xl md:text-5xl font-display font-bold text-white mb-8">Prêt à transformer votre épargne collective ?</h2>
+<p class="text-xl text-white/80 mb-12 max-w-2xl mx-auto">Rejoignez la révolution E-Tontine et donnez à votre communauté les outils qu'elle mérite.</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+<button class="bg-white text-primary font-bold px-10 py-5 rounded-xl shadow-2xl hover:scale-105 transition-transform">Créer un compte gratuit</button>
+<button class="text-white font-bold px-10 py-5 rounded-xl border-2 border-white/30 hover:bg-white/10 transition-all flex items-center gap-2">
+                        Contacter un conseiller
+                        <span class="material-symbols-outlined">chat</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0f172a] text-white pt-20 pb-10">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<!-- Brand -->
+<div class="col-span-1 md:col-span-1 space-y-6">
+<a class="text-2xl font-display font-bold text-primary tracking-tight flex items-center gap-2" href="#">
+<span class="bg-primary text-white p-1 rounded-lg text-lg">ET</span>
+                        E-Tontine
+                    </a>
+<p class="text-gray-400 text-sm leading-relaxed">
+                        L'inclusion financière par la technologie. Nous modernisons l'épargne communautaire en Afrique pour un avenir plus sûr et plus prospère.
+                    </p>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">language</span>
+</a>
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">share</span>
+</a>
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">mail</span>
+</a>
+</div>
+</div>
+<!-- Links -->
+<div class="space-y-6">
+<h4 class="font-display font-bold text-sm uppercase tracking-widest text-primary">Produit</h4>
+<ul class="space-y-4">
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Fonctionnalités</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Sécurité</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Tarifs particuliers</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Solutions Entreprises</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="font-display font-bold text-sm uppercase tracking-widest text-primary">Société</h4>
+<ul class="space-y-4">
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">À propos</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Blog</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Contact</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Partenaires</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h4 class="font-display font-bold text-sm uppercase tracking-widest text-primary">Légal</h4>
+<ul class="space-y-4">
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Conditions Générales</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Confidentialité</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Mentions Légales</a></li>
+<li><a class="text-gray-400 hover:text-white transition-colors text-sm" href="#">Politique Cookies</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-gray-500 text-xs">© 2024 E-Tontine. Tous droits réservés. Plateforme sécurisée par des protocoles AES-256.</p>
+<div class="flex items-center gap-6">
+<span class="text-gray-500 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-xs">lock</span> Données sécurisées</span>
+<span class="text-gray-500 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-xs">public</span> Disponible partout</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

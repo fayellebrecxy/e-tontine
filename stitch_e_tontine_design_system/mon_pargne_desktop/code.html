@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Épargne Personnelle - TontinePro</title>
+<!-- Google Fonts: Inter & Poppins -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#3e4a3d",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "surface-dim": "#d5dcd1",
+                    "destructive": "#DC2626",
+                    "surface-tint": "#006e2d",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#171d16",
+                    "secondary-container": "#8fa7fe",
+                    "tertiary": "#a72d51",
+                    "surface-bright": "#f4fcf0",
+                    "on-secondary-fixed": "#00164e",
+                    "surface-container": "#e9f0e5",
+                    "tertiary-fixed": "#ffd9de",
+                    "error": "#ba1a1a",
+                    "primary-container": "#00873a",
+                    "on-tertiary-fixed-variant": "#8a143c",
+                    "surface-container-highest": "#dde5d9",
+                    "on-tertiary-fixed": "#3f0016",
+                    "on-background": "#171d16",
+                    "inverse-on-surface": "#ecf3e7",
+                    "on-secondary-container": "#1d3989",
+                    "on-secondary-fixed-variant": "#264191",
+                    "warning": "#F97316",
+                    "surface": "#f4fcf0",
+                    "on-primary-fixed": "#002109",
+                    "tertiary-fixed-dim": "#ffb2bf",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e3eadf",
+                    "on-primary-fixed-variant": "#005320",
+                    "outline": "#6e7b6c",
+                    "primary-fixed-dim": "#62df7d",
+                    "background": "#f4fcf0",
+                    "border-light": "#E2E8F0",
+                    "on-tertiary": "#ffffff",
+                    "text-main": "#0F172A",
+                    "on-tertiary-container": "#fffbff",
+                    "text-muted": "#64748B",
+                    "inverse-surface": "#2b322b",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#f7fff2",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#dde5d9",
+                    "secondary-fixed": "#dce1ff",
+                    "primary": "#006b2c",
+                    "outline-variant": "#bdcaba",
+                    "surface-container-low": "#eff6ea",
+                    "tertiary-container": "#c74668",
+                    "primary-fixed": "#7ffc97",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#62df7d",
+                    "secondary": "#4059aa",
+                    "surface-light": "#F8FAFC"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "unit": "8px",
+                    "margin-mobile": "16px",
+                    "container-max": "1280px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "h1-mobile": [
+                            "Poppins"
+                    ],
+                    "body-base": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "h3": [
+                            "Poppins"
+                    ],
+                    "display": [
+                            "Poppins"
+                    ],
+                    "h1": [
+                            "Poppins"
+                    ],
+                    "h4": [
+                            "Poppins"
+                    ],
+                    "caption": [
+                            "Inter"
+                    ],
+                    "h2": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "h1-mobile": [
+                            "30px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-base": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label": [
+                            "14px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h3": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "h1": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "h4": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "caption": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h2": [
+                            "30px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Ambient shadows */
+        .shadow-xs-custom {
+            box-shadow: 0 1px 2px 0 rgba(30, 58, 138, 0.05);
+        }
+        .shadow-md-custom {
+            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.08), 0 2px 4px -1px rgba(30, 58, 138, 0.04);
+        }
+        .shadow-lg-custom {
+            box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.1), 0 4px 6px -2px rgba(30, 58, 138, 0.05);
+        }
+        
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Sparkline animation */
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+        .sparkline-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-surface-light text-text-main font-body-base min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="w-full sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm transition-all duration-300" id="top-nav">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-16">
+<!-- Brand -->
+<a class="text-h3 font-h3 font-bold text-primary flex items-center gap-2" href="#">
+<span class="material-symbols-outlined icon-fill text-[28px]">account_balance</span>
+                TontinePro
+            </a>
+<!-- Navigation Links (Desktop) -->
+<nav class="hidden md:flex items-center gap-8">
+<!-- Highlight 'Fonctionnalités' as it's the closest to 'Épargne' in intent, or generic inactive if none match perfectly. We'll use generic inactive for all to prioritize the main app flow, assuming this is a dashboard view. Wait, JSON says active state is "border-b-2 border-primary". Let's assume this is part of "Fonctionnalités" for this isolated screen generation. -->
+<a class="text-primary font-semibold border-b-2 border-primary py-5 px-1 font-label text-label hover:bg-surface-container-low transition-all duration-200" href="#">Fonctionnalités</a>
+<a class="text-on-surface-variant font-label text-label hover:text-primary py-5 px-1 hover:bg-surface-container-low transition-all duration-200" href="#">Comment ça marche</a>
+<a class="text-on-surface-variant font-label text-label hover:text-primary py-5 px-1 hover:bg-surface-container-low transition-all duration-200" href="#">FAQ</a>
+<a class="text-on-surface-variant font-label text-label hover:text-primary py-5 px-1 hover:bg-surface-container-low transition-all duration-200" href="#">Tarifs</a>
+</nav>
+<!-- Actions -->
+<div class="hidden md:flex items-center gap-4">
+<a class="text-on-surface-variant font-label text-label hover:text-primary transition-colors py-2 px-4 rounded-lg hover:bg-surface-container-low" href="#">Connexion</a>
+<a class="bg-primary text-on-primary font-label text-label py-2 px-4 rounded-lg hover:bg-primary-container-variant transition-colors shadow-xs-custom active:scale-95 transform transition-transform" href="#">S'inscrire</a>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-on-surface-variant p-2 rounded-lg hover:bg-surface-container-low" id="mobile-menu-btn">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow max-w-container-max w-full mx-auto px-margin-mobile md:px-margin-desktop py-8 md:py-12">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-h1-mobile text-h1-mobile md:font-h1 md:text-h1 text-text-main mb-2">Épargne Personnelle</h1>
+<p class="font-body-base text-body-base text-text-muted">Gérez vos fonds et suivez la croissance de votre capital.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-surface-container-lowest border border-border-light text-on-surface-variant font-label text-label py-2 px-4 rounded-lg hover:bg-surface-container-low transition-colors shadow-xs-custom active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Relevé
+                </button>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Balance & Actions (lg: 4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Premium Balance Card (Glassmorphism/Credit Card Style) -->
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary-fixed-variant text-on-primary shadow-lg-custom p-6 sm:p-8 aspect-[1.6/1] flex flex-col justify-between group">
+<!-- Abstract background elements -->
+<div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-5 group-hover:scale-110 transition-transform duration-700 ease-out"></div>
+<div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-white opacity-5 group-hover:scale-110 transition-transform duration-700 ease-out delay-100"></div>
+<div class="relative z-10 flex justify-between items-start">
+<div>
+<p class="font-caption text-caption text-surface-container opacity-90 mb-1 tracking-wider uppercase">Solde Total Disponible</p>
+<h2 class="font-display text-display tracking-tight">2 450 000 <span class="font-h3 text-h3 opacity-80">FCFA</span></h2>
+</div>
+<span class="material-symbols-outlined icon-fill text-[32px] opacity-80">wallet</span>
+</div>
+<div class="relative z-10 flex items-center gap-6 mt-8">
+<div>
+<p class="font-caption text-caption text-surface-container opacity-90 mb-1">Intérêts générés</p>
+<p class="font-body-lg text-body-lg font-medium text-primary-fixed">+45 000 FCFA</p>
+</div>
+<div class="h-10 w-px bg-white/20"></div>
+<div>
+<p class="font-caption text-caption text-surface-container opacity-90 mb-1">Rendement</p>
+<p class="font-body-lg text-body-lg font-medium text-primary-fixed flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                4.2%
+                            </p>
+</div>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-xs-custom border border-border-light border-opacity-50">
+<h3 class="font-h4 text-h4 text-text-main mb-4">Actions Rapides</h3>
+<div class="grid grid-cols-2 gap-4">
+<button class="bg-primary text-on-primary font-label text-label py-3 px-4 rounded-lg hover:bg-[#005a25] transition-colors shadow-xs-custom active:scale-95 flex flex-col items-center justify-center gap-2 group">
+<div class="bg-white/20 p-2 rounded-full group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">add_circle</span>
+</div>
+                            Déposer
+                        </button>
+<button class="bg-secondary text-on-secondary font-label text-label py-3 px-4 rounded-lg hover:bg-[#32488a] transition-colors shadow-xs-custom active:scale-95 flex flex-col items-center justify-center gap-2 group">
+<div class="bg-white/20 p-2 rounded-full group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+</div>
+                            Retirer
+                        </button>
+</div>
+<!-- Goal Progress -->
+<div class="mt-6 pt-6 border-t border-border-light">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label text-label text-text-main">Objectif Maison</span>
+<span class="font-body-sm text-body-sm text-text-muted">65%</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-2 overflow-hidden">
+<div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+</div>
+<p class="font-caption text-caption text-text-muted text-right">3 000 000 FCFA</p>
+</div>
+</div>
+</div>
+<!-- Right Column: Chart & History (lg: 8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Chart Area (Bento style card) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 md:p-8 shadow-xs-custom border border-border-light border-opacity-50 h-[320px] flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-h4 text-h4 text-text-main">Évolution de l'épargne</h3>
+<!-- Time Filters -->
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="px-3 py-1 text-caption font-label rounded-md text-text-muted hover:text-text-main transition-colors">1M</button>
+<button class="px-3 py-1 text-caption font-label rounded-md text-text-muted hover:text-text-main transition-colors">3M</button>
+<button class="px-3 py-1 text-caption font-label rounded-md bg-surface-container-lowest text-text-main shadow-sm transition-colors">6M</button>
+<button class="px-3 py-1 text-caption font-label rounded-md text-text-muted hover:text-text-main transition-colors">1A</button>
+</div>
+</div>
+<!-- SVG Chart Simulation -->
+<div class="flex-grow relative w-full mt-4">
+<!-- Y-Axis Labels -->
+<div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-caption text-text-muted font-body-sm">
+<span>3.0M</span>
+<span>2.5M</span>
+<span>2.0M</span>
+<span>1.5M</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute left-10 right-0 top-2 bottom-8 flex flex-col justify-between z-0">
+<div class="border-t border-dashed border-border-light w-full"></div>
+<div class="border-t border-dashed border-border-light w-full"></div>
+<div class="border-t border-dashed border-border-light w-full"></div>
+<div class="border-t border-dashed border-border-light w-full"></div>
+</div>
+<!-- Chart SVG Area -->
+<svg class="absolute left-10 right-0 top-2 bottom-8 w-[calc(100%-40px)] h-full overflow-visible z-10" preserveaspectratio="none" viewbox="0 0 1000 100">
+<!-- Area Gradient Fill -->
+<defs>
+<lineargradient id="chartGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#006b2c" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#006b2c" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 L100,75 L200,60 L300,65 L400,45 L500,50 L600,30 L700,25 L800,35 L900,15 L1000,10 L1000,100 L0,100 Z" fill="url(#chartGradient)"></path>
+<!-- Line -->
+<path class="sparkline-path" d="M0,80 L100,75 L200,60 L300,65 L400,45 L500,50 L600,30 L700,25 L800,35 L900,15 L1000,10" fill="none" stroke="#006b2c" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+<!-- Data Points (Interactive Simulation) -->
+<circle class="cursor-pointer hover:r-6 transition-all" cx="200" cy="60" fill="#ffffff" r="4" stroke="#006b2c" stroke-width="2"></circle>
+<circle class="cursor-pointer hover:r-6 transition-all" cx="600" cy="30" fill="#ffffff" r="4" stroke="#006b2c" stroke-width="2"></circle>
+<circle class="cursor-pointer hover:r-8 transition-all" cx="1000" cy="10" fill="#006b2c" r="6">
+<animate attributename="r" dur="2s" repeatcount="indefinite" values="5;7;5"></animate>
+</circle>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute left-10 right-0 bottom-0 flex justify-between text-caption text-text-muted font-body-sm mt-4 px-2">
+<span>Janv</span>
+<span>Févr</span>
+<span>Mars</span>
+<span>Avr</span>
+<span>Mai</span>
+<span>Juin</span>
+</div>
+<!-- Tooltip overlay (Hidden by default, shown for realism) -->
+<div class="absolute right-[20px] top-[0px] bg-surface-container-lowest border border-border-light shadow-md-custom rounded-lg p-2 z-20 pointer-events-none transform translate-x-1/2 -translate-y-full">
+<p class="font-label text-caption text-text-main mb-1">Juin 2024</p>
+<p class="font-body-base text-body-sm font-semibold text-primary">2 450 000 FCFA</p>
+</div>
+</div>
+</div>
+<!-- Transaction History -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-xs-custom border border-border-light border-opacity-50">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-h4 text-h4 text-text-main">Historique Récent</h3>
+<a class="font-label text-label text-primary hover:underline" href="#">Voir tout</a>
+</div>
+<div class="space-y-4">
+<!-- Transaction Item (Deposit) -->
+<div class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-light transition-colors group cursor-pointer border border-transparent hover:border-border-light">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">south_west</span>
+</div>
+<div>
+<p class="font-label text-body-base text-text-main mb-0.5">Dépôt Mensuel</p>
+<p class="font-caption text-caption text-text-muted">Aujourd'hui, 10:24 • Carte bancaire</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label text-body-base text-primary">+ 150 000 FCFA</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-surface-container font-caption text-caption text-primary">Complété</span>
+</div>
+</div>
+<!-- Transaction Item (Interest) -->
+<div class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-light transition-colors group cursor-pointer border border-transparent hover:border-border-light">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">auto_graph</span>
+</div>
+<div>
+<p class="font-label text-body-base text-text-main mb-0.5">Intérêts Générés</p>
+<p class="font-caption text-caption text-text-muted">01 Juin 2024 • Capitalisation</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label text-body-base text-primary">+ 12 500 FCFA</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-surface-container font-caption text-caption text-primary">Complété</span>
+</div>
+</div>
+<!-- Transaction Item (Withdrawal) -->
+<div class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-light transition-colors group cursor-pointer border border-transparent hover:border-border-light">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-text-main group-hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">north_east</span>
+</div>
+<div>
+<p class="font-label text-body-base text-text-main mb-0.5">Retrait Partiel</p>
+<p class="font-caption text-caption text-text-muted">15 Mai 2024 • Vers Compte SGBC</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label text-body-base text-text-main">- 50 000 FCFA</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-surface-container font-caption text-caption text-primary">Complété</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 bg-surface-container-lowest border-t border-outline-variant mt-auto">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div class="col-span-1 md:col-span-1">
+<a class="text-h4 font-h4 font-bold text-primary flex items-center gap-2 mb-4" href="#">
+<span class="material-symbols-outlined icon-fill">account_balance</span>
+                    TontinePro
+                </a>
+<p class="font-body-sm text-body-sm text-secondary mb-4">© 2024 TontinePro. Sécurisé et Transparent.</p>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-wrap gap-8 md:justify-end items-start pt-2">
+<a class="text-on-surface-variant text-body-sm font-body-sm hover:text-primary transition-opacity hover:opacity-80" href="#">Conditions Générales</a>
+<a class="text-on-surface-variant text-body-sm font-body-sm hover:text-primary transition-opacity hover:opacity-80" href="#">Confidentialité</a>
+<a class="text-on-surface-variant text-body-sm font-body-sm hover:text-primary transition-opacity hover:opacity-80" href="#">Sécurité</a>
+<a class="text-on-surface-variant text-body-sm font-body-sm hover:text-primary transition-opacity hover:opacity-80" href="#">Contact</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple JS for interaction demonstration
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile Menu Toggle
+            const mobileBtn = document.getElementById('mobile-menu-btn');
+            mobileBtn.addEventListener('click', () => {
+                // Logic for mobile menu would go here
+                console.log('Mobile menu toggled');
+            });
+            
+            // Add subtle scroll effect to header
+            const header = document.getElementById('top-nav');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 10) {
+                    header.classList.add('shadow-md-custom');
+                } else {
+                    header.classList.remove('shadow-md-custom');
+                }
+            });
+        });
+    </script>
+</body></html>

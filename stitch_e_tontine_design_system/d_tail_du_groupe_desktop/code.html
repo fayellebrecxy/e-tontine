@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TontinePro - Dashboard Groupe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "border-light": "#E2E8F0",
+                      "on-secondary-container": "#1d3989",
+                      "text-main": "#0F172A",
+                      "secondary-container": "#8fa7fe",
+                      "on-surface": "#171d16",
+                      "inverse-surface": "#2b322b",
+                      "inverse-on-surface": "#ecf3e7",
+                      "tertiary-container": "#c74668",
+                      "on-tertiary-fixed": "#3f0016",
+                      "tertiary-fixed-dim": "#ffb2bf",
+                      "on-error-container": "#93000a",
+                      "destructive": "#DC2626",
+                      "on-secondary": "#ffffff",
+                      "surface-container": "#e9f0e5",
+                      "on-error": "#ffffff",
+                      "text-muted": "#64748B",
+                      "outline": "#6e7b6c",
+                      "secondary-fixed-dim": "#b6c4ff",
+                      "on-primary-container": "#f7fff2",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#00873a",
+                      "surface-dim": "#d5dcd1",
+                      "tertiary": "#a72d51",
+                      "secondary-fixed": "#dce1ff",
+                      "outline-variant": "#bdcaba",
+                      "error": "#ba1a1a",
+                      "surface-variant": "#dde5d9",
+                      "surface-light": "#F8FAFC",
+                      "tertiary-fixed": "#ffd9de",
+                      "surface-container-highest": "#dde5d9",
+                      "surface": "#f4fcf0",
+                      "primary-fixed-dim": "#62df7d",
+                      "on-primary-fixed": "#002109",
+                      "on-secondary-fixed": "#00164e",
+                      "error-container": "#ffdad6",
+                      "warning": "#F97316",
+                      "on-background": "#171d16",
+                      "surface-bright": "#f4fcf0",
+                      "secondary": "#4059aa",
+                      "primary": "#006b2c",
+                      "on-tertiary-fixed-variant": "#8a143c",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-container": "#fffbff",
+                      "surface-container-low": "#eff6ea",
+                      "on-primary": "#ffffff",
+                      "inverse-primary": "#62df7d",
+                      "surface-container-high": "#e3eadf",
+                      "on-primary-fixed-variant": "#005320",
+                      "primary-fixed": "#7ffc97",
+                      "background": "#f4fcf0",
+                      "surface-tint": "#006e2d",
+                      "on-surface-variant": "#3e4a3d",
+                      "on-secondary-fixed-variant": "#264191"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "32px",
+                      "container-max": "1280px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "caption": [
+                              "Inter"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Poppins"
+                      ],
+                      "h1-mobile": [
+                              "Poppins"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "h4": [
+                              "Poppins"
+                      ],
+                      "display": [
+                              "Poppins"
+                      ],
+                      "h1": [
+                              "Poppins"
+                      ],
+                      "label": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Poppins"
+                      ]
+              },
+              "fontSize": {
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h3": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1-mobile": [
+                              "30px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h4": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "h1": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label": [
+                              "14px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2": [
+                              "30px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .shadow-xs { box-shadow: 0 1px 2px 0 rgba(30, 58, 138, 0.05); }
+        .shadow-lg-soft { box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.1); }
+      </style>
+</head>
+<body class="bg-background text-on-background font-body-base min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface dark:bg-background w-full sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant dark:border-outline shadow-sm">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-[64px]">
+<div class="flex items-center gap-[24px]">
+<div class="text-h3 font-h3 font-bold text-primary dark:text-primary-fixed">TontinePro</div>
+<nav class="hidden md:flex gap-[24px]">
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 px-[16px] py-[8px] rounded-DEFAULT" href="#">Fonctionnalités</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 px-[16px] py-[8px] rounded-DEFAULT" href="#">Comment ça marche</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 px-[16px] py-[8px] rounded-DEFAULT" href="#">FAQ</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 px-[16px] py-[8px] rounded-DEFAULT" href="#">Tarifs</a>
+</nav>
+</div>
+<div class="flex items-center gap-[16px]">
+<button class="font-display text-label font-label text-secondary bg-surface border border-border-light hover:bg-surface-container-low px-[16px] py-[8px] rounded-DEFAULT transition-all active:scale-95">Connexion</button>
+<button class="font-display text-label font-label text-on-primary bg-primary hover:bg-surface-tint px-[16px] py-[8px] rounded-DEFAULT shadow-xs transition-all active:scale-95">S'inscrire</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop py-[32px] flex flex-col gap-[32px]">
+<!-- Header Group -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-[16px]">
+<div>
+<div class="flex items-center gap-[8px] mb-[8px]">
+<span class="material-symbols-outlined text-outline" style="font-variation-settings: 'FILL' 1;">groups</span>
+<span class="text-label font-label text-outline uppercase tracking-wider">Groupe de Tontine</span>
+</div>
+<h1 class="text-h1 font-h1 text-text-main hidden md:block">Les Épargnants Solidaires</h1>
+<h1 class="text-h1-mobile font-h1-mobile text-text-main md:hidden">Les Épargnants Solidaires</h1>
+<p class="text-body-base font-body-base text-text-muted mt-[8px]">Cycle #4 en cours • 12 Membres actifs</p>
+</div>
+<div class="flex gap-[16px]">
+<button class="bg-surface border border-border-light text-secondary font-label text-label px-[24px] py-[12px] rounded-DEFAULT shadow-xs hover:bg-surface-container-low transition-all active:scale-95 flex items-center gap-[8px]">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                    Gérer le groupe
+                </button>
+<button class="bg-primary text-on-primary font-label text-label px-[24px] py-[12px] rounded-DEFAULT shadow-xs hover:bg-surface-tint transition-all active:scale-95 flex items-center gap-[8px]">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    Nouvelle Cotisation
+                </button>
+</div>
+</div>
+<!-- Tab Navigation -->
+<div class="border-b border-border-light">
+<nav class="flex gap-[32px]">
+<button class="text-primary font-label text-label py-[16px] border-b-2 border-primary">Aperçu</button>
+<button class="text-text-muted hover:text-text-main font-label text-label py-[16px] border-b-2 border-transparent transition-colors">Membres</button>
+<button class="text-text-muted hover:text-text-main font-label text-label py-[16px] border-b-2 border-transparent transition-colors">Cycles</button>
+<button class="text-text-muted hover:text-text-main font-label text-label py-[16px] border-b-2 border-transparent transition-colors">Cotisations</button>
+</nav>
+</div>
+<!-- Key Stats (Bento Grid) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-[24px] border border-border-light shadow-xs relative overflow-hidden">
+<div class="absolute top-0 right-0 p-[24px] opacity-10">
+<span class="material-symbols-outlined text-[64px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<h3 class="text-label font-label text-text-muted mb-[8px]">Solde global actuel</h3>
+<div class="text-h2 font-h2 text-text-main mb-[16px]">2 500 000 <span class="text-body-base font-body-base text-text-muted">FCFA</span></div>
+<div class="flex items-center gap-[8px] text-primary">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="text-caption font-caption font-medium">+15% vs cycle précédent</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-[24px] border border-border-light shadow-xs relative overflow-hidden">
+<div class="absolute top-0 right-0 p-[24px] opacity-10">
+<span class="material-symbols-outlined text-[64px]" style="font-variation-settings: 'FILL' 1;">savings</span>
+</div>
+<h3 class="text-label font-label text-text-muted mb-[8px]">Épargne totale accumulée</h3>
+<div class="text-h2 font-h2 text-text-main mb-[16px]">12 000 000 <span class="text-body-base font-body-base text-text-muted">FCFA</span></div>
+<div class="flex items-center gap-[8px] text-text-muted">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span class="text-caption font-caption">Depuis la création (2022)</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-lg p-[24px] border border-error-container shadow-xs relative overflow-hidden">
+<div class="absolute top-0 right-0 p-[24px] opacity-10 text-error">
+<span class="material-symbols-outlined text-[64px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<h3 class="text-label font-label text-error mb-[8px]">Cotisations impayées</h3>
+<div class="text-h2 font-h2 text-error mb-[16px]">150 000 <span class="text-body-base font-body-base text-error/70">FCFA</span></div>
+<div class="flex items-center gap-[8px] text-error">
+<span class="material-symbols-outlined text-[16px]">error</span>
+<span class="text-caption font-caption">3 membres en retard</span>
+</div>
+</div>
+</div>
+<!-- Central Section: Current Cycle & Chart -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-[24px]">
+<!-- Current Cycle Progress (Spans 1 col) -->
+<div class="bg-surface-container-lowest rounded-lg p-[24px] border border-border-light shadow-xs lg:col-span-1 flex flex-col gap-[24px]">
+<div class="flex justify-between items-center">
+<h3 class="text-h4 font-h4 text-text-main">Cycle #4</h3>
+<span class="bg-surface-container px-[12px] py-[4px] rounded-full text-caption font-caption text-primary-container font-medium">En cours</span>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-[8px]">
+<span class="text-text-muted">Progression</span>
+<span class="text-text-main font-medium">Tour 5/12</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-[8px] overflow-hidden">
+<div class="bg-primary h-full rounded-full w-[41%]"></div>
+</div>
+</div>
+<div class="bg-surface-light rounded-DEFAULT p-[16px] border border-border-light">
+<div class="text-caption font-caption text-text-muted mb-[8px] uppercase tracking-wider">Prochain Bénéficiaire</div>
+<div class="flex items-center gap-[16px]">
+<div class="w-[48px] h-[48px] rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-h4 font-h4">
+                            AM
+                        </div>
+<div>
+<div class="text-body-base font-body-base font-medium text-text-main">Amina Ndiaye</div>
+<div class="text-caption font-caption text-text-muted">Levée prévue: 15 Nov</div>
+</div>
+</div>
+</div>
+<button class="w-full bg-surface border border-border-light text-text-main font-label text-label px-[16px] py-[12px] rounded-DEFAULT hover:bg-surface-container-low transition-colors text-center">
+                    Voir les détails du cycle
+                </button>
+</div>
+<!-- Capital Evolution Chart (Spans 2 cols) -->
+<div class="bg-surface-container-lowest rounded-lg p-[24px] border border-border-light shadow-xs lg:col-span-2 flex flex-col">
+<div class="flex justify-between items-center mb-[24px]">
+<h3 class="text-h4 font-h4 text-text-main">Évolution du Capital</h3>
+<select class="bg-surface border border-border-light text-body-sm font-body-sm rounded-DEFAULT px-[12px] py-[4px] text-text-muted focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Cette année</option>
+<option>Derniers 6 mois</option>
+<option>Tout l'historique</option>
+</select>
+</div>
+<!-- Mock Chart Area -->
+<div class="flex-grow relative min-h-[250px] w-full rounded-DEFAULT overflow-hidden bg-surface-light border border-border-light/50">
+<!-- Decorative CSS chart representation -->
+<div class="absolute bottom-0 left-0 w-full h-[60%] bg-gradient-to-t from-primary/10 to-transparent"></div>
+<svg class="absolute bottom-0 left-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,100 L0,60 L10,55 L20,65 L30,40 L40,45 L50,20 L60,30 L70,15 L80,25 L90,10 L100,5 L100,100 Z" fill="rgba(0, 107, 44, 0.05)"></path>
+<path d="M0,60 L10,55 L20,65 L30,40 L40,45 L50,20 L60,30 L70,15 L80,25 L90,10 L100,5" fill="none" stroke="#006b2c" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<circle cx="50" cy="20" fill="#ffffff" r="1.5" stroke="#006b2c" stroke-width="1"></circle>
+<circle cx="90" cy="10" fill="#ffffff" r="1.5" stroke="#006b2c" stroke-width="1"></circle>
+</svg>
+<!-- Y-axis labels -->
+<div class="absolute left-[16px] top-[16px] h-[80%] flex flex-col justify-between text-caption font-caption text-text-muted">
+<span>15M</span>
+<span>10M</span>
+<span>5M</span>
+<span>0</span>
+</div>
+<!-- X-axis labels -->
+<div class="absolute bottom-[16px] left-[48px] right-[16px] flex justify-between text-caption font-caption text-text-muted px-[16px]">
+<span>Jan</span>
+<span>Mar</span>
+<span>Mai</span>
+<span>Jul</span>
+<span>Sep</span>
+<span>Nov</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Transactions & Members -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
+<!-- Recent Transactions Table -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-light shadow-xs flex flex-col">
+<div class="p-[24px] border-b border-border-light flex justify-between items-center">
+<h3 class="text-h4 font-h4 text-text-main">Transactions récentes</h3>
+<a class="text-primary font-label text-label hover:underline" href="#">Tout voir</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-light text-caption font-caption text-text-muted uppercase tracking-wider">
+<th class="p-[16px] font-medium">Membre</th>
+<th class="p-[16px] font-medium">Date</th>
+<th class="p-[16px] font-medium">Montant</th>
+<th class="p-[16px] font-medium">Statut</th>
+</tr>
+</thead>
+<tbody class="text-body-sm font-body-sm divide-y divide-border-light">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-[16px] flex items-center gap-[12px]">
+<div class="w-[32px] h-[32px] rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-caption font-medium">SF</div>
+<span class="text-text-main font-medium">Seydou Fall</span>
+</td>
+<td class="p-[16px] text-text-muted">Aujourd'hui</td>
+<td class="p-[16px] text-text-main font-medium">50 000 FCFA</td>
+<td class="p-[16px]">
+<span class="inline-flex items-center gap-[4px] bg-surface-container px-[8px] py-[2px] rounded-full text-caption font-caption text-primary-container">
+<span class="w-[6px] h-[6px] rounded-full bg-primary"></span> Payé
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-[16px] flex items-center gap-[12px]">
+<div class="w-[32px] h-[32px] rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-caption font-medium">MK</div>
+<span class="text-text-main font-medium">Moussa Kane</span>
+</td>
+<td class="p-[16px] text-text-muted">Hier</td>
+<td class="p-[16px] text-text-main font-medium">50 000 FCFA</td>
+<td class="p-[16px]">
+<span class="inline-flex items-center gap-[4px] bg-surface-container px-[8px] py-[2px] rounded-full text-caption font-caption text-primary-container">
+<span class="w-[6px] h-[6px] rounded-full bg-primary"></span> Payé
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-[16px] flex items-center gap-[12px]">
+<div class="w-[32px] h-[32px] rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-fixed font-caption font-medium">FD</div>
+<span class="text-text-main font-medium">Fatou Diallo</span>
+</td>
+<td class="p-[16px] text-text-muted">28 Oct 2024</td>
+<td class="p-[16px] text-text-main font-medium">50 000 FCFA</td>
+<td class="p-[16px]">
+<span class="inline-flex items-center gap-[4px] bg-error-container px-[8px] py-[2px] rounded-full text-caption font-caption text-on-error-container">
+<span class="w-[6px] h-[6px] rounded-full bg-error"></span> En retard
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-[16px] flex items-center gap-[12px]">
+<div class="w-[32px] h-[32px] rounded-full bg-surface-container-high flex items-center justify-center text-text-main font-caption font-medium">IB</div>
+<span class="text-text-main font-medium">Ibrahima Ba</span>
+</td>
+<td class="p-[16px] text-text-muted">25 Oct 2024</td>
+<td class="p-[16px] text-text-main font-medium">250 000 FCFA</td>
+<td class="p-[16px]">
+<span class="inline-flex items-center gap-[4px] bg-surface-variant px-[8px] py-[2px] rounded-full text-caption font-caption text-text-main">
+<span class="material-symbols-outlined text-[12px]">call_made</span> Levée
+                                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Active Members List -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-light shadow-xs flex flex-col">
+<div class="p-[24px] border-b border-border-light flex justify-between items-center">
+<h3 class="text-h4 font-h4 text-text-main">Membres (12)</h3>
+<button class="text-secondary font-label text-label hover:underline flex items-center gap-[4px]">
+<span class="material-symbols-outlined text-[16px]">person_add</span> Inviter
+                    </button>
+</div>
+<div class="p-[24px] flex flex-col gap-[16px] overflow-y-auto max-h-[350px]">
+<!-- Member Item -->
+<div class="flex items-center justify-between p-[12px] bg-surface-light rounded-DEFAULT border border-border-light hover:border-primary transition-colors">
+<div class="flex items-center gap-[16px]">
+<div class="relative">
+<div class="w-[40px] h-[40px] rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-body-sm font-medium">
+                                    SF
+                                </div>
+<div class="absolute bottom-0 right-0 w-[12px] h-[12px] bg-primary rounded-full border-2 border-surface-light"></div>
+</div>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-text-main">Seydou Fall</div>
+<div class="text-caption font-caption text-text-muted">Administrateur</div>
+</div>
+</div>
+<button class="p-[8px] text-text-muted hover:text-secondary transition-colors rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Member Item -->
+<div class="flex items-center justify-between p-[12px] bg-surface-light rounded-DEFAULT border border-border-light hover:border-primary transition-colors">
+<div class="flex items-center gap-[16px]">
+<div class="relative">
+<div class="w-[40px] h-[40px] rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-body-sm font-medium">
+                                    AM
+                                </div>
+<div class="absolute bottom-0 right-0 w-[12px] h-[12px] bg-primary rounded-full border-2 border-surface-light"></div>
+</div>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-text-main">Amina Ndiaye</div>
+<div class="text-caption font-caption text-text-muted">Membre régulier</div>
+</div>
+</div>
+<button class="p-[8px] text-text-muted hover:text-secondary transition-colors rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Member Item -->
+<div class="flex items-center justify-between p-[12px] bg-surface-light rounded-DEFAULT border border-error-container hover:border-error transition-colors">
+<div class="flex items-center gap-[16px]">
+<div class="relative">
+<div class="w-[40px] h-[40px] rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-fixed font-body-sm font-medium">
+                                    FD
+                                </div>
+<div class="absolute bottom-0 right-0 w-[12px] h-[12px] bg-error rounded-full border-2 border-surface-light"></div>
+</div>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-text-main">Fatou Diallo</div>
+<div class="text-caption font-caption text-error">1 cotisation en retard</div>
+</div>
+</div>
+<button class="p-[8px] text-text-muted hover:text-secondary transition-colors rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Member Item -->
+<div class="flex items-center justify-between p-[12px] bg-surface-light rounded-DEFAULT border border-border-light hover:border-primary transition-colors">
+<div class="flex items-center gap-[16px]">
+<div class="relative">
+<div class="w-[40px] h-[40px] rounded-full bg-surface-container-high flex items-center justify-center text-text-main font-body-sm font-medium">
+                                    IB
+                                </div>
+<div class="absolute bottom-0 right-0 w-[12px] h-[12px] bg-outline rounded-full border-2 border-surface-light"></div>
+</div>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-text-main">Ibrahima Ba</div>
+<div class="text-caption font-caption text-text-muted">Membre régulier</div>
+</div>
+</div>
+<button class="p-[8px] text-text-muted hover:text-secondary transition-colors rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<div class="p-[16px] border-t border-border-light text-center">
+<a class="text-label font-label text-primary hover:underline" href="#">Voir tous les membres</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-12 border-t border-outline-variant dark:border-outline mt-auto">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div>
+<div class="text-h4 font-h4 font-bold text-primary mb-[16px]">TontinePro</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant mb-[24px]">© 2024 TontinePro. Sécurisé et Transparent.</p>
+</div>
+<div class="flex flex-col gap-[12px]">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Conditions Générales</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Confidentialité</a>
+</div>
+<div class="flex flex-col gap-[12px]">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Sécurité</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body></html>

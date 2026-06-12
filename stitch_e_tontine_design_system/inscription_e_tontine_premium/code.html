@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Inscription - E-Tontine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#e9f0e5",
+                        "on-error": "#ffffff",
+                        "background": "#f4fcf0",
+                        "secondary-container": "#8fa7fe",
+                        "surface-light": "#F8FAFC",
+                        "on-surface": "#171d16",
+                        "tertiary-fixed": "#ffd9de",
+                        "secondary": "#4059aa",
+                        "inverse-primary": "#62df7d",
+                        "on-surface-variant": "#3e4a3d",
+                        "inverse-surface": "#2b322b",
+                        "surface-dim": "#d5dcd1",
+                        "on-primary-fixed-variant": "#005320",
+                        "primary-fixed": "#7ffc97",
+                        "on-background": "#171d16",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#6e7b6c",
+                        "surface-variant": "#dde5d9",
+                        "surface-container-low": "#eff6ea",
+                        "surface": "#f4fcf0",
+                        "inverse-on-surface": "#ecf3e7",
+                        "primary-container": "#00873a",
+                        "on-error-container": "#93000a",
+                        "border-light": "#E2E8F0",
+                        "on-secondary-container": "#1d3989",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f4fcf0",
+                        "primary": "#006b2c",
+                        "on-secondary-fixed": "#00164e",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#fffbff",
+                        "text-muted": "#64748B",
+                        "surface-tint": "#006e2d",
+                        "text-main": "#0F172A",
+                        "surface-container-high": "#e3eadf",
+                        "warning": "#F97316",
+                        "secondary-fixed": "#dce1ff",
+                        "on-primary-fixed": "#002109",
+                        "tertiary-fixed-dim": "#ffb2bf",
+                        "tertiary-container": "#c74668",
+                        "tertiary": "#a72d51",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#264191",
+                        "primary-fixed-dim": "#62df7d",
+                        "on-tertiary-fixed-variant": "#8a143c",
+                        "on-primary-container": "#f7fff2",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#dde5d9",
+                        "destructive": "#DC2626",
+                        "outline-variant": "#bdcaba",
+                        "on-tertiary-fixed": "#3f0016"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "h1-mobile": ["Poppins"],
+                        "caption": ["Inter"],
+                        "body-base": ["Inter"],
+                        "h3": ["Poppins"],
+                        "h2": ["Poppins"],
+                        "display": ["Poppins"],
+                        "h4": ["Poppins"],
+                        "h1": ["Poppins"],
+                        "body-sm": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "h1-mobile": ["30px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "h2": ["30px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h4": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .input-group { position: relative; }
+        .input-group label {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+            color: #64748B;
+        }
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: 0.5rem;
+            transform: translateY(0);
+            font-size: 0.75rem;
+            color: #006b2c;
+            font-weight: 500;
+        }
+        .input-group input {
+            padding-top: 1.25rem;
+            padding-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-base text-on-surface min-h-screen flex items-center justify-center p-0 md:p-4">
+<!-- Main Auth Container -->
+<main class="w-full max-w-container-max mx-auto bg-surface-container-lowest md:rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row min-h-screen md:min-h-[850px]">
+<!-- Left Column: Registration Form -->
+<div class="w-full md:w-[45%] lg:w-[40%] p-6 md:p-12 flex flex-col">
+<div class="mb-10">
+<a class="flex items-center gap-2 mb-8 group" href="/">
+<div class="bg-primary-container/10 p-2 rounded-lg group-hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl block">account_balance_wallet</span>
+</div>
+<span class="font-h3 text-h3 text-primary tracking-tight">E-Tontine</span>
+</a>
+<h1 class="font-h2 text-h2 mb-3">Créez votre compte</h1>
+<p class="font-body-base text-on-surface-variant leading-relaxed">Rejoignez la communauté de tontine la plus sécurisée d'Afrique.</p>
+</div>
+<!-- Social Logins -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<button class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-surface-container-low hover:border-outline transition-all text-label font-label text-on-surface shadow-sm">
+<svg class="w-5 h-5" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"></path>
+</svg>
+<span>Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-xl hover:bg-surface-container-low hover:border-outline transition-all text-label font-label text-on-surface shadow-sm">
+<svg class="w-5 h-5" viewbox="0 0 23 23">
+<path d="M0 0h23v23H0z" fill="#f3f3f3"></path>
+<path d="M1 1h10v10H1z" fill="#f35325"></path>
+<path d="M12 1h10v10H12z" fill="#80bb03"></path>
+<path d="M1 12h10v10H1z" fill="#05a6f0"></path>
+<path d="M12 12h10v10H12z" fill="#ffba08"></path>
+</svg>
+<span>Microsoft</span>
+</button>
+</div>
+<div class="relative flex items-center mb-8">
+<div class="flex-grow border-t border-outline-variant"></div>
+<span class="flex-shrink mx-4 font-label text-[11px] text-outline uppercase tracking-widest">ou continuer avec email</span>
+<div class="flex-grow border-t border-outline-variant"></div>
+</div>
+<!-- Registration Form -->
+<form class="space-y-4" onsubmit="return false;">
+<div class="grid grid-cols-2 gap-4">
+<div class="input-group">
+<input class="w-full border border-outline-variant rounded-xl px-4 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-body-base text-on-surface placeholder-transparent" id="prenom" placeholder="Prénom" required="" type="text"/>
+<label class="font-label" for="prenom">Prénom</label>
+</div>
+<div class="input-group">
+<input class="w-full border border-outline-variant rounded-xl px-4 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-body-base text-on-surface placeholder-transparent" id="nom" placeholder="Nom" required="" type="text"/>
+<label class="font-label" for="nom">Nom</label>
+</div>
+</div>
+<div class="input-group">
+<input class="w-full border border-outline-variant rounded-xl px-4 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-body-base text-on-surface placeholder-transparent" id="email" placeholder="Email" required="" type="email"/>
+<label class="font-label" for="email">Email professionnel</label>
+</div>
+<div class="input-group">
+<input class="w-full border border-outline-variant rounded-xl px-4 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-body-base text-on-surface placeholder-transparent" id="phone" placeholder="Téléphone" required="" type="tel"/>
+<label class="font-label" for="phone">Numéro de téléphone</label>
+</div>
+<div class="space-y-2">
+<div class="input-group">
+<input class="w-full border border-outline-variant rounded-xl px-4 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-body-base text-on-surface placeholder-transparent" id="password" placeholder="Mot de passe" required="" type="password"/>
+<label class="font-label" for="password">Mot de passe</label>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+<!-- Shadcn-style Password Strength Indicator -->
+<div class="pt-1">
+<div class="flex gap-2 mb-1.5">
+<div class="h-1.5 flex-1 rounded-full bg-primary"></div>
+<div class="h-1.5 flex-1 rounded-full bg-primary"></div>
+<div class="h-1.5 flex-1 rounded-full bg-primary/20"></div>
+<div class="h-1.5 flex-1 rounded-full bg-primary/20"></div>
+</div>
+<div class="flex items-center justify-between">
+<p class="text-[11px] font-medium text-primary uppercase tracking-tight">Sécurité : Bonne</p>
+<p class="text-[11px] text-outline italic">Utilisez 8+ caractères</p>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-3 pt-2">
+<div class="flex items-center h-5">
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary/20 focus:ring-offset-0 transition-all cursor-pointer" id="terms" required="" type="checkbox"/>
+</div>
+<label class="font-body-sm text-body-sm text-on-surface-variant leading-tight cursor-pointer" for="terms">
+                        J'accepte les <a class="text-primary font-medium hover:underline" href="#">conditions d'utilisation</a> et la <a class="text-primary font-medium hover:underline" href="#">politique de confidentialité</a>.
+                    </label>
+</div>
+<button class="w-full bg-primary hover:bg-surface-tint text-on-primary font-label text-label py-4 rounded-xl shadow-md shadow-primary/10 transition-all hover:-translate-y-0.5 active:translate-y-0 mt-6 flex items-center justify-center gap-2" type="submit">
+                    Créer mon compte
+                    <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</form>
+<div class="mt-auto pt-8 text-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Déjà membre ? <a class="text-primary font-semibold hover:underline decoration-2 underline-offset-4" href="#">Connectez-vous</a>
+</p>
+</div>
+</div>
+<!-- Right Column: Brand Imagery & Social Proof -->
+<div class="hidden md:block w-[55%] lg:w-[60%] relative bg-surface-container-high overflow-hidden">
+<img alt="African professionals collaborating" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqxd81FpQH8QBTa_gufYExxSWf2MZHUkXsCFLBUzOPp4uYuhO-x1mYEqyhhlnp1TACGPmGawOrHDSb23hDwGopFdTvX5BDKQXZgVpIqUT-HLZZnt3c6wvE7jwv-IJpObqqCwif8TFJ98LmECstpCSLS5scOOAJtsh0QXq-Y-aigOM6zQ7VX85AICyJNPLyle2R8IZHXJgEtJ-LowOVzVL8rW1S4DqcoANCozy_U9UYMnPpYwKwcIY5yH4M1DaMWSM0KMtTIoO7cu05"/>
+<!-- Dynamic Gradient Overlay -->
+<div class="absolute inset-0 bg-gradient-to-t from-on-primary-fixed/90 via-on-primary-fixed/30 to-transparent"></div>
+<!-- Bottom Content -->
+<div class="absolute bottom-0 left-0 right-0 p-12 text-on-primary">
+<div class="max-w-xl">
+<div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-6">
+<span class="material-symbols-outlined text-primary-fixed text-sm">verified_user</span>
+<span class="text-xs font-semibold tracking-wide uppercase">Solution Certifiée &amp; Sécurisée</span>
+</div>
+<h2 class="font-display text-h1 mb-6 leading-tight">La tontine moderne, ancrée dans la confiance.</h2>
+<div class="grid grid-cols-2 gap-8 mb-10">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-fixed">security</span>
+<div>
+<h4 class="font-semibold text-body-base">Sécurité Totale</h4>
+<p class="text-sm text-on-primary/70">Cryptage bancaire de bout en bout pour chaque transaction.</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-fixed">groups</span>
+<div>
+<h4 class="font-semibold text-body-base">Esprit Communautaire</h4>
+<p class="text-sm text-on-primary/70">Gérez vos cercles de confiance en toute transparence.</p>
+</div>
+</div>
+</div>
+<!-- Trust Indicators -->
+<div class="flex items-center justify-between border-t border-white/10 pt-8">
+<div class="flex items-center gap-4">
+<div class="flex -space-x-3">
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-on-primary-fixed object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAUlXPEj2fRMw8ffeM9pnFV2SON1z1ENhJmFO0X440CAWP11dVzw0V5Nvw2eg5hWhFTv8Bhuycg35G6lcOLNcWDqKjBw4BuDsXiO84MON58U5V6DRi-meRMDbyiBXICBgSVpsX3dw-FTd9-_ctLa53LpwAlzSnVxMjGCyTF_ZTMc4msW-3cU5Dy1mNyFLE4fv-qBgazbaOUjtgy_mbGNzHJ-ufuXCHesRz9spweZMX21ztxVPFuXVyQ5mZLR_sLN_laExX6qVqHNKq"/>
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-on-primary-fixed object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkMdxwb9ohjKFh4S3bEwhT3-TjHfEAkrZmEfynDroPp0--sy6NxncVuVQ1c90BrKwFb4ppXZRykMit_QtppZH69dQJ-JX4uX3__164W26wN4OSFAzToR7vkWZ1NsWD-JwMMjqi3vJHA3ZVRhB18OXyPx3Ddo1JZRpsaE2WbXBaoIxSQBfYBGRQJqNH_X-u4cV97eobjOiNbXleMSj1QX62WBzfKFZjbc0fTtTTTHdfM9yy0tsluf4sER4p_FQ1Bct3d5DabuG51HVH"/>
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-on-primary-fixed object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlI136jWyK6rZlKbIIFUluzSk5Iy8mhqK3cQYvHqDYhNwe4gK9JpMRXsVCIZtud99wkzN2_6ytMtpK26o3d_wEfyRUoWim4PGKygrsscVNFbxgg_0wq9y0KN6GvsSFrXlWbRt1IfVB3JaoJT63BLFtut6jzOMYFOLGw3rLoGaJaU7YN4DWIX1uIy90qD8GZGWICleODlTZn8oRR_5ammLE7PKt4D6sxueZvIwWmurgIBhdHP2eaLWacQPuVPS2XMut1zIwRZ3wHBsC"/>
+</div>
+<div class="text-sm">
+<span class="block font-bold">10k+ Membres</span>
+<span class="text-on-primary/60 text-xs">à travers l'Afrique de l'Ouest</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-warning fill-1">star</span>
+<span class="material-symbols-outlined text-warning fill-1">star</span>
+<span class="material-symbols-outlined text-warning fill-1">star</span>
+<span class="material-symbols-outlined text-warning fill-1">star</span>
+<span class="material-symbols-outlined text-warning fill-1">star</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

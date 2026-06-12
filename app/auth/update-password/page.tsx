@@ -13,13 +13,12 @@ export default async function UpdatePasswordPage() {
   }
 
   return (
-    <div className="flex justify-center">
-      <AuthCard
-        title="Nouveau mot de passe"
-        description="Choisis un nouveau mot de passe pour ton compte."
-      >
-        <UpdatePasswordForm />
-      </AuthCard>
-    </div>
+    <AuthCard
+      title="Nouveau mot de passe"
+      description="Choisis un nouveau mot de passe pour ton compte."
+      showImage={false}
+    >
+      <UpdatePasswordForm />
+    </AuthCard>
   );
 }

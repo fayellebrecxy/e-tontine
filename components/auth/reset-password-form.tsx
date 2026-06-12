@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Send } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { z } from "zod";
 
+import { resetPasswordSchema } from "@/lib/validations";
 import { resetPasswordAction } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +20,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { resetPasswordSchema } from "@/lib/validations";
 
 type Values = z.infer<typeof resetPasswordSchema>;
 
 export function ResetPasswordForm() {
-  const router = useRouter();
   const form = useForm<Values>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: "" },
@@ -40,27 +38,25 @@ export function ResetPasswordForm() {
         toast.error(res.error);
         return;
       }
-
-      toast.success(res.message ?? "Email envoyé.");
-      router.push(res.redirectTo);
-      router.refresh();
+      toast.success(res.message);
+      form.reset();
     });
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">Email</FormLabel>
+              <FormLabel className="block font-medium text-sm text-slate-900">Email</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
-                    className="h-12 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm transition duration-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-600/25"
+                    className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900"
                     placeholder="vous@example.com"
                     type="email"
                     autoComplete="email"
@@ -73,15 +69,19 @@ export function ResetPasswordForm() {
           )}
         />
 
-        <Button className="h-12 w-full rounded-lg bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700" type="submit" disabled={pending}>
-          {pending ? "Envoi..." : "Envoyer le lien"}
-          {!pending ? <Send className="h-4 w-4" /> : null}
+        <Button 
+          type="submit" 
+          disabled={pending}
+          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+        >
+          {pending ? "Envoi..." : "Réinitialiser"}
+          {!pending && <ArrowRight className="h-5 w-5" />}
         </Button>
 
-        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-          <Link href="/auth/login" className="inline-flex items-center gap-2 font-bold text-slate-950 underline underline-offset-4 transition hover:text-emerald-700">
-            <ArrowLeft className="h-4 w-4" />
-            Retour à la connexion
+        <p className="mt-8 text-center text-sm text-slate-600">
+          Tu t'en souviens ?{" "}
+          <Link href="/auth/login" className="font-medium text-green-600 hover:underline transition-all">
+            Se connecter
           </Link>
         </p>
       </form>

@@ -64,21 +64,20 @@ export function AppSidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-50 h-screen border-r border-slate-200 bg-slate-950 px-3 py-4 text-white transition-all duration-200 dark:border-white/10 dark:bg-slate-950 lg:translate-x-0 ${
+      className={`fixed left-0 top-0 z-50 h-screen border-r border-[#264191]/30 bg-[#00164e] px-3 py-4 text-white transition-all duration-200 lg:translate-x-0 ${
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       } ${sidebarWidth}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex h-full flex-col gap-6">
-        <div className="flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-slate-950">
-            <Landmark className="h-5 w-5" />
+        <div className="flex items-center gap-3 px-2 border-b border-[#264191]/30 pb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-transparent text-green-400">
+            <Landmark className="h-7 w-7" />
           </div>
           {(isExpanded || isHovered || isMobileOpen) && (
             <div>
-              <p className="text-sm font-semibold text-white">E-Tontine</p>
-              <p className="text-xs text-slate-400">Gestion des groupes</p>
+              <p className="text-xl font-heading font-semibold text-white tracking-tight">E-Tontine</p>
             </div>
           )}
         </div>

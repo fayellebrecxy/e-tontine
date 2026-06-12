@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Journal Financier - E-Tontine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-surface": "#0b1c30",
+                "background-slate": "#F8FAFC",
+                "surface-container": "#e5eeff",
+                "error": "#ba1a1a",
+                "inverse-primary": "#62df7d",
+                "on-primary-fixed": "#002109",
+                "surface-bright": "#f8f9ff",
+                "surface": "#f8f9ff",
+                "error-red": "#DC2626",
+                "inverse-surface": "#213145",
+                "on-secondary-container": "#1d3989",
+                "on-secondary-fixed-variant": "#264191",
+                "surface-container-low": "#eff4ff",
+                "secondary-fixed": "#dce1ff",
+                "tertiary-container": "#c74668",
+                "primary-container": "#00873a",
+                "tertiary-fixed": "#ffd9de",
+                "background": "#f8f9ff",
+                "tertiary": "#a72d51",
+                "secondary-fixed-dim": "#b6c4ff",
+                "warning-orange": "#F97316",
+                "surface-variant": "#d3e4fe",
+                "surface-dim": "#cbdbf5",
+                "outline": "#6e7b6c",
+                "primary-fixed": "#7ffc97",
+                "surface-tint": "#006e2d",
+                "on-background": "#0b1c30",
+                "on-primary": "#ffffff",
+                "on-tertiary-fixed-variant": "#8a143c",
+                "secondary-container": "#8fa7fe",
+                "surface-white": "#FFFFFF",
+                "on-tertiary": "#ffffff",
+                "on-tertiary-container": "#fffbff",
+                "on-error-container": "#93000a",
+                "on-surface-variant": "#3e4a3d",
+                "inverse-on-surface": "#eaf1ff",
+                "secondary": "#4059aa",
+                "primary": "#006b2c",
+                "error-container": "#ffdad6",
+                "tertiary-fixed-dim": "#ffb2bf",
+                "outline-variant": "#bdcaba",
+                "on-error": "#ffffff",
+                "on-tertiary-fixed": "#3f0016",
+                "on-primary-container": "#f7fff2",
+                "surface-container-high": "#dce9ff",
+                "on-secondary-fixed": "#00164e",
+                "surface-container-highest": "#d3e4fe",
+                "surface-container-lowest": "#ffffff",
+                "primary-fixed-dim": "#62df7d",
+                "on-secondary": "#ffffff",
+                "on-primary-fixed-variant": "#005320"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "base": "8px",
+                "sidebar-expanded": "260px",
+                "margin-mobile": "16px",
+                "sidebar-collapsed": "72px",
+                "container-max": "1280px",
+                "gutter": "24px"
+        },
+        "fontFamily": {
+                "body-md": [
+                        "Inter"
+                ],
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ],
+                "label-md": [
+                        "Inter"
+                ],
+                "label-sm": [
+                        "Inter"
+                ],
+                "headline-md": [
+                        "Hanken Grotesk"
+                ],
+                "display-lg": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Inter"
+                ],
+                "body-sm": [
+                        "Inter"
+                ],
+                "title-lg": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.01em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "title-lg": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Base styles mapped to tokens for robustness */
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Custom scrollbar for table container */
+        .table-scroll::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .table-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background-color: theme('colors.outline-variant');
+            border-radius: theme('borderRadius.full');
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md bg-background antialiased min-h-screen flex">
+<!-- Persistent Sidebar -->
+<aside class="hidden md:flex flex-col w-sidebar-expanded fixed top-0 left-0 h-screen bg-surface border-r border-outline-variant z-40">
+<div class="h-16 flex items-center px-6 border-b border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[28px] mr-2" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">E-Tontine</span>
+</div>
+<nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+            Tableau de bord
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary-container/30 text-on-secondary-container transition-colors font-label-md text-label-md font-semibold" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+            Journal Financier
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+            Membres
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+            Paramètres
+        </a>
+</nav>
+</aside>
+<!-- Main Wrapper -->
+<div class="flex-1 flex flex-col min-h-screen md:ml-sidebar-expanded">
+<!-- TopNavBar -->
+<header class="w-full sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm h-16 flex items-center justify-between px-4 md:px-8">
+<!-- Mobile Brand -->
+<div class="md:hidden flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[24px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span class="font-title-lg text-title-lg font-bold text-primary">E-Tontine</span>
+</div>
+<div class="flex-1"></div>
+<!-- Actions & Mobile Menu -->
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-gutter py-8">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-1">Journal Financier</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Suivi détaillé de toutes les transactions et opérations du cycle en cours.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 font-label-md text-label-md bg-surface border border-outline-variant text-on-surface py-2 px-4 rounded-lg hover:bg-surface-container-low transition-all duration-200 active:scale-98 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                        Export PDF
+                    </button>
+<button class="flex items-center gap-2 font-label-md text-label-md bg-secondary text-on-secondary py-2 px-4 rounded-lg hover:bg-secondary/90 transition-all duration-200 active:scale-98 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">table_view</span>
+                        Export Excel
+                    </button>
+</div>
+</div>
+<!-- Financial Summary Bento -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-8">
+<!-- Card 1 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Total Encaissé</span>
+<span class="material-symbols-outlined text-primary bg-primary-container/30 p-2 rounded-lg">arrow_downward</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mt-2">1 450 000 <span class="text-body-sm font-body-sm text-on-surface-variant">FCFA</span></div>
+<div class="font-label-sm text-label-sm text-primary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12% ce mois
+                    </div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Total Décaissé</span>
+<span class="material-symbols-outlined text-secondary bg-secondary-container/30 p-2 rounded-lg">arrow_upward</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mt-2">800 000 <span class="text-body-sm font-body-sm text-on-surface-variant">FCFA</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-1 font-normal">
+                        Distributions et retraits
+                    </div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface rounded-xl border border-outline-variant p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary/5 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Fonds de Caisse</span>
+<span class="material-symbols-outlined text-tertiary bg-tertiary-container/30 p-2 rounded-lg">savings</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface mt-2">650 000 <span class="text-body-sm font-body-sm text-on-surface-variant">FCFA</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-1 font-normal">
+                        Solde disponible net
+                    </div>
+</div>
+</div>
+<!-- DataTable Section -->
+<div class="bg-surface rounded-xl border border-outline-variant shadow-sm flex flex-col">
+<!-- Filter Toolbar -->
+<div class="p-4 border-b border-outline-variant flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-surface-container-lowest rounded-t-xl">
+<!-- Search -->
+<div class="relative w-full lg:w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-background border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Rechercher une réf, membre..." type="text"/>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<!-- Type Filter -->
+<div class="relative">
+<select class="appearance-none bg-background border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface py-2 pl-4 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+<option value="">Tous les types</option>
+<option value="cotisation">Cotisation</option>
+<option value="distribution">Distribution</option>
+<option value="penalite">Pénalité</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+<!-- Date Filter -->
+<div class="relative">
+<select class="appearance-none bg-background border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface py-2 pl-4 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+<option value="">Ce mois-ci</option>
+<option value="last_month">Mois dernier</option>
+<option value="all">Toute la période</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">calendar_today</span>
+</div>
+<!-- Status Filter -->
+<div class="relative">
+<select class="appearance-none bg-background border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface py-2 pl-4 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+<option value="">Tous statuts</option>
+<option value="paye">Validé</option>
+<option value="en_attente">En attente</option>
+<option value="retard">En retard</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">filter_list</span>
+</div>
+</div>
+</div>
+<!-- Table -->
+<div class="w-full overflow-x-auto table-scroll">
+<table class="w-full min-w-[900px] text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-outline-variant">
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Date &amp; Réf.</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Membre</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Type</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium text-right">Montant (FCFA)</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium">Statut</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-4 px-6 font-medium text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="font-body-sm text-body-sm text-on-surface font-medium">12 Oct 2023</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">#TRX-8492</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-md text-label-md font-bold">
+                                            AK
+                                        </div>
+<span class="font-body-sm text-body-sm text-on-surface">Aminata Koné</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">arrow_downward</span>
+                                        Cotisation Mensuelle
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-body-md text-body-md font-semibold text-on-surface">50 000</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium bg-primary-container/20 text-primary">
+                                        Validé
+                                    </span>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="font-body-sm text-body-sm text-on-surface font-medium">12 Oct 2023</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">#TRX-8493</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-label-md text-label-md font-bold">
+                                            MD
+                                        </div>
+<span class="font-body-sm text-body-sm text-on-surface">Mamadou Diallo</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary">arrow_upward</span>
+                                        Distribution (Tour)
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-body-md text-body-md font-semibold text-on-surface">500 000</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium bg-primary-container/20 text-primary">
+                                        Validé
+                                    </span>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="font-body-sm text-body-sm text-on-surface font-medium">14 Oct 2023</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">#TRX-8498</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-md text-label-md font-bold">
+                                            SF
+                                        </div>
+<span class="font-body-sm text-body-sm text-on-surface">Seydou Fall</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+                                        Pénalité Retard
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-body-md text-body-md font-semibold text-on-surface">5 000</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium bg-error-container text-on-error-container">
+                                        Impayé
+                                    </span>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="font-body-sm text-body-sm text-on-surface font-medium">15 Oct 2023</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">#TRX-8501</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-md text-label-md font-bold">
+                                            AK
+                                        </div>
+<span class="font-body-sm text-body-sm text-on-surface">Aminata Koné</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">savings</span>
+                                        Épargne Volontaire
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-body-md text-body-md font-semibold text-on-surface">15 000</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium bg-surface-container-high text-warning-orange">
+                                        En attente
+                                    </span>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded hover:bg-surface-container">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-outline-variant flex items-center justify-between bg-surface rounded-b-xl">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Affichage 1-4 sur 128 opérations</span>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary font-label-md text-label-md">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors font-label-md text-label-md">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors font-label-md text-label-md">3</button>
+<button class="p-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 bg-surface-container-lowest border-t border-outline-variant mt-auto">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-gutter grid grid-cols-1 md:grid-cols-4 gap-gutter font-body-sm text-body-sm">
+<!-- Brand & Copyright -->
+<div class="flex flex-col gap-4 col-span-1 md:col-span-2">
+<div class="text-title-lg font-title-lg font-bold text-primary">E-Tontine</div>
+<p class="text-on-surface-variant">
+                        © 2024 E-Tontine. Sécurisé et Transparent.
+                    </p>
+</div>
+<!-- Links -->
+<div class="flex flex-col gap-2 col-span-1">
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80 inline-block w-fit" href="#">Conditions Générales</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80 inline-block w-fit" href="#">Confidentialité</a>
+</div>
+<div class="flex flex-col gap-2 col-span-1">
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80 inline-block w-fit" href="#">Sécurité</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80 inline-block w-fit" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

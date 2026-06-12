@@ -1,19 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  ArrowRight,
   Bell,
-  CheckCircle2,
-  CircleDollarSign,
-  FileText,
-  Landmark,
-  PlusCircle,
-  Users,
+  CalendarDays,
+  Gavel,
+  Plus,
+  Repeat,
+  Users
 } from "lucide-react";
 
 import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
 import { DashboardNotifications } from "@/components/notifications/dashboard-notifications";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -63,297 +60,162 @@ export default async function DashboardPage() {
   const activeMemberships = memberships.filter(
     (membership) => membership.statut_adhesion === "ACTIF",
   );
-  const adminMemberships = memberships.filter((membership) => membership.role === "ADMIN");
+  
+  // Quick count for active cycles among memberships
   const totalCycles = activeMemberships.reduce(
     (total, membership) => total + membership.groupe._count.cycles,
     0,
   );
-  const totalMembers = activeMemberships.reduce(
-    (total, membership) => total + membership.groupe._count.membres,
-    0,
-  );
+
   const pendingNotifications = notifications.filter(
     (notification) => !notification.date_lecture,
   ).length;
-  const userName = dbUser ? `${dbUser.prenom} ${dbUser.nom}` : (user.email ?? "membre");
-  const dashboardNotifications = notifications.map((notification) => ({
-    id_notification: notification.id_notification,
-    type_notification: notification.type_notification,
-    message: notification.message,
-    date_creation: notification.date_creation.toISOString(),
-    date_lecture: notification.date_lecture?.toISOString() ?? null,
-  }));
 
-  const quickActions = [
-    {
-      title: "Créer un groupe",
-      text: "Lancez une nouvelle tontine et invitez vos participants.",
-      href: "/dashboard/groups/new",
-      icon: PlusCircle,
-      primary: true,
-    },
-    {
-      title: "Rejoindre une tontine",
-      text: "Utilisez un lien ou un code d’invitation reçu.",
-      icon: Users,
-      dialog: true,
-    },
-    {
-      title: "Voir mon compte",
-      text: "Mettez à jour vos informations personnelles.",
-      href: "/account",
-      icon: FileText,
-    },
-  ];
+  const userName = dbUser ? dbUser.prenom : (user.email ?? "membre");
 
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 text-white shadow-sm dark:border-white/10">
-        <div className="grid gap-8 p-6 md:grid-cols-[1fr_auto] md:p-8">
-          <div className="max-w-3xl">
-            <Badge className="border-white/10 bg-white/10 text-white hover:bg-white/10">
-              Espace personnel
-            </Badge>
-            <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Bonjour {userName}, gardez vos tontines sous contrôle.
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-              Retrouvez vos groupes, les cycles à suivre, les notifications récentes et les
-              prochaines actions utiles depuis un seul point d’entrée.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="bg-white text-slate-950 hover:bg-slate-100">
-                <Link href="/dashboard/groups/new">
-                  <PlusCircle className="h-4 w-4" />
-                  Nouveau groupe
-                </Link>
-              </Button>
-              <JoinGroupDialog
-                variant="outline"
-                className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              />
+    <div className="flex flex-col gap-6 font-sans">
+      {/* Welcome Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-3xl md:text-4xl text-slate-900 font-bold">Bonjour, {userName}</h1>
+          <p className="text-base text-slate-500 mt-1">Voici le résumé de vos activités financières communautaires.</p>
+        </div>
+        <div className="flex gap-3">
+          <JoinGroupDialog variant="outline" className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50" />
+        </div>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-2">
+        {/* KPI 1 */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Users className="h-5 w-5" />
             </div>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">Actifs</span>
           </div>
-          <div className="grid min-w-64 gap-3 sm:grid-cols-2 md:grid-cols-1">
-            <div className="rounded-lg border border-white/10 bg-white/10 p-4">
-              <p className="text-xs text-slate-300">Groupes actifs</p>
-              <p className="mt-2 text-3xl font-semibold">{activeMemberships.length}</p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/10 p-4">
-              <p className="text-xs text-slate-300">Notifications non lues</p>
-              <p className="mt-2 text-3xl font-semibold">{pendingNotifications}</p>
-            </div>
+          <div>
+            <div className="text-3xl font-heading font-semibold text-slate-900">{activeMemberships.length}</div>
+            <div className="text-sm text-slate-500 mt-1">Groupes rejoints</div>
           </div>
         </div>
-      </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          {
-            label: "Groupes",
-            value: memberships.length,
-            helper: "créés ou rejoints",
-            icon: Landmark,
-          },
-          {
-            label: "Cycles",
-            value: totalCycles,
-            helper: "dans vos groupes actifs",
-            icon: CircleDollarSign,
-          },
-          {
-            label: "Membres suivis",
-            value: totalMembers,
-            helper: "tous groupes actifs",
-            icon: Users,
-          },
-          {
-            label: "Rôle admin",
-            value: adminMemberships.length,
-            helper: "groupe(s) à piloter",
-            icon: CheckCircle2,
-          },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#f6f4ef] text-slate-700 dark:bg-white/10 dark:text-white">
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {stat.label}
-              </span>
+        {/* KPI 2 */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+              <Repeat className="h-5 w-5" />
             </div>
-            <p className="mt-5 text-3xl font-semibold text-slate-950 dark:text-white">
-              {stat.value}
-            </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{stat.helper}</p>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">En cours</span>
           </div>
-        ))}
-      </section>
+          <div>
+            <div className="text-3xl font-heading font-semibold text-slate-900">{totalCycles}</div>
+            <div className="text-sm text-slate-500 mt-1">Cycles actifs</div>
+          </div>
+        </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold tracking-normal text-slate-950 dark:text-white">
-                Mes groupes
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Ouvrez un groupe pour gérer ses cycles, membres, réunions et rapports.
-              </p>
+        {/* KPI 3 */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+          <div className="flex justify-between items-start relative z-10">
+            <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
+              <CalendarDays className="h-5 w-5" />
             </div>
-            <Button asChild variant="outline">
-              <Link href="/dashboard/groups">
-                Tout voir
-                <ArrowRight className="h-4 w-4" />
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs">Voir plus</span>
+          </div>
+          <div className="relative z-10">
+            <div className="text-3xl font-heading font-semibold text-slate-900">
+              {pendingNotifications}
+            </div>
+            <div className="text-sm text-slate-500 mt-1">Notifications non lues</div>
+          </div>
+        </div>
+
+        {/* KPI 4 */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+              <Gavel className="h-5 w-5" />
+            </div>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">Ce mois</span>
+          </div>
+          <div>
+            <div className="text-3xl font-heading font-semibold text-slate-900">0<span className="text-lg text-slate-400 ml-1">FCFA</span></div>
+            <div className="text-sm text-slate-500 mt-1">Pénalités estimées</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+        {/* Chart Area / Dashboard main section */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-heading text-xl font-semibold text-slate-900">Mes Groupes</h3>
+            <Button asChild variant="outline" size="sm" className="hidden border-green-200 text-green-700 bg-green-50 hover:bg-green-100 md:flex">
+              <Link href="/dashboard/groups/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Créer un groupe
               </Link>
             </Button>
           </div>
-
-          {memberships.length ? (
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {memberships.map((membership) => {
-                const isActive = membership.statut_adhesion === "ACTIF";
-
-                return (
-                  <div
-                    key={membership.id_membre_groupe}
-                    className="rounded-lg border border-slate-200 bg-[#fbfaf7] p-4 transition hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-950 dark:text-white">
-                          {membership.groupe.nom}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-                          {membership.groupe.description || "Groupe de tontine"}
-                        </p>
-                      </div>
-                      <Badge
-                        className={
-                          isActive
-                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                            : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                        }
-                      >
-                        {isActive ? "Actif" : "Limité"}
-                      </Badge>
+          {activeMemberships.length > 0 ? (
+            <div className="space-y-4">
+              {activeMemberships.map((m) => (
+                <div key={m.id_groupe} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold uppercase">
+                      {m.groupe.nom.substring(0, 2)}
                     </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                      <div className="rounded-md bg-white p-2 dark:bg-slate-950/40">
-                        <p className="font-semibold text-slate-950 dark:text-white">
-                          {membership.groupe._count.membres}
-                        </p>
-                        <p className="text-slate-500">Membres</p>
-                      </div>
-                      <div className="rounded-md bg-white p-2 dark:bg-slate-950/40">
-                        <p className="font-semibold text-slate-950 dark:text-white">
-                          {membership.groupe._count.cycles}
-                        </p>
-                        <p className="text-slate-500">Cycles</p>
-                      </div>
-                      <div className="rounded-md bg-white p-2 dark:bg-slate-950/40">
-                        <p className="font-semibold text-slate-950 dark:text-white">
-                          {membership.groupe._count.reunions}
-                        </p>
-                        <p className="text-slate-500">Réunions</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Button asChild size="sm">
-                        <Link href={`/dashboard/groups/${membership.groupe.id_groupe}`}>
-                          Ouvrir
-                        </Link>
-                      </Button>
-                      {membership.role === "ADMIN" ? (
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/dashboard/groups/${membership.groupe.id_groupe}/settings`}>
-                            Paramètres
-                          </Link>
-                        </Button>
-                      ) : null}
+                    <div>
+                      <p className="font-medium text-slate-900">{m.groupe.nom}</p>
+                      <p className="text-xs text-slate-500">{m.groupe._count.membres} membres</p>
                     </div>
                   </div>
-                );
-              })}
+                  <Button asChild variant="ghost" size="sm" className="text-slate-500 hover:text-green-600">
+                    <Link href={`/dashboard/groups/${m.id_groupe}`}>
+                      Voir
+                    </Link>
+                  </Button>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-[#fbfaf7] px-6 py-12 text-center dark:border-white/15 dark:bg-white/5">
-              <Landmark className="mx-auto h-10 w-10 text-slate-400" />
-              <h3 className="mt-4 font-semibold text-slate-950 dark:text-white">
-                Aucun groupe pour le moment
-              </h3>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Créez votre première tontine ou rejoignez un groupe existant avec un code
-                d’invitation.
-              </p>
-              <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                <Button asChild>
-                  <Link href="/dashboard/groups/new">Créer un groupe</Link>
-                </Button>
-                <JoinGroupDialog variant="outline" />
+            <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
+              <div className="bg-slate-50 rounded-full p-4 mb-4">
+                <Users className="h-8 w-8 text-slate-400" />
               </div>
+              <h4 className="font-heading font-medium text-slate-900 mb-1">Aucun groupe actif</h4>
+              <p className="text-sm text-slate-500 mb-4 max-w-sm">Vous n'êtes membre d'aucun groupe de tontine pour le moment. Créez-en un ou rejoignez un groupe existant.</p>
+              <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
+                <Link href="/dashboard/groups/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouveau groupe
+                </Link>
+              </Button>
             </div>
           )}
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-            <h2 className="text-lg font-semibold tracking-normal text-slate-950 dark:text-white">
-              Actions rapides
-            </h2>
-            <div className="mt-4 space-y-3">
-              {quickActions.map((action) => (
-                <div
-                  key={action.title}
-                  className="rounded-lg border border-slate-200 p-4 dark:border-white/10"
-                >
-                  <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#f6f4ef] text-slate-700 dark:bg-white/10 dark:text-white">
-                      <action.icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-950 dark:text-white">{action.title}</p>
-                      <p className="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">
-                        {action.text}
-                      </p>
-                      <div className="mt-3">
-                        {action.dialog ? (
-                          <JoinGroupDialog variant="sm" />
-                        ) : (
-                          <Button
-                            asChild
-                            size="sm"
-                            variant={action.primary ? "default" : "outline"}
-                          >
-                            <Link href={action.href ?? "/dashboard"}>
-                              Ouvrir
-                              <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Notifications Aside */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-heading text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-orange-500" /> Notifications
+            </h3>
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-slate-500" />
-              <h2 className="text-lg font-semibold tracking-normal text-slate-950 dark:text-white">
-                Notifications
-              </h2>
-            </div>
-            <DashboardNotifications initialNotifications={dashboardNotifications} />
+          <div className="flex-1">
+            {notifications.length > 0 ? (
+              <DashboardNotifications />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center text-slate-400 p-8">
+                <Bell className="h-8 w-8 mb-2 opacity-50" />
+                <p className="text-sm">Aucune notification</p>
+              </div>
+            )}
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

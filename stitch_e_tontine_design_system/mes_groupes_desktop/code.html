@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mes Groupes - TontinePro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "border-light": "#E2E8F0",
+                    "on-secondary-container": "#1d3989",
+                    "text-main": "#0F172A",
+                    "secondary-container": "#8fa7fe",
+                    "on-surface": "#171d16",
+                    "inverse-surface": "#2b322b",
+                    "inverse-on-surface": "#ecf3e7",
+                    "tertiary-container": "#c74668",
+                    "on-tertiary-fixed": "#3f0016",
+                    "tertiary-fixed-dim": "#ffb2bf",
+                    "on-error-container": "#93000a",
+                    "destructive": "#DC2626",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#e9f0e5",
+                    "on-error": "#ffffff",
+                    "text-muted": "#64748B",
+                    "outline": "#6e7b6c",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "on-primary-container": "#f7fff2",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#00873a",
+                    "surface-dim": "#d5dcd1",
+                    "tertiary": "#a72d51",
+                    "secondary-fixed": "#dce1ff",
+                    "outline-variant": "#bdcaba",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#dde5d9",
+                    "surface-light": "#F8FAFC",
+                    "tertiary-fixed": "#ffd9de",
+                    "surface-container-highest": "#dde5d9",
+                    "surface": "#f4fcf0",
+                    "primary-fixed-dim": "#62df7d",
+                    "on-primary-fixed": "#002109",
+                    "on-secondary-fixed": "#00164e",
+                    "error-container": "#ffdad6",
+                    "warning": "#F97316",
+                    "on-background": "#171d16",
+                    "surface-bright": "#f4fcf0",
+                    "secondary": "#4059aa",
+                    "primary": "#006b2c",
+                    "on-tertiary-fixed-variant": "#8a143c",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-container": "#fffbff",
+                    "surface-container-low": "#eff6ea",
+                    "on-primary": "#ffffff",
+                    "inverse-primary": "#62df7d",
+                    "surface-container-high": "#e3eadf",
+                    "on-primary-fixed-variant": "#005320",
+                    "primary-fixed": "#7ffc97",
+                    "background": "#f4fcf0",
+                    "surface-tint": "#006e2d",
+                    "on-surface-variant": "#3e4a3d",
+                    "on-secondary-fixed-variant": "#264191"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "32px",
+                    "container-max": "1280px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "caption": [
+                            "Inter"
+                    ],
+                    "body-base": [
+                            "Inter"
+                    ],
+                    "h3": [
+                            "Poppins"
+                    ],
+                    "h1-mobile": [
+                            "Poppins"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "h4": [
+                            "Poppins"
+                    ],
+                    "display": [
+                            "Poppins"
+                    ],
+                    "h1": [
+                            "Poppins"
+                    ],
+                    "label": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "h2": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "caption": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-base": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h3": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "h1-mobile": [
+                            "30px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h4": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "h1": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label": [
+                            "14px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h2": [
+                            "30px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-surface-light text-on-surface min-h-screen flex flex-col font-body-base">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-background w-full sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant dark:border-outline shadow-sm">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-16">
+<div class="flex items-center gap-4">
+<a class="text-h3 font-h3 font-bold text-primary dark:text-primary-fixed" href="#">TontinePro</a>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 active:scale-95 transform transition-transform py-2 px-3 rounded-DEFAULT" href="#">Fonctionnalités</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 active:scale-95 transform transition-transform py-2 px-3 rounded-DEFAULT" href="#">Comment ça marche</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 active:scale-95 transform transition-transform py-2 px-3 rounded-DEFAULT" href="#">FAQ</a>
+<a class="font-display text-label font-label text-on-surface-variant dark:text-outline hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-dim transition-all duration-200 active:scale-95 transform transition-transform py-2 px-3 rounded-DEFAULT" href="#">Tarifs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label text-label text-secondary hover:text-primary transition-colors active:scale-95">Connexion</button>
+<button class="bg-primary text-on-primary font-label text-label px-4 py-2 rounded-DEFAULT hover:bg-surface-tint transition-colors active:scale-95">S'inscrire</button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow max-w-container-max w-full mx-auto px-margin-mobile md:px-margin-desktop py-8">
+<!-- Header & Toolbar -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-h1 text-h1-mobile md:text-h1 text-text-main mb-2">Mes Groupes</h1>
+<p class="font-body-base text-body-base text-text-muted">Gérez vos tontines et suivez les contributions de vos groupes.</p>
+</div>
+<button class="bg-primary text-on-primary font-label text-label px-4 py-2 rounded-DEFAULT hover:bg-surface-tint transition-colors active:scale-95 flex items-center justify-center gap-2 h-fit whitespace-nowrap shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                Nouveau Groupe
+            </button>
+</div>
+<!-- Filters & Tabs -->
+<div class="flex flex-col lg:flex-row justify-between gap-4 mb-8 bg-surface-container-lowest p-2 rounded-lg border border-border-light shadow-sm">
+<!-- Tabs -->
+<div class="flex bg-surface-container p-1 rounded-DEFAULT">
+<button class="px-4 py-2 rounded-DEFAULT bg-surface-container-lowest shadow-sm text-primary font-label text-label transition-all">Tous les groupes</button>
+<button class="px-4 py-2 rounded-DEFAULT text-text-muted hover:text-text-main font-label text-label transition-all">Administrateur</button>
+<button class="px-4 py-2 rounded-DEFAULT text-text-muted hover:text-text-main font-label text-label transition-all">Membre</button>
+</div>
+<!-- Search & Filter Actions -->
+<div class="flex gap-2 w-full lg:w-auto">
+<div class="relative flex-grow lg:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted text-[20px]" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-light border border-border-light rounded-DEFAULT font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Rechercher un groupe..." type="text"/>
+</div>
+<button class="px-3 py-2 border border-border-light rounded-DEFAULT text-text-muted hover:bg-surface-container-low transition-colors flex items-center justify-center bg-surface-light">
+<span class="material-symbols-outlined text-[20px]" data-icon="tune">tune</span>
+</button>
+</div>
+</div>
+<!-- Groups Grid (Bento/Card Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1: Active Admin Group -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-light shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-primary px-2 py-1 rounded-full font-caption text-caption mb-2">
+<span class="material-symbols-outlined text-[14px]" data-icon="admin_panel_settings">admin_panel_settings</span> Administrateur
+                        </span>
+<h3 class="font-h4 text-h4 text-text-main">Famille Diop &amp; Co</h3>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption bg-[#DCFCE7] text-[#166534]">
+                        Actif
+                    </span>
+</div>
+<div class="flex items-center gap-4 mb-6">
+<div class="flex -space-x-2">
+<img alt="Membre" class="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A small circular avatar showing a smiling professional woman. The image is bright and cleanly lit, perfect for a modern corporate SaaS application profile picture. Background is neutral." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz7oZRt3E023CCf_fozNamkJG2OcEVV7AM4iOO69mhMnWM6uyP-n-avHhD7SBMd_K_giiguGM0M4VpwrZ9WNcB44BllTCIEyCnQn6z3AvQ6dfAmrS_Iz7afXDimq-3c2gJifsQN_p1_qv9t8lNxw-4GUassN7j5u7Qh2YZaD_StjjUC-zkZ1CCMvyedeFnAyQS_pjlVfhYjl0iZI0XfsElYF0CddwBhmu5QgtWoeTXiQ-bfZ8Q7JXNvNDeNgAVFSJtzIaT_J_S7I4i"/>
+<img alt="Membre" class="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A small circular avatar showing a confident man looking directly at the camera. Soft studio lighting on a light background. Suitable for a professional fintech dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYqai2deP-4ysf6Vj9sxXUpawRnNtsh8guaPGA6RUjBIZIVIxvYnKWU_f4f-_sUX6gu6YKSzLHrd16zf-Kr02Rewdx4yG06LqzCCVVZBAE7EdBaj--ed5ega0mTrcIG5F0Yf2ZlZKAlsNI8yTJ2qTAdFhoul7cE0kBbXtx3udzVcnQmFFqo-CnmpjE07pdlpcA4z1DiAyJqumWBPf8zL6XWd8RKYydiDXPNgsJH10agIglHgY7dT7D4ffZtnwuIzW-UFdc5kcBRgHm"/>
+<img alt="Membre" class="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A small circular avatar showing a cheerful person with glasses. Clean, bright corporate aesthetic with a solid light background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARcs0g8oZ_Z_3TlhJMaTv_nzEM3q53IOiDJAjPncJDHzXMZIPoJ9fkZzSb4I85glVzUzX80aeh_gENU-TZWxfpz4YBcBA0s4eUprhg5UoAP07hHNa11nPMKgTwrHOZsGshjt9bBwLBvzeKLuQ7vrzJGVvSj-zxEnYEXXriw67U-Kd4AhNWZuAt6Z-VBHnOue0E-33nTFSFx0Xc3cmpF2wmV4cuCswsFrz0L5wd2pzbRrPbG2kto-kK0VWVmrky64epXpp9YySY70NZ"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center font-caption text-caption text-text-muted">
+                            +9
+                        </div>
+</div>
+<span class="font-body-sm text-body-sm text-text-muted">12 Membres</span>
+</div>
+<div class="bg-surface-light p-3 rounded-DEFAULT mb-6 border border-border-light flex justify-between items-center">
+<div>
+<p class="font-caption text-caption text-text-muted mb-1">Mise / cycle</p>
+<p class="font-h4 text-body-base font-semibold text-text-main">50 000 FCFA</p>
+</div>
+<div class="text-right">
+<p class="font-caption text-caption text-text-muted mb-1">Cycle actuel</p>
+<p class="font-body-sm text-body-sm font-medium text-text-main">Mois 3/12</p>
+</div>
+</div>
+<button class="w-full mt-auto bg-surface-light border border-border-light text-text-main font-label text-label py-2 rounded-DEFAULT group-hover:border-primary group-hover:text-primary transition-colors flex items-center justify-center gap-2">
+                    Ouvrir le groupe
+                    <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Card 2: Pending Group -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-light shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col relative overflow-hidden group opacity-80">
+<div class="absolute top-0 left-0 w-full h-1 bg-warning"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-text-muted px-2 py-1 rounded-full font-caption text-caption mb-2">
+<span class="material-symbols-outlined text-[14px]" data-icon="person">person</span> Membre
+                        </span>
+<h3 class="font-h4 text-h4 text-text-main">Collègues Tech</h3>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption bg-[#FFEDD5] text-[#9A3412]">
+                        En attente
+                    </span>
+</div>
+<div class="flex items-center gap-4 mb-6">
+<div class="flex -space-x-2">
+<img alt="Membre" class="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="Small circular portrait avatar of a young male professional. Crisp lighting, plain background, suitable for software UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfB40tauWAVG0OXPdjNeCF4uKyeK6jmp10gj52z233BbTpemwnnhAlJO77LvsmC1j_nxEx8C8E4B6RP2yKhrYEnumjjBYYtcIasl5LNLdaikv856O1zJ5HpgLf6Z6ZGbIDQe0y3TvsgFnSy20CK3oQ0edE8o-JFUcy1HFRrqmPOKN1MHBinNjzXKQI-Zl-zVkPycvZ7Pmr3SItL5eFONjcJTFBAwyznjgAkwFphBeJ2uec2934IY1F4ET6-5BWYQxXIxMvTMd7nCan"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center font-caption text-caption text-text-muted">
+                            +4
+                        </div>
+</div>
+<span class="font-body-sm text-body-sm text-text-muted">5/10 Inscrits</span>
+</div>
+<div class="bg-surface-light p-3 rounded-DEFAULT mb-6 border border-border-light flex justify-between items-center">
+<div>
+<p class="font-caption text-caption text-text-muted mb-1">Mise / cycle</p>
+<p class="font-h4 text-body-base font-semibold text-text-main">100 EUR</p>
+</div>
+<div class="text-right">
+<p class="font-caption text-caption text-text-muted mb-1">Début prévu</p>
+<p class="font-body-sm text-body-sm font-medium text-text-main">01 Nov 2024</p>
+</div>
+</div>
+<button class="w-full mt-auto bg-surface-light border border-border-light text-text-main font-label text-label py-2 rounded-DEFAULT group-hover:border-primary group-hover:text-primary transition-colors flex items-center justify-center gap-2">
+                    Voir les détails
+                    <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Card 3: Active Member Group -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-light shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1 bg-surface-container-low text-text-muted px-2 py-1 rounded-full font-caption text-caption mb-2">
+<span class="material-symbols-outlined text-[14px]" data-icon="person">person</span> Membre
+                        </span>
+<h3 class="font-h4 text-h4 text-text-main">Projet Immobilier</h3>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption bg-[#DCFCE7] text-[#166534]">
+                        Actif
+                    </span>
+</div>
+<div class="flex items-center gap-4 mb-6">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-secondary text-on-secondary flex items-center justify-center font-caption text-caption">
+                            P
+                        </div>
+<img alt="Membre" class="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="Small circular avatar of a woman with a confident smile. Soft natural lighting, solid corporate background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7FvglautxpyQ8r-Vgz6KmN64fbbHI2Zy_QlHC9yWT4Ff6epyuzoWNt50C9Q7QSUHg-gf01_D3fDucwDGChnuPDHt_6NKDUfJfV6yE39xhT_1HJdkHmJ-wp3LynatZP1hiSC1Ug5FdpYGOzTekZs24vYlpnPG4P19IrYxYDeyJLMH1y6OGF_Q682__F82YtojZlALfj1i94AkIw2ucZdi2CM-LyigLmQ8_XcXEz68Lu8ryheSwtd2uV8EtYKo0Vertqpek5aLl5Y3m"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center font-caption text-caption text-text-muted">
+                            +2
+                        </div>
+</div>
+<span class="font-body-sm text-body-sm text-text-muted">4 Membres</span>
+</div>
+<div class="bg-surface-light p-3 rounded-DEFAULT mb-6 border border-border-light flex justify-between items-center">
+<div>
+<p class="font-caption text-caption text-text-muted mb-1">Mise / cycle</p>
+<p class="font-h4 text-body-base font-semibold text-text-main">200 000 FCFA</p>
+</div>
+<div class="text-right">
+<p class="font-caption text-caption text-text-muted mb-1">Mon tour</p>
+<p class="font-body-sm text-body-sm font-medium text-text-main">Décembre</p>
+</div>
+</div>
+<button class="w-full mt-auto bg-surface-light border border-border-light text-text-main font-label text-label py-2 rounded-DEFAULT group-hover:border-primary group-hover:text-primary transition-colors flex items-center justify-center gap-2">
+                    Ouvrir le groupe
+                    <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-inverse-surface w-full py-12 border-t border-outline-variant dark:border-outline mt-auto">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div>
+<a class="text-h4 font-h4 font-bold text-primary mb-4 block" href="#">TontinePro</a>
+<p class="font-body-sm text-body-sm text-text-muted">© 2024 TontinePro. Sécurisé et Transparent.</p>
+</div>
+<div>
+<h4 class="font-h4 text-body-base font-semibold text-text-main mb-4">Liens Utiles</h4>
+<ul class="space-y-2">
+<li><a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Conditions Générales</a></li>
+<li><a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Confidentialité</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-h4 text-body-base font-semibold text-text-main mb-4">Support</h4>
+<ul class="space-y-2">
+<li><a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Sécurité</a></li>
+<li><a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed underline transition-opacity hover:opacity-80" href="#">Contact</a></li>
+</ul>
+</div>
+</div>
+</footer>
+</body></html>

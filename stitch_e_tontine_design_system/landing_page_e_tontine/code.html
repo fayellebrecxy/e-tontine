@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>E-Tontine | La tontine en toute confiance</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Poppins:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#3f0016",
+                    "on-background": "#171d16",
+                    "inverse-on-surface": "#ecf3e7",
+                    "on-secondary-container": "#1d3989",
+                    "on-primary-fixed": "#002109",
+                    "on-secondary-fixed-variant": "#264191",
+                    "warning": "#F97316",
+                    "surface": "#f4fcf0",
+                    "tertiary-fixed": "#ffd9de",
+                    "primary-container": "#00873a",
+                    "on-tertiary-fixed-variant": "#8a143c",
+                    "surface-container-highest": "#dde5d9",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#8fa7fe",
+                    "tertiary": "#a72d51",
+                    "surface-bright": "#f4fcf0",
+                    "surface-container": "#e9f0e5",
+                    "on-secondary-fixed": "#00164e",
+                    "on-surface-variant": "#3e4a3d",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "surface-dim": "#d5dcd1",
+                    "destructive": "#DC2626",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#171d16",
+                    "surface-tint": "#006e2d",
+                    "tertiary-container": "#c74668",
+                    "primary-fixed": "#7ffc97",
+                    "surface-container-low": "#eff6ea",
+                    "secondary": "#4059aa",
+                    "surface-light": "#F8FAFC",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#62df7d",
+                    "text-muted": "#64748B",
+                    "inverse-surface": "#2b322b",
+                    "surface-variant": "#dde5d9",
+                    "secondary-fixed": "#dce1ff",
+                    "primary": "#006b2c",
+                    "outline-variant": "#bdcaba",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#f7fff2",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "background": "#f4fcf0",
+                    "border-light": "#E2E8F0",
+                    "text-main": "#0F172A",
+                    "on-tertiary-container": "#fffbff",
+                    "on-error": "#ffffff",
+                    "surface-container-high": "#e3eadf",
+                    "on-primary-fixed-variant": "#005320",
+                    "outline": "#6e7b6c",
+                    "tertiary-fixed-dim": "#ffb2bf",
+                    "primary-fixed-dim": "#62df7d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "margin-desktop": "32px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "container-max": "1280px"
+            },
+            "fontFamily": {
+                    "display": ["Poppins"],
+                    "h1": ["Poppins"],
+                    "h4": ["Poppins"],
+                    "caption": ["Inter"],
+                    "h2": ["Poppins"],
+                    "h1-mobile": ["Poppins"],
+                    "body-base": ["Inter"],
+                    "label": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "h3": ["Poppins"]
+            },
+            "fontSize": {
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "h4": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "h2": ["30px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "h1-mobile": ["30px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+        .material-symbols-outlined.filled {
+          font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Subtle ambient shadow for depth without harsh lines */
+        .shadow-ambient {
+            box-shadow: 0 10px 40px -10px rgba(30, 58, 138, 0.08);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar (Shared Component) -->
+<nav class="w-full sticky top-0 z-50 bg-surface/80 backdrop-blur-md shadow-sm border-b-0">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-16">
+<!-- Brand -->
+<a class="text-h3 font-h3 font-bold text-primary dark:text-primary-fixed tracking-tight" href="#">
+                E-Tontine
+            </a>
+<!-- Desktop Navigation -->
+<div class="hidden md:flex items-center space-x-gutter">
+<a class="font-display text-label font-label text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-200 px-3 py-2 rounded-lg" href="#fonctionnalites">Fonctionnalités</a>
+<a class="font-display text-label font-label text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-200 px-3 py-2 rounded-lg" href="#comment-ca-marche">Comment ça marche</a>
+<a class="font-display text-label font-label text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-200 px-3 py-2 rounded-lg" href="#faq">FAQ</a>
+<a class="font-display text-label font-label text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all duration-200 px-3 py-2 rounded-lg" href="#tarifs">Tarifs</a>
+</div>
+</div>
+</nav>
+<main class="flex-grow flex flex-col">
+<!-- Hero Section -->
+<section class="relative pt-24 pb-32 overflow-hidden bg-surface-container-lowest">
+<!-- Decorative background blob -->
+<div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[800px] h-[800px] bg-primary-container/20 rounded-full blur-[100px] opacity-70 pointer-events-none"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+<div class="space-y-8">
+<div class="inline-flex items-center space-x-2 bg-surface-container-low px-4 py-2 rounded-full border border-primary/10">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label text-label text-primary">Nouveau : Gestion automatisée des cycles</span>
+</div>
+<h1 class="font-h1-mobile text-h1-mobile md:font-display md:text-display text-on-background">
+                        La tontine en toute <span class="text-primary relative inline-block">
+                            confiance
+                            <svg class="absolute w-full h-3 -bottom-1 left-0 text-primary-container/40 z-[-1]" preserveaspectratio="none" viewbox="0 0 100 10"><path d="M0 5 Q 50 10 100 5" fill="transparent" stroke="currentColor" stroke-width="4"></path></svg>
+</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                        Modernisez vos cercles d'épargne avec E-Tontine. Une plateforme sécurisée qui allie la tradition de la solidarité financière à la transparence de la technologie moderne.
+                    </p>
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+<button class="bg-primary text-on-primary font-label text-label px-8 py-4 rounded-xl shadow-lg hover:bg-primary/90 hover:-translate-y-0.5 active:scale-95 transform transition-all duration-200 flex items-center gap-2">
+                            Créer ma tontine
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="bg-surface text-secondary font-label text-label px-8 py-4 rounded-xl border border-border-light hover:bg-surface-container-lowest hover:-translate-y-0.5 active:scale-95 transform transition-all duration-200">
+                            Voir la démo
+                        </button>
+</div>
+<div class="pt-8 border-t border-border-light flex items-center gap-6">
+<div class="flex -space-x-4">
+<img alt="Utilisateur" class="w-12 h-12 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A portrait of a diverse professional woman smiling in a bright, modern office setting. The lighting is soft and natural, emphasizing a trustworthy and approachable demeanor. Professional SaaS aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuQQLyEahOnXPwhqDdB8Muw1AF3MJC_a2HenttG1XbjrKApyw5YeN70wi1cs9eQMawaKJ9gkX1KmjxBEdyhFb6BD-7jGxBpqLUksWpo5vzqkn-F_fb8zDS8aKHuwiuBkdhoHaMBvxZfoR-eUYUBCOLshnZ-EKFoi3mK4tl9hIexAR4rQUyu31MKS8DULAj1vbHCuAM15JihT6AXXTWxfiqh22DHEPOcimCIakZZLdX6S4lADZu8vJpHE9j0IdeBL15uo2ec9rggBXF"/>
+<img alt="Utilisateur" class="w-12 h-12 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A portrait of a confident male entrepreneur in a well-lit startup environment. The background is slightly blurred to focus on his expression. Professional SaaS aesthetic with cool tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiiGCGF6wkC6Ld4MA2uHIswdhLGUMYyHV_td1D8bILhyWObjeplIe6OpD_ZzAbwpFtlIH8IiF1YV1C_2vMWUYWdW_P5V1XzrFj82vqdkhg77b4YzPmYC_u92U1YmWJy92eszkbLa83Dx_SIewyjKaaODM4vuBBZzWjkZVRbffl_5XZcpJcYJaA-GaHZW4r42aNfDAdh35Zo5hiu-I_RgmDNgsL0ODlVAO9ryMRYiJnO_Smcno8tKRk9IJvgOLmR_wjktu7mvW10Tgi"/>
+<img alt="Utilisateur" class="w-12 h-12 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A professional headshot of a female financial consultant looking directly at the camera. The setting features modern architectural elements, bathed in clean, white light. High trust and reliability aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnUpUatEoG-oJt91eUUMy0vo-iGxiW0jAYW0PftzcosR5C75zysGKlvKHRtj3FYf0cH_IO6Hze6BmCKPUoeLOFNyzUBU-4489u__jkH5UBOLxppmiqZ3aL6NoYcDruZSw-QMo4sl5jwY0AoWu7i43_a0_FINkHqXucz_fkiiJPp9fFFF41D-zzLVVHKGoa3uCyWAwM5TRIrCqR_hAc3GTLei2wnPB_gD-UIDYlKRNbT2JhrIC4P-bnxfl1bn9XS3uyL1eaOEcEs-P_"/>
+<div class="w-12 h-12 rounded-full border-2 border-surface-container-lowest bg-surface-container-high flex items-center justify-center font-label text-label text-on-surface-variant z-10 relative">
+                                +5k
+                            </div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Rejoignez des milliers de<br/>membres satisfaits.</p>
+</div>
+</div>
+<!-- Mockup Illustration Area -->
+<div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-ambient bg-surface-container-low border border-border-light flex items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5"></div>
+<!-- Mock Dashboard Interface -->
+<div class="w-3/4 h-3/4 bg-surface rounded-xl shadow-lg border border-border-light overflow-hidden flex flex-col">
+<!-- Mock Header -->
+<div class="h-12 border-b border-border-light bg-surface-container-lowest flex items-center px-4 justify-between">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-error/80"></div>
+<div class="w-3 h-3 rounded-full bg-warning/80"></div>
+<div class="w-3 h-3 rounded-full bg-primary/80"></div>
+</div>
+<div class="w-32 h-4 bg-surface-container-highest rounded-full"></div>
+</div>
+<!-- Mock Content -->
+<div class="flex-1 p-6 grid grid-cols-3 gap-4">
+<div class="col-span-2 space-y-4">
+<div class="h-24 bg-surface-container-lowest border border-border-light rounded-lg p-4 flex flex-col justify-between">
+<div class="w-20 h-3 bg-surface-container-highest rounded-full"></div>
+<div class="w-32 h-6 bg-primary/20 rounded-full"></div>
+</div>
+<div class="h-32 bg-surface-container-lowest border border-border-light rounded-lg flex items-end p-4 gap-2">
+<div class="w-full h-[40%] bg-secondary-container rounded-t"></div>
+<div class="w-full h-[70%] bg-primary-container rounded-t"></div>
+<div class="w-full h-[50%] bg-secondary-container rounded-t"></div>
+<div class="w-full h-[90%] bg-primary-container rounded-t"></div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="h-16 bg-surface-container-lowest border border-border-light rounded-lg flex items-center p-3 gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest"></div>
+<div class="flex-1 space-y-2"><div class="w-full h-2 bg-surface-container-highest rounded-full"></div><div class="w-1/2 h-2 bg-surface-container-highest rounded-full"></div></div>
+</div>
+<div class="h-16 bg-surface-container-lowest border border-border-light rounded-lg flex items-center p-3 gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest"></div>
+<div class="flex-1 space-y-2"><div class="w-full h-2 bg-surface-container-highest rounded-full"></div><div class="w-1/2 h-2 bg-surface-container-highest rounded-full"></div></div>
+</div>
+<div class="h-16 bg-surface-container-lowest border border-border-light rounded-lg flex items-center p-3 gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest"></div>
+<div class="flex-1 space-y-2"><div class="w-full h-2 bg-surface-container-highest rounded-full"></div><div class="w-1/2 h-2 bg-surface-container-highest rounded-full"></div></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Glass Card -->
+<div class="absolute -right-6 -bottom-6 w-48 glass-card rounded-xl p-4 shadow-xl transform -rotate-2">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+</div>
+<div>
+<p class="font-label text-label text-on-surface">Tour validé</p>
+<p class="font-caption text-caption text-on-surface-variant">Il y a 2 min</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant w-full py-12">
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<!-- Brand Column -->
+<div class="space-y-4">
+<h4 class="text-h4 font-h4 font-bold text-primary">E-Tontine</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
+                    La solution moderne, sécurisée et transparente pour gérer vos tontines et cercles d'épargne.
+                </p>
+</div>
+<!-- Links -->
+<div class="space-y-4">
+<p class="font-label text-label text-on-surface">Produit</p>
+<ul class="space-y-2">
+<li><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80" href="#">Conditions Générales</a></li>
+<li><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80" href="#">Confidentialité</a></li>
+</ul>
+</div>
+<div class="space-y-4">
+<p class="font-label text-label text-on-surface">Ressources</p>
+<ul class="space-y-2">
+<li><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80" href="#">Sécurité</a></li>
+<li><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary underline transition-opacity hover:opacity-80" href="#">Contact</a></li>
+</ul>
+</div>
+<!-- Copyright -->
+<div class="flex flex-col justify-end">
+<p class="font-body-sm text-body-sm text-secondary">
+                    © 2024 E-Tontine. Sécurisé et Transparent.
+                </p>
+</div>
+</div>
+</footer>
+</body></html>

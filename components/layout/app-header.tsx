@@ -60,10 +60,10 @@ export function AppHeader() {
             <Button
               asChild
               size="sm"
-              className="hidden bg-slate-950 text-white hover:bg-slate-800 md:inline-flex"
+              className="hidden bg-green-600 text-white hover:bg-green-700 md:inline-flex"
             >
               <Link href="/dashboard/groups/new">
-                <PlusCircle className="h-4 w-4" />
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Nouveau groupe
               </Link>
             </Button>

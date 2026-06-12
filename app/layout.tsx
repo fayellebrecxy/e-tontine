@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 
 import { ThemeProvider } from "@/components/theme-provider";
-// import { Toaster } from "@/components/ui/sonner";
 
-const outfit = Outfit({ subsets: ["latin"], display: "swap" });
+const inter = Inter({ 
+  subsets: ["latin"], 
+  variable: "--font-inter", 
+  display: "swap" 
+});
+
+const poppins = Poppins({ 
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"], 
+  variable: "--font-poppins", 
+  display: "swap" 
+});
 
 export const metadata: Metadata = {
   title: {
@@ -19,8 +29,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body className={outfit.className}>
+    <html lang="fr" suppressHydrationWarning className={`${inter.variable} ${poppins.variable}`}>
+      <body className={`${inter.className} font-sans antialiased text-foreground bg-background`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
           {/* <Toaster /> */}
