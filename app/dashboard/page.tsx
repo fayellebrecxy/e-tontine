@@ -206,7 +206,15 @@ export default async function DashboardPage() {
           </div>
           <div className="flex-1">
             {notifications.length > 0 ? (
-              <DashboardNotifications />
+              <DashboardNotifications
+                initialNotifications={notifications.map((n) => ({
+                  id_notification: n.id_notification,
+                  type_notification: n.type_notification,
+                  message: n.message,
+                  date_creation: n.date_creation.toISOString(),
+                  date_lecture: n.date_lecture?.toISOString() ?? null,
+                }))}
+              />
             ) : (
               <div className="flex h-full flex-col items-center justify-center text-slate-400 p-8">
                 <Bell className="h-8 w-8 mb-2 opacity-50" />

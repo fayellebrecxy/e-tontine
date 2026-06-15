@@ -559,16 +559,7 @@ export default async function GroupCycleDetailPage({
             </div>
           </div>
 
-          {tresorerie.caissePenalitesTour > 0 || tresorerie.caissePenalitesCycle > 0 ? (
-            <PenaltyWithdrawalForm
-              groupId={groupId}
-              cycleId={cycleId}
-              activeTour={activeTour}
-              devise={membership.groupe.devise}
-              caisseTour={tresorerie.caissePenalitesTour}
-              caisseCycle={tresorerie.caissePenalitesCycle}
-            />
-          ) : null}
+          {/* Le formulaire de retrait est désormais dans l'onglet "Caisse pénalités" */}
         </>
       ) : (
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -813,6 +804,40 @@ export default async function GroupCycleDetailPage({
               cycleTermine={cycleTermine}
             />
           </div>
+        }
+        caissePenalites={
+          membership.role === "ADMIN" ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs text-amber-600 font-medium mb-1">Caisse pénalités (tour actuel)</p>
+                  <p className="text-xl font-bold text-amber-700">
+                    {tresorerie.caissePenalitesTour.toLocaleString("fr-FR")} {devise}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                  <p className="text-xs text-orange-600 font-medium mb-1">Caisse pénalités (cycle entier)</p>
+                  <p className="text-xl font-bold text-orange-700">
+                    {tresorerie.caissePenalitesCycle.toLocaleString("fr-FR")} {devise}
+                  </p>
+                </div>
+              </div>
+              {tresorerie.caissePenalitesTour > 0 || tresorerie.caissePenalitesCycle > 0 ? (
+                <PenaltyWithdrawalForm
+                  groupId={groupId}
+                  cycleId={cycleId}
+                  activeTour={activeTour}
+                  devise={devise}
+                  caisseTour={tresorerie.caissePenalitesTour}
+                  caisseCycle={tresorerie.caissePenalitesCycle}
+                />
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                  <p className="text-sm text-gray-500">Aucune pénalité collectée pour le moment.</p>
+                </div>
+              )}
+            </div>
+          ) : null
         }
         closeAction={
           !cycleTermine ? <CloseCycleButton groupId={groupId} cycleId={cycleId} /> : null

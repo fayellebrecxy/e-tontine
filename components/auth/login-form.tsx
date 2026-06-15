@@ -124,33 +124,3 @@ export function LoginForm() {
     </Form>
   );
 }
-
-        <Button className="h-12 w-full rounded-lg bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700" type="submit" disabled={pending}>
-          {pending ? "Connexion..." : "Se connecter"}
-          {!pending ? <ArrowRight className="h-4 w-4" /> : null}
-        </Button>
-
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-          <p>
-            Pas encore de compte ?{" "}
-          <Link
-            href={`/auth/register?next=${nextParam}`}
-              className="font-bold text-slate-950 underline underline-offset-4 transition hover:text-emerald-700"
-          >
-            Créer un compte
-          </Link>
-          .
-          </p>
-          <p>
-          <Link
-            href={`/auth/reset-password?next=${nextParam}`}
-              className="font-bold text-slate-950 underline underline-offset-4 transition hover:text-emerald-700"
-          >
-            Mot de passe oublié ?
-          </Link>
-          </p>
-        </div>
-      </form>
-    </Form>
-  );
-}

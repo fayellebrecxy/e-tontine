@@ -12,11 +12,12 @@ import {
   Users,
   Wallet,
   ArrowUpDown,
+  PiggyBank,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments" | "ordrePassage";
+type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments" | "ordrePassage" | "caissePenalites";
 
 type Panel = {
   key: PanelKey;
@@ -37,6 +38,7 @@ type CycleDetailActionsProps = {
   participants: React.ReactNode;
   myPayments?: React.ReactNode;
   ordrePassage?: React.ReactNode;
+  caissePenalites?: React.ReactNode;
   closeAction?: React.ReactNode;
   deleteAction?: React.ReactNode;
   backAction: React.ReactNode;
@@ -53,6 +55,7 @@ export function CycleDetailActions({
   participants,
   myPayments,
   ordrePassage,
+  caissePenalites,
   closeAction,
   deleteAction,
   backAction,
@@ -66,10 +69,11 @@ export function CycleDetailActions({
       { key: "distribution", label: "Verser pot", icon: Wallet, content: distribution, adminOnly: true },
       { key: "history", label: "Historique", icon: History, content: history, adminOnly: true },
       { key: "allCotisations", label: "Versements membres", icon: ListChecks, content: allCotisations, adminOnly: true },
+      { key: "caissePenalites", label: "Caisse pénalités", icon: PiggyBank, content: caissePenalites, adminOnly: true },
       { key: "participants", label: "Participants", icon: Users, content: participants },
       { key: "myPayments", label: "Mes versements", icon: Receipt, content: myPayments },
     ],
-    [allCotisations, distribution, edit, history, myPayments, ordrePassage, overview, participants, payment],
+    [allCotisations, caissePenalites, distribution, edit, history, myPayments, ordrePassage, overview, participants, payment],
   );
 
   const visiblePanels = panels.filter((panel) => panel.content && (!panel.adminOnly || isAdmin));
