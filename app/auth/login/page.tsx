@@ -20,7 +20,7 @@ export default async function LoginPage({
   }
 
   return (
-    <AuthCard title="Connexion" description="Connecte-toi avec ton email et ton mot de passe.">
+    <AuthCard variant="login" title="Connexion" description="Connecte-toi avec ton email et ton mot de passe.">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Menu, PlusCircle, UserCircle } from "lucide-react";
+import { Menu, PlusCircle, UserCircle } from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
 import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
 import { NotificationCenter } from "@/components/notifications/notification-center";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AppHeader() {
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
@@ -20,55 +22,63 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
-      <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-            onClick={handleToggle}
-            aria-label="Toggle sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <div>
-            <Link
-              href="/dashboard"
-              className="text-base font-semibold text-slate-950 dark:text-white"
-            >
-              E-Tontine
-            </Link>
-            <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-              Votre espace de gestion
-            </p>
-          </div>
-        </div>
+    <header className="sticky top-0 z-20 w-full bg-surface-container-lowest border-b border-border-light h-16 flex items-center justify-between px-4 md:px-8">
+      {/* Left: toggle + search */}
+      <div className="flex items-center gap-3">
+        <button
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-light bg-surface text-on-surface-variant hover:bg-surface-container-low shadow-card transition-colors"
+          onClick={handleToggle}
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
 
-        <div className="flex flex-1 items-center justify-end gap-2">
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <JoinGroupDialog variant="ghost" className="hidden h-9 rounded-md sm:flex" />
-            <NotificationCenter />
-            <Button asChild variant="ghost" size="icon" title="Compte">
-              <Link href="/account" aria-label="Compte">
-                <UserCircle className="h-4 w-4" />
-              </Link>
-            </Button>
-            <form action="/logout" method="post">
-              <Button type="submit" variant="outline" size="icon" title="Se déconnecter">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </form>
-            <Button
-              asChild
-              size="sm"
-              className="hidden bg-green-600 text-white hover:bg-green-700 md:inline-flex"
-            >
-              <Link href="/dashboard/groups/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nouveau groupe
-              </Link>
-            </Button>
-          </nav>
+        <div className="relative hidden md:block w-72">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            className="w-full h-9 pl-9 pr-4 rounded-lg border border-border-light bg-surface-light focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-sans text-sm transition-all placeholder:text-text-muted"
+            placeholder="Rechercher des groupes, membres..."
+            type="text"
+          />
         </div>
+      </div>
+
+      {/* Right: actions */}
+      <div className="flex items-center gap-3">
+        <JoinGroupDialog variant="ghost" className="hidden h-9 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low sm:flex font-sans text-sm" />
+
+        <ThemeToggle />
+
+        <LanguageSwitcher />
+
+        <NotificationCenter />
+
+        <Button asChild variant="ghost" size="icon" title="Compte" className="h-9 w-9 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg">
+          <Link href="/account" aria-label="Compte">
+            <UserCircle className="h-5 w-5" />
+          </Link>
+        </Button>
+
+        <div className="hidden md:block w-px h-5 bg-border-light" />
+
+        <Button
+          asChild
+          size="sm"
+          className="hidden md:inline-flex bg-primary text-on-primary hover:bg-primary/90 font-sans font-medium text-sm rounded-lg shadow-card h-9 active:scale-95 transition-all"
+        >
+          <Link href="/dashboard/groups/new">
+            <PlusCircle className="mr-1.5 h-4 w-4" />
+            Nouveau groupe
+          </Link>
+        </Button>
       </div>
     </header>
   );

@@ -1,54 +1,94 @@
 import * as React from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 
-export function AuthCard({
+import { Logo } from "@/components/brand/logo";
+
+export async function AuthCard({
   title,
   description,
   children,
   showImage = true,
+  variant = "default",
 }: {
   title: string;
   description: string;
   children: React.ReactNode;
   showImage?: boolean;
+  variant?: "default" | "login";
 }) {
-  return (
-    <div className={`w-full ${showImage ? "max-w-[1000px] grid grid-cols-1 md:grid-cols-2" : "max-w-[500px]"} bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden`}>
-      {/* Left Side: Form */}
-      <div className="p-8 md:p-12 flex flex-col justify-center">
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl text-green-600 font-bold mb-2">E-Tontine</h1>
-          <p className="font-sans text-base text-slate-500">
-            {title === "Connexion" ? "Bon retour parmi nous. Gérez vos finances communautaires." : description}
-          </p>
-        </div>
-        
-        {children}
-      </div>
+  const t = await getTranslations("auth");
+  const isLogin = variant === "login";
 
-      {/* Right Side: Illustration/Branding */}
+  return (
+    <div
+      className={`auth-card-enter w-full ${
+        showImage
+          ? "grid max-w-[1000px] grid-cols-1 md:grid-cols-2"
+          : "max-w-[480px]"
+      } overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-lg`}
+    >
+      {/* Left: image (modern, représente la tontine) */}
       {showImage && (
-        <div className="hidden md:block relative bg-green-700 overflow-hidden">
+        <div className="relative hidden min-h-[560px] overflow-hidden md:block">
           <Image
-            src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80"
-            alt="Collaboration et finances"
+            src="/images/login-3d.png"
+            alt="Tontine E-Tontine : pot commun et cotisations en FCFA"
             fill
-            className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply"
+            sizes="500px"
+            priority
+            className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-green-800/90 to-transparent pointer-events-none"></div>
-          
-          <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-lg shadow-lg">
-              <ShieldCheck className="w-8 h-8 text-green-400 mb-4" />
-              <h2 className="font-heading text-xl font-bold mb-2 text-white">Sécurité de niveau bancaire</h2>
-              <p className="font-sans text-sm text-green-50">
-                Vos fonds communautaires sont protégés par des protocoles de chiffrement avancés, garantissant une transparence totale pour tous les membres de votre tontine.
+          {/* Voile dégradé pour lisibilité */}
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/40 to-primary/10" />
+
+          {/* Logo en haut */}
+          <div className="absolute left-8 top-8">
+            <Logo size={30} variant="light" />
+          </div>
+
+          {/* Carte verre dépoli en bas */}
+          <div className="absolute inset-x-8 bottom-8">
+            <div className="glass-panel rounded-2xl border-white/20 p-6 shadow-lg">
+              <ShieldCheck className="mb-3 h-7 w-7 text-primary" />
+              <h2 className="mb-1.5 font-heading text-lg font-bold text-on-surface">
+                {t("securityTitle")}
+              </h2>
+              <p className="font-sans text-sm leading-relaxed text-on-surface-variant">
+                {t("securityText")}
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Right: form */}
+      <div className="flex flex-col justify-center p-7 sm:p-10 md:p-12">
+        <div className="mb-7">
+          {/* Logo mobile + retour */}
+          <div className="mb-7 flex items-center justify-between md:hidden">
+            <Logo size={28} />
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 font-sans text-xs font-medium text-on-surface-variant hover:text-primary"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {t("homeLink")}
+            </Link>
+          </div>
+
+          <h1 className="mb-1.5 font-heading text-2xl font-bold text-on-surface">
+            {isLogin ? t("welcomeBack") : title}
+          </h1>
+          <p className="font-sans text-base text-on-surface-variant">
+            {isLogin ? t("loginDescription") : description}
+          </p>
+        </div>
+
+        {children}
+      </div>
     </div>
   );
 }

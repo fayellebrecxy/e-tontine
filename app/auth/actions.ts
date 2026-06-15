@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isMailerConfigured, sendMail } from "@/lib/email/mailer";
+import { resetPasswordEmail } from "@/lib/email/templates";
 import {
   normalizeEmail,
   normalizeName,
@@ -136,8 +139,49 @@ export async function resetPasswordAction(
     return { ok: false as const, error: "Missing Supabase environment variables." };
   }
 
+  const email = normalizeEmail(parsed.data.email);
   const origin = await getOrigin();
-  const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(parsed.data.email), {
+  const genericSuccess = {
+    ok: true as const,
+    redirectTo: "/auth/login",
+    message: "Si l'adresse existe, un lien de réinitialisation a été envoyé.",
+  };
+
+  const admin = createSupabaseAdminClient();
+
+  // Chemin privilégié : on génère le lien via l'API Admin et on l'envoie nous-mêmes
+  // par SMTP (Gmail), pour contourner les limites/fiabilité de l'email Supabase intégré.
+  if (admin && isMailerConfigured()) {
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+    });
+
+    // generateLink échoue si l'utilisateur n'existe pas : on ne révèle pas l'info.
+    if (error || !data?.properties?.hashed_token) {
+      return genericSuccess;
+    }
+
+    const confirmUrl = `${origin}/auth/confirm?token_hash=${encodeURIComponent(
+      data.properties.hashed_token,
+    )}&type=recovery&next=${encodeURIComponent("/auth/update-password")}`;
+
+    const { subject, html, text } = resetPasswordEmail({ resetUrl: confirmUrl });
+
+    try {
+      await sendMail({ to: email, subject, html, text });
+    } catch {
+      return {
+        ok: false as const,
+        error: "Impossible d'envoyer l'email pour le moment. Réessayez plus tard.",
+      };
+    }
+
+    return genericSuccess;
+  }
+
+  // Repli : email intégré de Supabase.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
   });
 
@@ -145,11 +189,7 @@ export async function resetPasswordAction(
     return { ok: false as const, error: error.message };
   }
 
-  return {
-    ok: true as const,
-    redirectTo: "/auth/login",
-    message: "Si l'adresse existe, un lien de réinitialisation a été envoyé.",
-  };
+  return genericSuccess;
 }
 
 export async function updatePasswordAction(

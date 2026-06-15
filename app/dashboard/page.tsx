@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  ArrowRight,
   Bell,
-  CalendarDays,
-  Gavel,
+  CalendarClock,
   Plus,
   Repeat,
-  Users
+  Users,
 } from "lucide-react";
+
+import { getTranslations } from "next-intl/server";
 
 import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
 import { DashboardNotifications } from "@/components/notifications/dashboard-notifications";
@@ -57,153 +59,150 @@ export default async function DashboardPage() {
     : [];
 
   const memberships = dbUser?.memberships ?? [];
-  const activeMemberships = memberships.filter(
-    (membership) => membership.statut_adhesion === "ACTIF",
-  );
-  
-  // Quick count for active cycles among memberships
-  const totalCycles = activeMemberships.reduce(
-    (total, membership) => total + membership.groupe._count.cycles,
-    0,
-  );
-
-  const pendingNotifications = notifications.filter(
-    (notification) => !notification.date_lecture,
-  ).length;
-
+  const activeMemberships = memberships.filter((m) => m.statut_adhesion === "ACTIF");
+  const totalCycles = activeMemberships.reduce((t, m) => t + m.groupe._count.cycles, 0);
+  const totalReunions = activeMemberships.reduce((t, m) => t + m.groupe._count.reunions, 0);
+  const pendingNotifications = notifications.filter((n) => !n.date_lecture).length;
   const userName = dbUser ? dbUser.prenom : (user.email ?? "membre");
+  const t = await getTranslations("dashboard");
+
+  const kpis = [
+    { label: t("kpiGroups"), value: activeMemberships.length, icon: Users, tone: "secondary" as const },
+    { label: t("kpiCycles"), value: totalCycles, icon: Repeat, tone: "primary" as const },
+    { label: t("kpiMeetings"), value: totalReunions, icon: CalendarClock, tone: "neutral" as const },
+    { label: t("kpiAlerts"), value: pendingNotifications, icon: Bell, tone: "warning" as const },
+  ];
+
+  const toneClasses: Record<string, string> = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/10 text-secondary",
+    warning: "bg-warning/10 text-warning",
+    neutral: "bg-surface-container text-on-surface-variant",
+  };
 
   return (
     <div className="flex flex-col gap-6 font-sans">
-      {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl md:text-4xl text-slate-900 font-bold">Bonjour, {userName}</h1>
-          <p className="text-base text-slate-500 mt-1">Voici le résumé de vos activités financières communautaires.</p>
+          <h1 className="font-heading text-xl font-bold text-text-main sm:text-2xl">
+            {t("greeting", { name: userName })}
+          </h1>
+          <p className="mt-1 font-sans text-sm text-text-muted">{t("subtitle")}</p>
         </div>
-        <div className="flex gap-3">
-          <JoinGroupDialog variant="outline" className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50" />
-        </div>
-      </div>
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-2">
-        {/* KPI 1 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="h-5 w-5" />
-            </div>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">Actifs</span>
-          </div>
-          <div>
-            <div className="text-3xl font-heading font-semibold text-slate-900">{activeMemberships.length}</div>
-            <div className="text-sm text-slate-500 mt-1">Groupes rejoints</div>
-          </div>
-        </div>
-
-        {/* KPI 2 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
-              <Repeat className="h-5 w-5" />
-            </div>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">En cours</span>
-          </div>
-          <div>
-            <div className="text-3xl font-heading font-semibold text-slate-900">{totalCycles}</div>
-            <div className="text-sm text-slate-500 mt-1">Cycles actifs</div>
-          </div>
-        </div>
-
-        {/* KPI 3 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-          <div className="flex justify-between items-start relative z-10">
-            <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs">Voir plus</span>
-          </div>
-          <div className="relative z-10">
-            <div className="text-3xl font-heading font-semibold text-slate-900">
-              {pendingNotifications}
-            </div>
-            <div className="text-sm text-slate-500 mt-1">Notifications non lues</div>
-          </div>
-        </div>
-
-        {/* KPI 4 */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
-              <Gavel className="h-5 w-5" />
-            </div>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">Ce mois</span>
-          </div>
-          <div>
-            <div className="text-3xl font-heading font-semibold text-slate-900">0<span className="text-lg text-slate-400 ml-1">FCFA</span></div>
-            <div className="text-sm text-slate-500 mt-1">Pénalités estimées</div>
-          </div>
+        <div className="flex gap-2">
+          <JoinGroupDialog
+            variant="outline"
+            className="h-9 flex-1 rounded-lg border border-border-light bg-surface-container-lowest text-sm text-on-surface-variant hover:bg-surface-container-low sm:flex-none"
+          />
+          <Button
+            asChild
+            size="sm"
+            className="h-9 flex-1 rounded-lg bg-primary text-sm font-medium text-on-primary shadow-card transition-all hover:bg-primary/90 active:scale-95 sm:flex-none"
+          >
+            <Link href="/dashboard/groups/new">
+              <Plus className="mr-1.5 h-4 w-4" />
+              {t("new")}
+            </Link>
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        {/* Chart Area / Dashboard main section */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-heading text-xl font-semibold text-slate-900">Mes Groupes</h3>
-            <Button asChild variant="outline" size="sm" className="hidden border-green-200 text-green-700 bg-green-50 hover:bg-green-100 md:flex">
-              <Link href="/dashboard/groups/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Créer un groupe
+      {/* KPIs : 2 colonnes mobile, 4 desktop */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="flex items-center gap-3 rounded-xl border border-border-light bg-surface-container-lowest p-4 shadow-card"
+          >
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClasses[kpi.tone]}`}>
+              <kpi.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-heading text-xl font-bold leading-none text-text-main sm:text-2xl">
+                {kpi.value}
+              </div>
+              <div className="mt-1 truncate font-sans text-xs text-text-muted">{kpi.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Contenu principal */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Groupes */}
+        <section className="rounded-xl border border-border-light bg-surface-container-lowest shadow-card lg:col-span-2">
+          <header className="flex items-center justify-between border-b border-border-light px-5 py-4">
+            <h2 className="font-heading text-base font-semibold text-text-main">{t("myGroups")}</h2>
+            {activeMemberships.length > 0 && (
+              <Link
+                href="/dashboard/groups"
+                className="font-sans text-sm font-medium text-primary hover:underline"
+              >
+                {t("seeAll")}
               </Link>
-            </Button>
-          </div>
+            )}
+          </header>
+
           {activeMemberships.length > 0 ? (
-            <div className="space-y-4">
-              {activeMemberships.map((m) => (
-                <div key={m.id_groupe} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold uppercase">
+            <ul className="divide-y divide-border-light">
+              {activeMemberships.slice(0, 5).map((m) => (
+                <li key={m.id_groupe}>
+                  <Link
+                    href={`/dashboard/groups/${m.id_groupe}`}
+                    className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-surface-container-low"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold uppercase text-primary">
                       {m.groupe.nom.substring(0, 2)}
                     </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{m.groupe.nom}</p>
-                      <p className="text-xs text-slate-500">{m.groupe._count.membres} membres</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-sans text-sm font-semibold text-text-main">
+                        {m.groupe.nom}
+                      </p>
+                      <p className="mt-0.5 font-sans text-xs text-text-muted">
+                        {m.groupe._count.membres} membre{m.groupe._count.membres > 1 ? "s" : ""}
+                        {" · "}
+                        {m.groupe._count.cycles} cycle{m.groupe._count.cycles > 1 ? "s" : ""}
+                      </p>
                     </div>
-                  </div>
-                  <Button asChild variant="ghost" size="sm" className="text-slate-500 hover:text-green-600">
-                    <Link href={`/dashboard/groups/${m.id_groupe}`}>
-                      Voir
-                    </Link>
-                  </Button>
-                </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
-              <div className="bg-slate-50 rounded-full p-4 mb-4">
-                <Users className="h-8 w-8 text-slate-400" />
+            <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-container">
+                <Users className="h-6 w-6 text-outline" />
               </div>
-              <h4 className="font-heading font-medium text-slate-900 mb-1">Aucun groupe actif</h4>
-              <p className="text-sm text-slate-500 mb-4 max-w-sm">Vous n'êtes membre d'aucun groupe de tontine pour le moment. Créez-en un ou rejoignez un groupe existant.</p>
-              <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
+              <h3 className="font-heading text-sm font-semibold text-text-main">{t("noGroupsTitle")}</h3>
+              <p className="mx-auto mt-1 max-w-xs font-sans text-sm text-text-muted">{t("noGroupsText")}</p>
+              <Button
+                asChild
+                size="sm"
+                className="mt-4 h-9 rounded-lg bg-primary text-sm font-medium text-on-primary shadow-card hover:bg-primary/90 active:scale-95"
+              >
                 <Link href="/dashboard/groups/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau groupe
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  {t("createGroup")}
                 </Link>
               </Button>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Notifications Aside */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-heading text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <Bell className="h-4 w-4 text-orange-500" /> Notifications
-            </h3>
-          </div>
+        {/* Activité récente */}
+        <section className="flex flex-col rounded-xl border border-border-light bg-surface-container-lowest shadow-card">
+          <header className="flex items-center justify-between border-b border-border-light px-5 py-4">
+            <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-text-main">
+              <Bell className="h-4 w-4 text-warning" />
+              {t("activity")}
+            </h2>
+            {pendingNotifications > 0 && (
+              <span className="badge-warning text-xs">{pendingNotifications}</span>
+            )}
+          </header>
+
           <div className="flex-1">
             {notifications.length > 0 ? (
               <DashboardNotifications
@@ -216,13 +215,15 @@ export default async function DashboardPage() {
                 }))}
               />
             ) : (
-              <div className="flex h-full flex-col items-center justify-center text-slate-400 p-8">
-                <Bell className="h-8 w-8 mb-2 opacity-50" />
-                <p className="text-sm">Aucune notification</p>
+              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-container">
+                  <Bell className="h-5 w-5 text-outline" />
+                </div>
+                <p className="font-sans text-sm text-text-muted">{t("noNotifications")}</p>
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

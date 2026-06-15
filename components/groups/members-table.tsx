@@ -131,19 +131,19 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+      <div className="overflow-x-auto rounded-2xl border border-border-light bg-surface-container-lowest shadow-card">
+        <table className="w-full min-w-[680px] text-left text-sm">
+          <thead className="border-b border-border-light bg-surface-container-low text-xs uppercase tracking-wide text-text-muted">
             <tr>
-              <th className="px-4 py-3">Nom</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Telephone</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Statut</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3 font-semibold">Nom</th>
+              <th className="px-4 py-3 font-semibold">Email</th>
+              <th className="px-4 py-3 font-semibold">Telephone</th>
+              <th className="px-4 py-3 font-semibold">Role</th>
+              <th className="px-4 py-3 font-semibold">Statut</th>
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+          <tbody className="divide-y divide-border-light">
             {members.map((member) => {
               const isSelf = member.user.id_user === currentUserId;
               const canExclude = canManage && !isSelf && member.statut_adhesion !== "INACTIF";
@@ -151,29 +151,29 @@ export function MembersTable({ groupId, currentUserId, canManage, members }: Mem
               const isPending = member.statut_adhesion === "EN_ATTENTE";
               const statutVisuel = (member.statut_visuel === "ORANGE" ? "ROUGE" : member.statut_visuel) as "VERT" | "ROUGE";
               return (
-                <tr key={member.id_membre_groupe} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                <tr key={member.id_membre_groupe} className="transition-colors hover:bg-surface-container-low">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <StatutBadge statut={statutVisuel} />
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                      <div className="font-sans font-medium text-text-main">
                         {member.user.prenom} {member.user.nom}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{member.user.email}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{member.user.telephone}</td>
+                  <td className="px-4 py-3 text-on-surface-variant">{member.user.email}</td>
+                  <td className="px-4 py-3 text-on-surface-variant">{member.user.telephone}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                         member.role === "ADMIN"
-                          ? "bg-brand-50 text-brand-600"
-                          : "bg-gray-100 text-gray-500"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-surface-container text-on-surface-variant"
                       }`}
                     >
                       {member.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                  <td className="px-4 py-3 text-on-surface-variant">
                     {member.statut_adhesion}
                   </td>
                   <td className="px-4 py-3 text-right">

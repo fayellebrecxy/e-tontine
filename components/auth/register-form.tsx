@@ -24,6 +24,9 @@ import { Input } from "@/components/ui/input";
 
 type Values = z.infer<typeof signUpSchema>;
 
+const inputClass =
+  "w-full h-11 pl-10 pr-4 rounded-lg border border-outline-variant bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors font-sans text-sm text-on-surface";
+
 export function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,18 +54,25 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="nom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="block font-medium text-sm text-slate-900">Nom</FormLabel>
+                <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">
+                  Nom
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="Tedom" autoComplete="family-name" {...field} />
+                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
+                    <Input
+                      className={inputClass}
+                      placeholder="Tedom"
+                      autoComplete="family-name"
+                      {...field}
+                    />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -74,11 +84,18 @@ export function RegisterForm() {
             name="prenom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="block font-medium text-sm text-slate-900">Prénom</FormLabel>
+                <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">
+                  Prénom
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="Dimitri" autoComplete="given-name" {...field} />
+                    <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
+                    <Input
+                      className={inputClass}
+                      placeholder="Dimitri"
+                      autoComplete="given-name"
+                      {...field}
+                    />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -86,49 +103,70 @@ export function RegisterForm() {
             )}
           />
         </div>
+
         <FormField
           control={form.control}
           name="telephone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block font-medium text-sm text-slate-900">Téléphone</FormLabel>
+              <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">
+                Téléphone
+              </FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="+237 6 00 00 00 00" type="tel" autoComplete="tel" {...field} />
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
+                  <Input
+                    className={inputClass}
+                    placeholder="+237 6 00 00 00 00"
+                    type="tel"
+                    autoComplete="tel"
+                    {...field}
+                  />
                 </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block font-medium text-sm text-slate-900">Email</FormLabel>
+              <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">
+                Email
+              </FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <Input className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900" placeholder="vous@example.com" type="email" autoComplete="email" {...field} />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
+                  <Input
+                    className={inputClass}
+                    placeholder="vous@exemple.com"
+                    type="email"
+                    autoComplete="email"
+                    {...field}
+                  />
                 </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block font-medium text-sm text-slate-900">Mot de passe</FormLabel>
+              <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">
+                Mot de passe
+              </FormLabel>
               <FormControl>
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
                   <Input
-                    className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900"
+                    className={inputClass}
                     placeholder="Au moins 8 caractères"
                     type="password"
                     autoComplete="new-password"
@@ -141,18 +179,41 @@ export function RegisterForm() {
           )}
         />
 
-        <Button 
-          type="submit" 
+        <div className="flex items-start gap-2 pt-1">
+          <input
+            className="mt-0.5 h-4 w-4 text-primary border-outline-variant rounded focus:ring-primary cursor-pointer shrink-0"
+            id="terms"
+            type="checkbox"
+            required
+          />
+          <label className="font-sans text-sm text-on-surface-variant cursor-pointer" htmlFor="terms">
+            J&apos;accepte les{" "}
+            <Link className="text-primary hover:underline" href="#">
+              Conditions d&apos;utilisation
+            </Link>{" "}
+            et la{" "}
+            <Link className="text-primary hover:underline" href="#">
+              Politique de confidentialité
+            </Link>
+            .
+          </label>
+        </div>
+
+        <Button
+          type="submit"
           disabled={pending}
-          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+          className="w-full h-11 bg-primary text-on-primary hover:bg-primary/90 font-sans font-medium text-sm rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95 mt-2"
         >
-          {pending ? "Création..." : "Créer le compte"}
-          {!pending && <ArrowRight className="h-5 w-5" />}
+          {pending ? "Création en cours..." : "S'inscrire"}
+          {!pending && <ArrowRight className="h-4 w-4" />}
         </Button>
 
-        <p className="mt-8 text-center text-sm text-slate-600">
+        <p className="text-center font-sans text-sm text-on-surface-variant">
           Déjà un compte ?{" "}
-          <Link href={`/auth/login?next=${nextParam}`} className="font-medium text-green-600 hover:underline transition-all">
+          <Link
+            href={`/auth/login?next=${nextParam}`}
+            className="font-medium text-primary hover:underline transition-all"
+          >
             Se connecter
           </Link>
         </p>

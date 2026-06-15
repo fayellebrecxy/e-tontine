@@ -51,13 +51,13 @@ export function ResetPasswordForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block font-medium text-sm text-slate-900">Email</FormLabel>
+              <FormLabel className="block font-sans font-medium text-sm text-on-surface mb-1.5">Email</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
                   <Input
-                    className="w-full h-12 pl-10 pr-4 rounded-md border-slate-200 bg-slate-50 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:border-green-600 transition-colors text-base text-slate-900"
-                    placeholder="vous@example.com"
+                    className="w-full h-11 pl-10 pr-4 rounded-lg border border-outline-variant bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors font-sans text-sm text-on-surface"
+                    placeholder="vous@exemple.com"
                     type="email"
                     autoComplete="email"
                     {...field}
@@ -69,18 +69,18 @@ export function ResetPasswordForm() {
           )}
         />
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={pending}
-          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+          className="w-full h-11 bg-primary text-on-primary hover:bg-primary/90 font-sans font-medium text-sm rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
         >
-          {pending ? "Envoi..." : "Réinitialiser"}
-          {!pending && <ArrowRight className="h-5 w-5" />}
+          {pending ? "Envoi en cours..." : "Réinitialiser le mot de passe"}
+          {!pending && <ArrowRight className="h-4 w-4" />}
         </Button>
 
-        <p className="mt-8 text-center text-sm text-slate-600">
-          Tu t'en souviens ?{" "}
-          <Link href="/auth/login" className="font-medium text-green-600 hover:underline transition-all">
+        <p className="text-center font-sans text-sm text-on-surface-variant">
+          Vous vous en souvenez ?{" "}
+          <Link href="/auth/login" className="font-medium text-primary hover:underline transition-all">
             Se connecter
           </Link>
         </p>

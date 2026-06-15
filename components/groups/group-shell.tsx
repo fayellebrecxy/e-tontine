@@ -33,14 +33,14 @@ type GroupSummaryBody = {
 function GroupShellSkeleton({ children }: { children?: React.ReactNode }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-        <div className="h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
-        <div className="mt-3 h-4 w-64 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+      <div className="rounded-2xl border border-border-light bg-surface-container-lowest p-5 shadow-card">
+        <div className="h-5 w-48 animate-pulse rounded bg-surface-container-high" />
+        <div className="mt-3 h-4 w-64 animate-pulse rounded bg-surface-container" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <div className="hidden h-64 animate-pulse rounded-xl bg-white dark:bg-white/5 lg:block" />
+        <div className="hidden h-64 animate-pulse rounded-2xl bg-surface-container-lowest lg:block" />
         <div className="min-h-64 min-w-0">
-          {children ?? <div className="h-64 animate-pulse rounded-xl bg-white dark:bg-white/5" />}
+          {children ?? <div className="h-64 animate-pulse rounded-2xl bg-surface-container-lowest" />}
         </div>
       </div>
     </div>
@@ -131,14 +131,14 @@ export function GroupShell({
   if (!loading && membership && !isActive) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+        <div className="w-full max-w-md rounded-2xl border border-border-light bg-surface-container-lowest p-6 text-center shadow-card">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-warning/15 text-warning">
             <ShieldAlert className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-xl font-bold text-slate-950 dark:text-white">
+          <h1 className="mt-4 font-heading text-xl font-bold text-text-main">
             {group?.nom ?? "Groupe"}
           </h1>
-          <div className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <div className="mt-3 font-sans text-sm leading-6 text-on-surface-variant">
             {isInactive ? (
               <p>Vous avez été exclu de ce groupe.</p>
             ) : isPending ? (
@@ -168,36 +168,33 @@ export function GroupShell({
 
   return (
     <div className="space-y-6">
-      <header className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+      <header className="overflow-hidden rounded-2xl border border-border-light bg-surface-container-lowest shadow-card">
         <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_auto]">
           <div className="flex gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Landmark className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p className="font-sans text-xs font-semibold uppercase tracking-wide text-text-muted">
                 Groupe
               </p>
-              <h1 className="mt-1 truncate text-2xl font-semibold tracking-normal text-slate-950 dark:text-white">
+              <h1 className="mt-1 truncate font-heading text-xl font-bold tracking-tight text-text-main sm:text-2xl">
                 {group?.nom}
               </h1>
               {group?.description ? (
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-300">
+                <p className="mt-2 max-w-3xl font-sans text-sm leading-6 text-on-surface-variant">
                   {group.description}
                 </p>
               ) : null}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-slate-950 text-white hover:bg-slate-950 dark:bg-white dark:text-slate-950">
+          <div className="flex flex-wrap items-start gap-2">
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/15">
               <Crown className="mr-1 h-3.5 w-3.5" />
               {membership?.role === "ADMIN" ? "Administrateur" : "Membre"}
             </Badge>
             {group?.devise ? (
-              <Badge
-                variant="outline"
-                className="bg-[#f6f4ef] text-slate-700 dark:bg-white/10 dark:text-white"
-              >
+              <Badge variant="outline" className="border-border-light bg-surface-container-low text-on-surface-variant">
                 {group.devise}
               </Badge>
             ) : null}
@@ -206,7 +203,7 @@ export function GroupShell({
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
+        <aside className="rounded-2xl border border-border-light bg-surface-container-lowest p-3 shadow-card lg:sticky lg:top-20 lg:self-start">
           <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />
         </aside>
         <section className="min-w-0">{children}</section>
