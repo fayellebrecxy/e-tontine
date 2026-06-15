@@ -22,7 +22,8 @@ export function useSidebar() {
 }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
+  // Fermée par défaut : l'utilisateur l'ouvre via le bouton du header (vue maximisée).
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);

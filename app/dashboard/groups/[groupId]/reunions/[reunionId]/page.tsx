@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Coins, FileText, MapPin, NotebookPen } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -102,6 +102,24 @@ export default async function ReunionDetailPage({
     ? reunion.presences.find((p) => p.id_membre_groupe === membership.id_membre_groupe) ?? null
     : null;
 
+  const dateLabel = reunion.date_reunion.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "2-digit", month: "long", year: "numeric",
+  });
+  const timeLabel = reunion.date_reunion.toLocaleTimeString("fr-FR", {
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const infoTiles = [
+    { icon: Calendar, label: "Date", value: dateLabel },
+    { icon: Clock, label: "Heure", value: timeLabel },
+    { icon: MapPin, label: "Lieu", value: reunion.lieu || "Non précisé" },
+    {
+      icon: Coins,
+      label: "Amende d'absence",
+      value: montantAmende > 0 ? `${montantAmende.toLocaleString("fr-FR")} ${devise}` : "Aucune",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Navigation retour */}
@@ -115,85 +133,88 @@ export default async function ReunionDetailPage({
       </div>
 
       {/* En-tête réunion */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge variant="secondary" className={typeInfo.className + " text-xs"}>
-                {typeInfo.label}
-              </Badge>
-              <Badge variant="secondary" className={statutInfo.className + " text-xs"}>
-                {statutInfo.label}
-              </Badge>
+      <div className="overflow-hidden rounded-2xl border border-border-light bg-surface-container-lowest shadow-card">
+        <div className="bg-gradient-to-br from-primary/10 via-surface-container-lowest to-surface-container-lowest p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className={typeInfo.className + " text-xs"}>
+                  {typeInfo.label}
+                </Badge>
+                <Badge variant="secondary" className={statutInfo.className + " text-xs"}>
+                  {statutInfo.label}
+                </Badge>
+              </div>
+              <h1 className="font-heading text-2xl font-bold text-on-surface sm:text-3xl">
+                {reunion.titre}
+              </h1>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{reunion.titre}</h1>
-          </div>
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              {reunion.statut === "PLANIFIEE" && (
-                <EditReunionSheet
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                {reunion.statut === "PLANIFIEE" && (
+                  <EditReunionSheet
+                    groupId={groupId}
+                    reunionId={reunionId}
+                    devise={devise}
+                    initial={{
+                      titre: reunion.titre,
+                      description: reunion.description,
+                      date_reunion: reunion.date_reunion.toISOString(),
+                      lieu: reunion.lieu,
+                      type_reunion: reunion.type_reunion,
+                      montant_amende: reunion.montant_amende ? Number(reunion.montant_amende) : null,
+                    }}
+                  />
+                )}
+                <DeleteReunionButton
                   groupId={groupId}
                   reunionId={reunionId}
-                  devise={devise}
-                  initial={{
-                    titre: reunion.titre,
-                    description: reunion.description,
-                    date_reunion: reunion.date_reunion.toISOString(),
-                    lieu: reunion.lieu,
-                    type_reunion: reunion.type_reunion,
-                    montant_amende: reunion.montant_amende ? Number(reunion.montant_amende) : null,
-                  }}
+                  titre={reunion.titre}
+                  canDelete={canDeleteReunion}
+                  canCancel={canCancelReunion}
                 />
-              )}
-              <DeleteReunionButton
-                groupId={groupId}
-                reunionId={reunionId}
-                titre={reunion.titre}
-                canDelete={canDeleteReunion}
-                canCancel={canCancelReunion}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-          <span className="flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" />
-            {reunion.date_reunion.toLocaleDateString("fr-FR", {
-              weekday: "long", day: "2-digit", month: "long", year: "numeric",
-            })}{" "}
-            à{" "}
-            {reunion.date_reunion.toLocaleTimeString("fr-FR", {
-              hour: "2-digit", minute: "2-digit",
-            })}
-          </span>
-          {reunion.lieu && (
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              {reunion.lieu}
-            </span>
-          )}
-        </div>
-
-        {reunion.description && (
-          <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-            <p className="font-medium text-xs uppercase text-gray-400 mb-1">Ordre du jour</p>
-            <p className="whitespace-pre-wrap">{reunion.description}</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        {montantAmende > 0 && (
-          <p className="text-sm text-amber-700">
-            💰 Amende d'absence : <strong>{montantAmende.toLocaleString("fr-FR")} {devise}</strong>
-          </p>
-        )}
+        {/* Infos clés — tuiles bien visibles */}
+        <div className="grid grid-cols-2 gap-px border-t border-border-light bg-border-light lg:grid-cols-4">
+          {infoTiles.map(({ icon: Icon, label, value }) => (
+            <div key={label} className="bg-surface-container-lowest p-4 sm:p-5">
+              <div className="flex items-center gap-2 text-on-surface-variant">
+                <Icon className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
+              </div>
+              <p className="mt-2 font-sans text-sm font-semibold capitalize text-on-surface sm:text-base">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Ordre du jour */}
+      {reunion.description && (
+        <div className="rounded-2xl border border-border-light bg-surface-container-lowest p-5 shadow-card sm:p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="font-heading text-lg font-semibold text-on-surface">Ordre du jour</h2>
+          </div>
+          <p className="whitespace-pre-wrap font-sans text-base leading-relaxed text-on-surface-variant">
+            {reunion.description}
+          </p>
+        </div>
+      )}
 
       {/* Compte-rendu (visible par tous si publié) */}
       {reunion.compte_rendu && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-900/10 p-4 space-y-2">
-          <h2 className="font-semibold text-blue-800 dark:text-blue-300">📝 Compte-rendu</h2>
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 shadow-card sm:p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <NotebookPen className="h-5 w-5 text-primary" />
+            <h2 className="font-heading text-lg font-semibold text-on-surface">Compte-rendu</h2>
+          </div>
+          <p className="whitespace-pre-wrap font-sans text-base leading-relaxed text-on-surface-variant">
             {reunion.compte_rendu}
           </p>
         </div>

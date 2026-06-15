@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Crown, Landmark, ShieldAlert } from "lucide-react";
+import { Crown, Landmark, PanelLeftClose, PanelLeftOpen, ShieldAlert } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -64,6 +64,8 @@ export function GroupShell({
   );
   const [loading, setLoading] = React.useState(!initialMembership);
   const [pendingRejoin, setPendingRejoin] = React.useState(false);
+  // Menu du groupe fermé par défaut → le contenu occupe toute la largeur.
+  const [navOpen, setNavOpen] = React.useState(false);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -189,6 +191,16 @@ export function GroupShell({
             </div>
           </div>
           <div className="flex flex-wrap items-start gap-2">
+            <button
+              type="button"
+              onClick={() => setNavOpen((v) => !v)}
+              aria-expanded={navOpen}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-container-low px-3 py-1.5 font-sans text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
+            >
+              {navOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              <span className="hidden sm:inline">{navOpen ? "Masquer le menu" : "Menu du groupe"}</span>
+              <span className="sm:hidden">Menu</span>
+            </button>
             <Badge className="bg-primary/10 text-primary hover:bg-primary/15">
               <Crown className="mr-1 h-3.5 w-3.5" />
               {membership?.role === "ADMIN" ? "Administrateur" : "Membre"}
@@ -202,10 +214,12 @@ export function GroupShell({
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="rounded-2xl border border-border-light bg-surface-container-lowest p-3 shadow-card lg:sticky lg:top-20 lg:self-start">
-          <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />
-        </aside>
+      <div className={navOpen ? "grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]" : "block"}>
+        {navOpen ? (
+          <aside className="rounded-2xl border border-border-light bg-surface-container-lowest p-3 shadow-card lg:sticky lg:top-20 lg:self-start">
+            <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />
+          </aside>
+        ) : null}
         <section className="min-w-0">{children}</section>
       </div>
     </div>
