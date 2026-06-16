@@ -7,6 +7,12 @@ export type CycleTurnSnapshot = {
   activeTourEnd: Date | null;
   completedTours: number;
   isCompleted: boolean;
+  /** Tous les pots versés mais des dettes membres peuvent subsister */
+  allPotsDistributed: boolean;
+  /** Échéance du tour actif dépassée (lendemain inclus) */
+  isPastDue: boolean;
+  /** Peut verser le pot : échéance passée, tour actif, pas encore versé */
+  canDistribute: boolean;
   expectedCurrentTurn: number;
   collectedCurrentTurn: number;
   remainingCurrentTurn: number;
@@ -35,6 +41,29 @@ function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+type TourWindowInput = {
+  date_debut: Date;
+  duree_tour_de_gain: number;
+  versements: { numero_tour: number; date_versement: Date }[];
+};
+
+/** Calcule la fenêtre temporelle d'un tour (début = versement précédent ou date_debut). */
+export function getTourWindow(ctx: TourWindowInput, numeroTour: number) {
+  const previousVersement =
+    numeroTour > 1
+      ? ctx.versements.find((v) => v.numero_tour === numeroTour - 1)
+      : null;
+  const tourStart = previousVersement?.date_versement ?? ctx.date_debut;
+  const tourEnd = addDays(tourStart, ctx.duree_tour_de_gain);
+  return { tourStart, tourEnd };
+}
+
+function isPastDueDay(now: Date, dueDate: Date) {
+  return Math.ceil((now.getTime() - dueDate.getTime()) / ONE_DAY_MS) >= 1;
 }
 
 export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSnapshot> {
@@ -74,6 +103,9 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
       activeTourEnd: null,
       completedTours: 0,
       isCompleted: true,
+      allPotsDistributed: true,
+      isPastDue: false,
+      canDistribute: false,
       expectedCurrentTurn: 0,
       collectedCurrentTurn: 0,
       remainingCurrentTurn: 0,
@@ -96,17 +128,30 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
   const versementsParTour = new Map(cycle.versements.map((v) => [v.numero_tour, Number(v.montant_verse)]));
   const completedTours = cycle.participants.filter((p) => versementsParTour.has(p.ordre)).length;
   const activeTour = cycle.participants.find((p) => !versementsParTour.has(p.ordre))?.ordre ?? null;
-  const isCompleted = activeTour === null;
+  const allPotsDistributed = activeTour === null;
+  const isCompleted = allPotsDistributed;
   const montantCotisation = Number(cycle.montant_cotisation);
-  const previousVersement = activeTour
-    ? cycle.versements.find((versement) => versement.numero_tour === activeTour - 1)
-    : null;
+
+  const tourWindowCtx = {
+    date_debut: cycle.date_debut,
+    duree_tour_de_gain: cycle.duree_tour_de_gain,
+    versements: cycle.versements,
+  };
+
   const activeTourStart = activeTour
-    ? previousVersement?.date_versement ?? cycle.date_debut
+    ? getTourWindow(tourWindowCtx, activeTour).tourStart
     : null;
-  const activeTourEnd = activeTourStart
-    ? addDays(activeTourStart, cycle.duree_tour_de_gain)
+  const activeTourEnd = activeTour
+    ? getTourWindow(tourWindowCtx, activeTour).tourEnd
     : null;
+
+  const now = new Date();
+  const isPastDue = activeTourEnd ? isPastDueDay(now, activeTourEnd) : false;
+  const canDistribute =
+    activeTour !== null &&
+    isPastDue &&
+    !versementsParTour.has(activeTour) &&
+    (versementsParTour.get(activeTour) ?? 0) === 0;
   const expectedCurrentTurn = activeTour ? totalTours * montantCotisation : 0;
 
   const currentCotisations = activeTour
@@ -176,6 +221,9 @@ export async function getCycleTurnSnapshot(cycleId: string): Promise<CycleTurnSn
     activeTourEnd,
     completedTours,
     isCompleted,
+    allPotsDistributed,
+    isPastDue,
+    canDistribute,
     expectedCurrentTurn,
     collectedCurrentTurn,
     remainingCurrentTurn,

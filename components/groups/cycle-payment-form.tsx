@@ -9,14 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type DebtSlice = {
+  type: "COTISATION" | "PENALITE";
+  numeroTour: number;
+  remaining: number;
+};
+
 type ParticipantItem = {
   id_membre_groupe: string;
   nom: string;
   prenom: string;
-  paidForActiveTour?: number;
-  remainingForActiveTour?: number;
-  /** Pénalité automatique en attente pour ce tour (non encore collectée) */
-  pendingPenaltyForActiveTour?: number | null;
+  totalDue: number;
+  cotisationDue: number;
+  penaltyDue: number;
+  debtSlices: DebtSlice[];
 };
 
 type TourItem = {
@@ -38,27 +44,19 @@ export function CyclePaymentForm({
   cycleId,
   participants,
   tours,
-  defaultTour,
 }: CyclePaymentFormProps) {
   const router = useRouter();
   const [selected, setSelected] = React.useState(
-    participants.find(
-      (participant) =>
-        (participant.remainingForActiveTour ?? 0) > 0 ||
-        (participant.pendingPenaltyForActiveTour ?? 0) > 0,
-    )
-      ?.id_membre_groupe ??
+    participants.find((participant) => participant.totalDue > 0)?.id_membre_groupe ??
       participants[0]?.id_membre_groupe ??
       "",
   );
-  const [numeroTour, setNumeroTour] = React.useState(String(defaultTour));
   const [montant, setMontant] = React.useState("");
   const [datePaiement, setDatePaiement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+
   const selectedParticipant = participants.find((participant) => participant.id_membre_groupe === selected);
-  const selectedRemaining = selectedParticipant?.remainingForActiveTour ?? 0;
-  const selectedPenalty = selectedParticipant?.pendingPenaltyForActiveTour ?? 0;
-  const selectedTotalToCollect = selectedRemaining + selectedPenalty;
+  const activeTourInfo = tours[0];
 
   const submit = async () => {
     const montantValue = Number(montant);
@@ -72,6 +70,13 @@ export function CyclePaymentForm({
       return;
     }
 
+    if (selectedParticipant && montantValue > selectedParticipant.totalDue) {
+      toast.error(
+        `Montant trop élevé. Total dû : ${selectedParticipant.totalDue.toLocaleString("fr-FR")}.`,
+      );
+      return;
+    }
+
     setSubmitting(true);
     const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}/payments`, {
       method: "POST",
@@ -79,7 +84,6 @@ export function CyclePaymentForm({
       body: JSON.stringify({
         id_membre_groupe: selected,
         montant: montantValue,
-        numero_tour: Number(numeroTour),
         ...(datePaiement ? { date_paiement: datePaiement } : {}),
       }),
     });
@@ -106,8 +110,17 @@ export function CyclePaymentForm({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Sélectionnez le membre qui a payé, le tour concerné, puis saisissez le montant reçu.
+          Le montant est imputé automatiquement dans l&apos;ordre : arriérés des tours passés,
+          pénalités associées, puis cotisation du tour en cours.
         </p>
+
+        {activeTourInfo ? (
+          <div className="rounded-md border border-brand-100 bg-brand-50 px-3 py-2 text-xs text-brand-800">
+            Tour actif : {activeTourInfo.numero} — Bénéficiaire : {activeTourInfo.beneficiaire} —
+            Échéance : {activeTourInfo.dateEcheance}
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <Label>Membre qui a versé</Label>
           <select
@@ -119,65 +132,50 @@ export function CyclePaymentForm({
               <option
                 key={member.id_membre_groupe}
                 value={member.id_membre_groupe}
-                disabled={
-                  (member.remainingForActiveTour ?? 0) <= 0 &&
-                  !(member.pendingPenaltyForActiveTour && member.pendingPenaltyForActiveTour > 0)
-                }
+                disabled={member.totalDue <= 0}
               >
                 {member.prenom} {member.nom}
-                {typeof member.remainingForActiveTour === "number"
-                  ? ` — cotisation restante : ${member.remainingForActiveTour.toLocaleString("fr-FR")}`
-                  : ""}
-                {member.pendingPenaltyForActiveTour
-                  ? ` ⚠️ pénalité : ${member.pendingPenaltyForActiveTour.toLocaleString("fr-FR")}`
-                  : ""}
+                {member.totalDue > 0
+                  ? ` — total dû : ${member.totalDue.toLocaleString("fr-FR")}`
+                  : " — soldé"}
               </option>
             ))}
           </select>
-          {selectedParticipant ? (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">
-                Déjà versé : {(selectedParticipant.paidForActiveTour ?? 0).toLocaleString("fr-FR")} ·
-                Reste à cotiser : <span className="font-medium text-gray-700">{selectedRemaining.toLocaleString("fr-FR")}</span>
+
+          {selectedParticipant && selectedParticipant.totalDue > 0 ? (
+            <div className="space-y-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+              <p>
+                Cotisations en attente :{" "}
+                <strong>{selectedParticipant.cotisationDue.toLocaleString("fr-FR")}</strong>
               </p>
-              {selectedParticipant.pendingPenaltyForActiveTour ? (
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  <span className="font-semibold">⚠️ Pénalité de retard enregistrée automatiquement :</span>{" "}
-                  <span className="font-bold">{selectedParticipant.pendingPenaltyForActiveTour.toLocaleString("fr-FR")}</span>
-                  <br />
-                  Ce membre doit payer sa cotisation + la pénalité. Lorsque vous enregistrerez son paiement,
-                  la cotisation ira dans la caisse principale et la pénalité dans la caisse pénalités.
-                  <br />
-                  <span className="font-semibold">Total à collecter :{" "}
-                    {selectedTotalToCollect.toLocaleString("fr-FR")}
-                  </span>
-                </div>
+              {selectedParticipant.penaltyDue > 0 ? (
+                <p className="text-amber-800">
+                  Pénalités en attente :{" "}
+                  <strong>{selectedParticipant.penaltyDue.toLocaleString("fr-FR")}</strong>
+                </p>
               ) : null}
+              <ul className="list-disc space-y-0.5 pl-4 text-gray-600">
+                {selectedParticipant.debtSlices.map((slice) => (
+                  <li key={`${slice.type}-${slice.numeroTour}`}>
+                    {slice.type === "COTISATION" ? "Cotisation" : "Pénalité"} tour {slice.numeroTour}{" "}
+                    : {slice.remaining.toLocaleString("fr-FR")}
+                  </li>
+                ))}
+              </ul>
+              <p className="font-semibold text-gray-800">
+                Total à collecter : {selectedParticipant.totalDue.toLocaleString("fr-FR")}
+              </p>
             </div>
           ) : null}
         </div>
-        <div className="space-y-2">
-          <Label>Tour concerné</Label>
-          <p className="text-xs text-muted-foreground">Chaque tour correspond à un bénéficiaire. Le tour en cours est pré-sélectionné.</p>
-          <select
-            className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
-            value={numeroTour}
-            onChange={(event) => setNumeroTour(event.target.value)}
-          >
-            {tours.map((tour) => (
-              <option key={tour.numero} value={tour.numero}>
-                Tour {tour.numero} — Bénéficiaire : {tour.beneficiaire} — Échéance : {tour.dateEcheance}
-              </option>
-            ))}
-          </select>
-        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Montant versé</Label>
             <Input
               type="number"
               min={0}
-              max={selectedTotalToCollect || selectedParticipant?.remainingForActiveTour}
+              max={selectedParticipant?.totalDue}
               step="0.01"
               value={montant}
               onChange={(event) => setMontant(event.target.value)}
@@ -185,7 +183,7 @@ export function CyclePaymentForm({
           </div>
           <div className="space-y-2">
             <Label>Date du versement</Label>
-              <p className="text-xs text-muted-foreground">Laissez vide pour utiliser la date d'aujourd'hui.</p>
+            <p className="text-xs text-muted-foreground">Laissez vide pour utiliser la date d&apos;aujourd&apos;hui.</p>
             <Input
               type="date"
               value={datePaiement}
@@ -193,7 +191,7 @@ export function CyclePaymentForm({
             />
           </div>
         </div>
-        <Button type="button" onClick={submit} disabled={submitting}>
+        <Button type="button" onClick={submit} disabled={submitting || !selectedParticipant?.totalDue}>
           {submitting ? "Enregistrement…" : "✅ Enregistrer le versement"}
         </Button>
       </CardContent>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/cycle-distributions";
 import { getCycleTurnSnapshot } from "@/lib/cycle-turns";
 import { caisseCycle, recordMouvementFinancier } from "@/lib/financial-journal";
+import { finalizeTourPenalties } from "@/lib/cycle-penalties";
 
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
@@ -104,30 +105,39 @@ export async function POST(
     );
   }
 
-  if (!snapshot.allCurrentTurnMembersPaid || snapshot.remainingCurrentTurn > 0) {
+  if (!snapshot.isPastDue) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Impossible de solder ce tour : tous les membres doivent d'abord payer leur cotisation complète.",
+        error: "Le pot ne peut être versé qu'après la date d'échéance du tour actif.",
       },
       { status: 409 },
     );
   }
 
-  if (roundCurrency(montant_verse) !== roundCurrency(snapshot.expectedCurrentTurn)) {
+  const montantVerse = roundCurrency(montant_verse);
+
+  if (montantVerse <= 0) {
+    return NextResponse.json(
+      { ok: false, error: "Le montant versé doit être supérieur à 0." },
+      { status: 400 },
+    );
+  }
+
+  if (montantVerse > roundCurrency(snapshot.availableCurrentTurn)) {
     return NextResponse.json(
       {
         ok: false,
-        error: `Le montant à verser doit être exactement ${snapshot.expectedCurrentTurn.toLocaleString("fr-FR")} ${cycle.groupe.devise}.`,
+        error: `Le montant ne peut pas dépasser la caisse disponible (${snapshot.availableCurrentTurn.toLocaleString("fr-FR")} ${cycle.groupe.devise}).`,
       },
       { status: 400 },
     );
   }
 
-  if (roundCurrency(montant_verse) > roundCurrency(snapshot.availableCurrentTurn)) {
+  if (snapshot.availableCurrentTurn <= 0) {
     return NextResponse.json(
-      { ok: false, error: "Le montant ne peut pas dépasser la caisse disponible du tour." },
-      { status: 400 },
+      { ok: false, error: "Aucun fonds disponible en caisse pour ce tour." },
+      { status: 409 },
     );
   }
 
@@ -152,13 +162,15 @@ export async function POST(
   const idBeneficiaire = beneficiaireParticipant.id_membre_groupe;
 
   try {
+    await finalizeTourPenalties(cycleId, numero_tour);
+
     const versement = await prisma.$transaction(async (tx) => {
       const created = await tx.versement.create({
         data: {
           id_cycle: cycleId,
           id_beneficiaire: idBeneficiaire,
           numero_tour,
-          montant_verse,
+          montant_verse: montantVerse,
           date_versement: dateVersement,
           mode_versement: mode_versement ?? null,
           reference_externe: reference_externe ?? null,
@@ -182,7 +194,7 @@ export async function POST(
         caisse: caisseCycle(cycleId, cycle.nom_cycle),
         type: "SORTIE",
         source: "VERSEMENT_BENEFICIAIRE",
-        montant: montant_verse,
+        montant: montantVerse,
         motif: `Versement au bénéficiaire du tour ${numero_tour} - ${cycle.nom_cycle}`,
         adminId: adminMembership.id_membre_groupe,
         membreId: idBeneficiaire,
@@ -194,17 +206,15 @@ export async function POST(
       return created;
     });
 
-    // Calculer le pot du tour pour l'inclure dans la notification
-    const pot = await calculerPotTour(cycleId, numero_tour);
+    const potPartiel = montantVerse < snapshot.expectedCurrentTurn;
     const nomBeneficiaire = `${beneficiaireParticipant.membre_groupe.user.prenom} ${beneficiaireParticipant.membre_groupe.user.nom}`;
     const devise = cycle.groupe.devise;
 
-    // Notifier le bénéficiaire
     await createNotification({
       userId: beneficiaireParticipant.membre_groupe.id_user,
       groupId,
       type: "PAIEMENT_RECU",
-      message: `🎉 Félicitations ${nomBeneficiaire} ! Vous avez reçu votre pot de ${montant_verse.toLocaleString("fr-FR")} ${devise} pour le tour ${numero_tour} du cycle "${cycle.nom_cycle}" (Groupe : ${cycle.groupe.nom}).`,
+      message: `🎉 Félicitations ${nomBeneficiaire} ! Vous avez reçu votre pot de ${montantVerse.toLocaleString("fr-FR")} ${devise} pour le tour ${numero_tour} du cycle "${cycle.nom_cycle}" (Groupe : ${cycle.groupe.nom}).${potPartiel ? " Versement partiel : des cotisations restent en attente pour ce tour." : ""}`,
     });
 
     // Notifier tous les membres du groupe
@@ -223,10 +233,12 @@ export async function POST(
           userId: m.id_user,
           groupId,
           type: "PAIEMENT_RECU",
-          message: `✅ Le tour ${numero_tour} du cycle "${cycle.nom_cycle}" a été soldé. ${nomBeneficiaire} a reçu son pot de ${montant_verse.toLocaleString("fr-FR")} ${devise}.`,
+          message: `✅ Le tour ${numero_tour} du cycle "${cycle.nom_cycle}" est clos. ${nomBeneficiaire} a reçu ${montantVerse.toLocaleString("fr-FR")} ${devise}.${potPartiel ? " Des membres ont des arriérés à régler au prochain tour." : ""}`,
         }),
       ),
     );
+
+    const pot = await calculerPotTour(cycleId, numero_tour);
 
     return NextResponse.json(
       {

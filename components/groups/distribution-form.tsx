@@ -15,7 +15,11 @@ type TourItem = {
   idBeneficiaire: string;
   dateEcheance: string;
   potCollecte: number;
+  potAttendu: number;
+  soldeDisponible: number;
   dejaVerse: boolean;
+  canDistribute: boolean;
+  isPastDue: boolean;
 };
 
 type DistributionFormProps = {
@@ -56,10 +60,9 @@ export function DistributionForm({
 
   const tourSelectionne = tours.find((t) => t.numero === Number(numeroTour));
 
-  // Pré-remplir le montant avec le pot collecté quand le tour change
   React.useEffect(() => {
-    if (tourSelectionne && tourSelectionne.potCollecte > 0) {
-      setMontantVerse(String(tourSelectionne.potCollecte));
+    if (tourSelectionne && tourSelectionne.soldeDisponible > 0) {
+      setMontantVerse(String(tourSelectionne.soldeDisponible));
     } else {
       setMontantVerse("");
     }
@@ -75,6 +78,18 @@ export function DistributionForm({
 
     if (tourSelectionne?.dejaVerse) {
       toast.error(`Le tour ${numeroTour} a déjà été soldé.`);
+      return;
+    }
+
+    if (tourSelectionne && !tourSelectionne.canDistribute) {
+      toast.error("Le pot ne peut être versé qu'après la date d'échéance du tour actif.");
+      return;
+    }
+
+    if (tourSelectionne && montantValue > tourSelectionne.soldeDisponible) {
+      toast.error(
+        `Le montant ne peut pas dépasser la caisse disponible (${tourSelectionne.soldeDisponible.toLocaleString("fr-FR")} ${devise}).`,
+      );
       return;
     }
 
@@ -119,7 +134,7 @@ export function DistributionForm({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-emerald-700 font-medium">
-            ✅ Tous les tours de ce cycle ont été soldés.
+            ✅ Tous les tours de ce cycle ont reçu leur pot.
           </p>
         </CardContent>
       </Card>
@@ -133,14 +148,23 @@ export function DistributionForm({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Enregistrez le versement du pot au bénéficiaire du tour actif. Le montant doit être
-          exactement égal au total attendu et collecté du tour. Les pénalités restent dans une
-          caisse séparée.
+          Versez le pot au bénéficiaire du tour actif après la date d&apos;échéance. Le montant peut
+          être inférieur au pot théorique si des cotisations manquent — les arriérés seront réclamés
+          au prochain tour. Les pénalités restent dans une caisse séparée.
         </p>
 
-        {/* Sélection du tour */}
+        {tourSelectionne?.canDistribute ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            ⏰ Échéance dépassée — vous pouvez clôturer ce tour et passer au suivant.
+          </div>
+        ) : tourSelectionne && !tourSelectionne.isPastDue ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+            Le versement sera possible après l&apos;échéance du {tourSelectionne.dateEcheance}.
+          </div>
+        ) : null}
+
         <div className="space-y-2">
-          <Label>Tour à solder</Label>
+          <Label>Tour à clôturer</Label>
           <select
             className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
             value={numeroTour}
@@ -149,47 +173,51 @@ export function DistributionForm({
             {tours.map((tour) => (
               <option key={tour.numero} value={tour.numero} disabled={tour.dejaVerse}>
                 Tour {tour.numero} — {tour.beneficiaire} — Échéance : {tour.dateEcheance}
-                {tour.dejaVerse ? " ✅ Soldé" : ""}
+                {tour.dejaVerse ? " ✅ Versé" : ""}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Info bénéficiaire */}
         {tourSelectionne && (
           <div className="rounded-lg border border-brand-100 bg-brand-50 p-3 space-y-1">
             <p className="text-xs font-semibold text-brand-700 uppercase">Bénéficiaire du tour</p>
             <p className="text-sm font-bold text-brand-900">{tourSelectionne.beneficiaire}</p>
-            {tourSelectionne.potCollecte > 0 && (
-              <p className="text-xs text-brand-600">
-                Pot collecté : <strong>{tourSelectionne.potCollecte.toLocaleString("fr-FR")} {devise}</strong>
-              </p>
-            )}
+            <p className="text-xs text-brand-600">
+              Pot attendu :{" "}
+              <strong>{tourSelectionne.potAttendu.toLocaleString("fr-FR")} {devise}</strong>
+            </p>
+            <p className="text-xs text-brand-600">
+              Collecté :{" "}
+              <strong>{tourSelectionne.potCollecte.toLocaleString("fr-FR")} {devise}</strong>
+            </p>
+            <p className="text-xs text-brand-600">
+              Caisse disponible :{" "}
+              <strong>{tourSelectionne.soldeDisponible.toLocaleString("fr-FR")} {devise}</strong>
+            </p>
           </div>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {/* Montant versé */}
           <div className="space-y-2">
             <Label>Montant versé ({devise})</Label>
             <Input
               type="number"
               min={0}
+              max={tourSelectionne?.soldeDisponible}
               step="0.01"
               placeholder="Ex : 150000"
               value={montantVerse}
               onChange={(e) => setMontantVerse(e.target.value)}
-              readOnly
             />
             <p className="text-xs text-muted-foreground">
-              Montant verrouillé : il correspond au pot du tour actif.
+              Maximum : {tourSelectionne?.soldeDisponible.toLocaleString("fr-FR") ?? "—"} {devise}
             </p>
           </div>
 
-          {/* Date du versement */}
           <div className="space-y-2">
             <Label>Date du versement</Label>
-            <p className="text-xs text-muted-foreground">Laissez vide pour aujourd'hui.</p>
+            <p className="text-xs text-muted-foreground">Laissez vide pour aujourd&apos;hui.</p>
             <Input
               type="date"
               value={dateVersement}
@@ -199,7 +227,6 @@ export function DistributionForm({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {/* Mode de versement */}
           <div className="space-y-2">
             <Label>Mode de versement</Label>
             <select
@@ -215,7 +242,6 @@ export function DistributionForm({
             </select>
           </div>
 
-          {/* Référence externe */}
           <div className="space-y-2">
             <Label>Référence externe (optionnel)</Label>
             <Input
@@ -227,7 +253,12 @@ export function DistributionForm({
           </div>
         </div>
 
-        <Button type="button" onClick={submit} disabled={submitting} className="w-full sm:w-auto">
+        <Button
+          type="button"
+          onClick={submit}
+          disabled={submitting || !tourSelectionne?.canDistribute}
+          className="w-full sm:w-auto"
+        >
           {submitting ? "Enregistrement…" : "💰 Verser le pot au bénéficiaire"}
         </Button>
       </CardContent>

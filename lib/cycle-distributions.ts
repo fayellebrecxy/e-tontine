@@ -119,5 +119,8 @@ export async function getTresorerieCycle(cycleId: string) {
     allMembersPaid: snapshot.allCurrentTurnMembersPaid,
     paidMembersCount: snapshot.paidMembersCurrentTurn,
     totalMembersCount: snapshot.totalTours,
+    isPastDue: snapshot.isPastDue,
+    canDistribute: snapshot.canDistribute,
+    allPotsDistributed: snapshot.allPotsDistributed,
   };
 }

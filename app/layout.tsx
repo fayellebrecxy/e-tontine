@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             {children}
             <ToastContainer position="top-right" autoClose={3500} closeOnClick pauseOnHover />
+            <Toaster richColors closeButton position="top-right" />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
+import { getMemberDebtSummary, getCycleOutstandingDebtTotal } from "@/lib/cycle-member-debts";
 import { Button } from "@/components/ui/button";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
@@ -32,20 +33,6 @@ function addDays(date: Date, days: number) {
 
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
-}
-
-function computePenaltyAmount(input: {
-  mode: "FIXE" | "POURCENTAGE" | "PROGRESSIVE" | null;
-  configuredValue: number;
-  montantCotisation: number;
-  joursRetard: number;
-}) {
-  if (!input.mode || input.configuredValue <= 0 || input.joursRetard <= 0) return 0;
-  if (input.mode === "FIXE") return input.configuredValue;
-  if (input.mode === "POURCENTAGE") {
-    return roundCurrency((input.montantCotisation * input.configuredValue) / 100);
-  }
-  return roundCurrency(input.configuredValue * input.joursRetard);
 }
 
 type PaymentItem = {
@@ -199,64 +186,48 @@ export default async function GroupCycleDetailPage({
 
   const defaultTour = activeTour ?? totalTours;
 
-  const participantsForForm = cycle.participants.map((participant) => {
-    const paymentsList = paymentsByMember.get(participant.id_membre_groupe) ?? [];
-    // Paiements réels (montant > 0) pour le tour actif
-    const activeTourPayments = activeTour
-      ? paymentsList.filter((payment) => payment.numero_tour === activeTour)
+  const memberDebtSummaries =
+    membership.role === "ADMIN"
+      ? await Promise.all(
+          cycle.participants.map(async (participant) => ({
+            id_membre_groupe: participant.id_membre_groupe,
+            summary: await getMemberDebtSummary(cycleId, participant.id_membre_groupe, now),
+          })),
+        )
       : [];
-    const paidForActiveTour = activeTourPayments
-      .filter((payment) => payment.montant > 0)
-      .reduce((acc, payment) => acc + payment.montant, 0);
-    // Pénalité automatique en attente (montant = 0) pour ce membre
-    const pendingPenaltyRecord = activeTourPayments.find(
-      (payment) =>
-        payment.montant === 0 &&
-        payment.penalite_appliquee &&
-        payment.montant_penalite !== null &&
-        !payment.penalite_collectee,
-    );
-    const penaltyAlreadyCollected = activeTourPayments.some((payment) => payment.penalite_collectee);
-    const latePaymentWithoutPenalty =
-      !pendingPenaltyRecord && !penaltyAlreadyCollected
-        ? activeTourPayments.find(
-            (payment) => payment.montant > 0 && payment.date_de_paiement > tourEnd,
-          )
-        : null;
-    const computedLatePenalty = latePaymentWithoutPenalty
-      ? computePenaltyAmount({
-          mode: cycle.mode_penalite,
-          configuredValue: cycle.valeur_penalite ? Number(cycle.valeur_penalite) : 0,
-          montantCotisation: montantFixe,
-          joursRetard: Math.max(
-            0,
-            Math.ceil(
-              (latePaymentWithoutPenalty.date_de_paiement.getTime() - tourEnd.getTime()) /
-                (24 * 60 * 60 * 1000),
-            ),
-          ),
-        })
-      : 0;
-    const pendingPenaltyForActiveTour =
-      pendingPenaltyRecord?.montant_penalite ??
-      (computedLatePenalty > 0 ? computedLatePenalty : null);
+
+  const outstandingDebtTotal =
+    membership.role === "ADMIN" ? await getCycleOutstandingDebtTotal(cycleId) : 0;
+
+  const participantsForForm = cycle.participants.map((participant) => {
+    const debt = memberDebtSummaries.find(
+      (item) => item.id_membre_groupe === participant.id_membre_groupe,
+    )?.summary;
 
     return {
       id_membre_groupe: participant.id_membre_groupe,
       nom: participant.membre_groupe.user.nom,
       prenom: participant.membre_groupe.user.prenom,
-      paidForActiveTour,
-      remainingForActiveTour: Math.max(0, montantFixe - paidForActiveTour),
-      pendingPenaltyForActiveTour,
+      totalDue: debt?.totalDue ?? 0,
+      cotisationDue: debt?.cotisationDue ?? 0,
+      penaltyDue: debt?.penaltyDue ?? 0,
+      debtSlices: (debt?.slices ?? []).map((slice) => ({
+        type: slice.type,
+        numeroTour: slice.numeroTour,
+        remaining: slice.remaining,
+      })),
     };
   });
-  const toursForForm = cycle.participants
-    .filter((participant) => participant.ordre === activeTour)
-    .map((participant) => ({
-      numero: participant.ordre,
-      beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
-      dateEcheance: tourEnd.toLocaleDateString("fr-FR"),
-    }));
+
+  const toursForForm = activeTour
+    ? [
+        {
+          numero: activeTour,
+          beneficiaire: currentName,
+          dateEcheance: tourEnd.toLocaleDateString("fr-FR"),
+        },
+      ]
+    : [];
   const participantsStats = cycle.participants.map((participant) => {
     const member = participant.membre_groupe;
     const paymentsList = paymentsByMember.get(member.id_membre_groupe) ?? [];
@@ -327,12 +298,13 @@ export default async function GroupCycleDetailPage({
         numero: participant.ordre,
         beneficiaire: `${participant.membre_groupe.user.prenom} ${participant.membre_groupe.user.nom}`,
         idBeneficiaire: participant.id_membre_groupe,
-        dateEcheance: addDays(
-          cycle.date_debut,
-          cycle.duree_tour_de_gain * participant.ordre,
-        ).toLocaleDateString("fr-FR"),
         potCollecte: potInfo?.pot.potTotal ?? 0,
+        potAttendu: tresorerie.totalAttendu,
+        soldeDisponible: tresorerie.soldeDisponible,
         dejaVerse: versementsParTour.has(participant.ordre),
+        canDistribute: tresorerie.canDistribute && !versementsParTour.has(participant.ordre),
+        isPastDue: tresorerie.isPastDue,
+        dateEcheance: tourEnd.toLocaleDateString("fr-FR"),
       };
     });
 
@@ -444,18 +416,39 @@ export default async function GroupCycleDetailPage({
     <div className="space-y-4">
       {membership.role === "ADMIN" ? (
         <>
-          {!cycleTermine && tresorerie.resteACollecter === 0 && tresorerie.totalCollecte > 0 ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-              <p className="text-sm font-semibold">Tour prêt à solder</p>
+          {!cycleTermine && tresorerie.canDistribute ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+              <p className="text-sm font-semibold">⏰ Échéance du tour {activeTour} dépassée</p>
               <p className="mt-1 text-xs">
-                Tous les membres ont cotisé pour le tour {activeTour}. L'admin peut maintenant
-                verser le pot à {currentName}. Après ce versement, le cycle passera automatiquement
-                au tour suivant.
+                C&apos;est le moment de verser le pot à {currentName}. Montant disponible en caisse
+                :{" "}
+                <strong>
+                  {tresorerie.soldeDisponible.toLocaleString("fr-FR")} {membership.groupe.devise}
+                </strong>
+                {tresorerie.resteACollecter > 0 ? (
+                  <>
+                    {" "}
+                    (pot incomplet : {tresorerie.resteACollecter.toLocaleString("fr-FR")}{" "}
+                    {membership.groupe.devise} de cotisations manquantes — les retardataires
+                    régleront leurs arriérés au prochain tour).
+                  </>
+                ) : null}
               </p>
             </div>
           ) : null}
 
-          {cycleTermine ? (
+          {cycleTermine && outstandingDebtTotal > 0 ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+              <p className="text-sm font-semibold">Dettes en cours</p>
+              <p className="mt-1 text-xs">
+                Tous les pots ont été versés, mais des arriérés et pénalités restent à collecter (
+                {outstandingDebtTotal.toLocaleString("fr-FR")} {membership.groupe.devise}). Le cycle
+                reste ouvert pour le règlement.
+              </p>
+            </div>
+          ) : null}
+
+          {cycleTermine && outstandingDebtTotal <= 0 ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-brand-900">
               <p className="text-sm font-semibold">🎉 Cycle terminé avec succès</p>
               <p className="mt-1 text-xs">
@@ -463,6 +456,16 @@ export default async function GroupCycleDetailPage({
                 nouveau cycle dès maintenant ou à tout moment depuis la liste des cycles.
               </p>
               <RelancerCycleSheet groupId={groupId} />
+            </div>
+          ) : null}
+
+          {!cycleTermine && tresorerie.resteACollecter === 0 && tresorerie.totalCollecte > 0 && !tresorerie.isPastDue ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+              <p className="text-sm font-semibold">Tour {activeTour} — cotisations complètes</p>
+              <p className="mt-1 text-xs">
+                Tous les membres ont cotisé. Le pot pourra être versé à {currentName} après
+                l&apos;échéance du {tourEnd.toLocaleDateString("fr-FR")}.
+              </p>
             </div>
           ) : null}
 
@@ -578,7 +581,9 @@ export default async function GroupCycleDetailPage({
             <p className="text-lg font-semibold text-brand-600">{currentName}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {cycleTermine
-                ? "Tous les tours sont terminés. Le cycle est clos."
+                ? outstandingDebtTotal > 0
+                  ? "Tous les pots ont été versés. Des arriérés restent à régler."
+                  : "Tous les tours sont terminés et les dettes sont soldées."
                 : `C'est au tour de ${currentName} de recevoir le pot collecté.`}
             </p>
           </div>
