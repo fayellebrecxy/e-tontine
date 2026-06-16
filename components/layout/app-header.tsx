@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Menu, PlusCircle, UserCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AppHeader() {
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const t = useTranslations("nav");
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -45,7 +47,7 @@ export function AppHeader() {
           </svg>
           <input
             className="w-full h-9 pl-9 pr-4 rounded-lg border border-border-light bg-surface-light focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-sans text-sm transition-all placeholder:text-text-muted"
-            placeholder="Rechercher des groupes, membres..."
+            placeholder={t("searchPlaceholder")}
             type="text"
           />
         </div>
@@ -61,8 +63,8 @@ export function AppHeader() {
 
         <NotificationCenter />
 
-        <Button asChild variant="ghost" size="icon" title="Compte" className="h-9 w-9 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg">
-          <Link href="/account" aria-label="Compte">
+        <Button asChild variant="ghost" size="icon" title={t("account")} className="h-9 w-9 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg">
+          <Link href="/account" aria-label={t("account")}>
             <UserCircle className="h-5 w-5" />
           </Link>
         </Button>
@@ -76,7 +78,7 @@ export function AppHeader() {
         >
           <Link href="/dashboard/groups/new">
             <PlusCircle className="mr-1.5 h-4 w-4" />
-            Nouveau groupe
+            {t("newGroup")}
           </Link>
         </Button>
       </div>

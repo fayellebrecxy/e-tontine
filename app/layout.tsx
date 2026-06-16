@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
@@ -30,11 +30,12 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
     <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${poppins.variable}`}>
       <body className={`${inter.className} font-sans antialiased text-foreground bg-background`}>
-        <NextIntlClientProvider>
+        <NextIntlClientProvider locale={locale} messages={messages} key={locale}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             {children}
             <Toaster richColors closeButton position="top-right" />

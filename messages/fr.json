@@ -24,7 +24,8 @@
     "newGroup": "Nouveau groupe",
     "groups": "Groupes",
     "settings": "Paramètres",
-    "home": "Accueil"
+    "home": "Accueil",
+    "searchPlaceholder": "Rechercher des groupes, membres..."
   },
   "language": {
     "label": "Langue",
