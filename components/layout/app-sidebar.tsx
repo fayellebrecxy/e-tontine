@@ -10,11 +10,11 @@ import {
   Plus,
   UserCircle,
   Users,
-  Wallet,
   Settings,
   LogOut,
 } from "lucide-react";
 
+import { Logo } from "@/components/brand/logo";
 import { useSidebar } from "@/components/layout/sidebar-context";
 
 type GroupItem = {
@@ -69,15 +69,12 @@ export function AppSidebar() {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-3 h-16 border-b border-[#264191]/30 mb-4 shrink-0">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/20 shrink-0">
-          <Wallet className="h-5 w-5 text-[#62df7d]" />
-        </div>
-        {isVisible && (
-          <span className="font-heading text-lg font-semibold text-white tracking-tight truncate">
-            E-Tontine
-          </span>
-        )}
+      <div
+        className={`mb-4 flex h-16 shrink-0 items-center border-b border-[#264191]/30 px-3 ${
+          isVisible ? "gap-3" : "justify-center"
+        }`}
+      >
+        <Logo size={isVisible ? 34 : 32} showWordmark={isVisible} variant="light" className="min-w-0" />
       </div>
 
       {/* Navigation */}

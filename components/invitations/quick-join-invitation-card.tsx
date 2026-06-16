@@ -42,13 +42,11 @@ export function QuickJoinInvitationCard({ code }: Props) {
       }
 
       if (body.already_member) {
-        toast.info("Vous etes deja membre du groupe.");
         router.push("/dashboard");
         router.refresh();
         return;
       }
 
-      toast.success("Vous avez rejoint le groupe.");
       router.push("/dashboard");
       router.refresh();
     });

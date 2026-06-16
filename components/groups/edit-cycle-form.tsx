@@ -207,7 +207,6 @@ export function EditCycleForm({
 
     const confirmationText = window.prompt('Tapez "SUPPRIMER" pour confirmer.');
     if (confirmationText !== "SUPPRIMER") {
-      toast.error("Suppression annulee.");
       return;
     }
 

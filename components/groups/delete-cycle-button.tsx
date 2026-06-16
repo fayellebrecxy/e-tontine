@@ -27,7 +27,6 @@ export function DeleteCycleButton({ groupId, cycleId, cycleName }: DeleteCycleBu
 
     const confirmationText = window.prompt('Tapez "SUPPRIMER" pour confirmer.');
     if (confirmationText !== "SUPPRIMER") {
-      toast.error("Suppression annulée.");
       return;
     }
 

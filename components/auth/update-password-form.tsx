@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { updatePasswordSchema } from "@/lib/validations";
@@ -39,7 +39,6 @@ export function UpdatePasswordForm() {
         toast.error(res.error);
         return;
       }
-      toast.success(res.message);
       router.push(res.redirectTo);
       router.refresh();
     });

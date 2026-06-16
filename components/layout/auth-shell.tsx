@@ -1,8 +1,12 @@
+"use client";
+
+import { PageReveal } from "@/components/motion/page-reveal";
+
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-surface-container-low text-on-surface flex flex-col font-sans">
-      <main className="flex-grow flex items-center justify-center p-4 md:p-8">
-        {children}
+    <div className="relative flex min-h-screen flex-col bg-surface-container-low font-sans text-on-surface">
+      <main className="flex flex-grow items-center justify-center p-4 md:p-8">
+        <PageReveal className="flex w-full justify-center">{children}</PageReveal>
       </main>
     </div>
   );

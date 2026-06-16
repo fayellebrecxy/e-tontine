@@ -74,13 +74,11 @@ export function JoinInvitationForm({ code }: Props) {
       }
 
       if (body.already_member) {
-        toast.info("ℹ️ Vous êtes déjà membre du groupe.");
         router.push("/dashboard");
         router.refresh();
         return;
       }
 
-      toast.success("✅ Félicitations ! Vous avez rejoint le groupe avec succès.");
       router.push("/dashboard");
       router.refresh();
     });

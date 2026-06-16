@@ -3,8 +3,6 @@ import { Inter, Poppins } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import "./globals.css";
-import "react-toastify/dist/ReactToastify.css";
-import { ToastContainer } from "react-toastify";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,7 +37,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             {children}
-            <ToastContainer position="top-right" autoClose={3500} closeOnClick pauseOnHover />
             <Toaster richColors closeButton position="top-right" />
           </ThemeProvider>
         </NextIntlClientProvider>

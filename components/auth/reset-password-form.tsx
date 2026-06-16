@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Mail } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { resetPasswordSchema } from "@/lib/validations";
@@ -30,15 +30,17 @@ export function ResetPasswordForm() {
   });
 
   const [pending, startTransition] = React.useTransition();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const onSubmit = (values: Values) => {
+    setSuccessMessage(null);
     startTransition(async () => {
       const res = await resetPasswordAction(values);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
-      toast.success(res.message);
+      setSuccessMessage(res.message ?? "Si un compte existe, un email de réinitialisation a été envoyé.");
       form.reset();
     });
   };
@@ -46,6 +48,12 @@ export function ResetPasswordForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {successMessage ? (
+          <p className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 font-sans text-sm text-on-surface">
+            {successMessage}
+          </p>
+        ) : null}
+
         <FormField
           control={form.control}
           name="email"

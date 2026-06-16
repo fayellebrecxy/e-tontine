@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
+  ArrowUpRight,
   Bell,
   CalendarClock,
   Plus,
@@ -13,6 +14,7 @@ import { getTranslations } from "next-intl/server";
 
 import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
 import { DashboardNotifications } from "@/components/notifications/dashboard-notifications";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -67,25 +69,46 @@ export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
 
   const kpis = [
-    { label: t("kpiGroups"), value: activeMemberships.length, icon: Users, tone: "secondary" as const },
-    { label: t("kpiCycles"), value: totalCycles, icon: Repeat, tone: "primary" as const },
-    { label: t("kpiMeetings"), value: totalReunions, icon: CalendarClock, tone: "neutral" as const },
-    { label: t("kpiAlerts"), value: pendingNotifications, icon: Bell, tone: "warning" as const },
+    {
+      label: t("kpiGroups"),
+      value: activeMemberships.length,
+      hint: t("kpiGroupsHint"),
+      icon: Users,
+      href: "/dashboard/groups",
+      highlight: true,
+    },
+    {
+      label: t("kpiCycles"),
+      value: totalCycles,
+      hint: t("kpiCyclesHint"),
+      icon: Repeat,
+      href: "/dashboard/groups",
+      highlight: false,
+    },
+    {
+      label: t("kpiMeetings"),
+      value: totalReunions,
+      hint: t("kpiMeetingsHint"),
+      icon: CalendarClock,
+      href: "/dashboard/groups",
+      highlight: false,
+    },
+    {
+      label: t("kpiAlerts"),
+      value: pendingNotifications,
+      hint: t("kpiAlertsHint"),
+      icon: Bell,
+      href: "/dashboard",
+      highlight: false,
+    },
   ];
-
-  const toneClasses: Record<string, string> = {
-    primary: "bg-primary/10 text-primary",
-    secondary: "bg-secondary/10 text-secondary",
-    warning: "bg-warning/10 text-warning",
-    neutral: "bg-surface-container text-on-surface-variant",
-  };
 
   return (
     <div className="flex flex-col gap-6 font-sans">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-xl font-bold text-text-main sm:text-2xl">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-text-main sm:text-3xl">
             {t("greeting", { name: userName })}
           </h1>
           <p className="mt-1 font-sans text-sm text-text-muted">{t("subtitle")}</p>
@@ -93,12 +116,12 @@ export default async function DashboardPage() {
         <div className="flex gap-2">
           <JoinGroupDialog
             variant="outline"
-            className="h-9 flex-1 rounded-lg border border-border-light bg-surface-container-lowest text-sm text-on-surface-variant hover:bg-surface-container-low sm:flex-none"
+            className="h-10 flex-1 rounded-full border border-border-light bg-surface-container-lowest px-5 text-sm text-on-surface-variant hover:bg-surface-container-low sm:flex-none"
           />
           <Button
             asChild
             size="sm"
-            className="h-9 flex-1 rounded-lg bg-primary text-sm font-medium text-on-primary shadow-card transition-all hover:bg-primary/90 active:scale-95 sm:flex-none"
+            className="h-10 flex-1 rounded-full bg-primary px-5 text-sm font-medium text-on-primary shadow-card transition-all hover:bg-primary/90 active:scale-95 sm:flex-none"
           >
             <Link href="/dashboard/groups/new">
               <Plus className="mr-1.5 h-4 w-4" />
@@ -108,21 +131,53 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* KPIs : 2 colonnes mobile, 4 desktop */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      {/* KPIs : 1 colonne mobile, 2 tablette, 4 desktop */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className="flex items-center gap-3 rounded-xl border border-border-light bg-surface-container-lowest p-4 shadow-card"
+            className={`flex flex-col justify-between rounded-2xl p-5 transition-shadow ${
+              kpi.highlight
+                ? "bg-primary text-on-primary shadow-lg"
+                : "border border-border-light bg-surface-container-lowest text-text-main shadow-card hover:shadow-md"
+            }`}
           >
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClasses[kpi.tone]}`}>
-              <kpi.icon className="h-5 w-5" />
+            <div className="flex items-start justify-between">
+              <span
+                className={`font-sans text-sm font-medium ${
+                  kpi.highlight ? "text-on-primary/90" : "text-text-muted"
+                }`}
+              >
+                {kpi.label}
+              </span>
+              <Link
+                href={kpi.href}
+                aria-label={kpi.label}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  kpi.highlight
+                    ? "bg-white/15 text-on-primary hover:bg-white/25"
+                    : "border border-border-light text-text-muted hover:border-primary hover:text-primary"
+                }`}
+              >
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
             </div>
-            <div className="min-w-0">
-              <div className="font-heading text-xl font-bold leading-none text-text-main sm:text-2xl">
+            <div className="mt-8">
+              <div
+                className={`font-heading text-4xl font-bold leading-none ${
+                  kpi.highlight ? "text-on-primary" : "text-text-main"
+                }`}
+              >
                 {kpi.value}
               </div>
-              <div className="mt-1 truncate font-sans text-xs text-text-muted">{kpi.label}</div>
+              <div
+                className={`mt-2.5 flex items-center gap-1.5 font-sans text-xs ${
+                  kpi.highlight ? "text-on-primary/80" : "text-text-muted"
+                }`}
+              >
+                <kpi.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{kpi.hint}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -131,13 +186,13 @@ export default async function DashboardPage() {
       {/* Contenu principal */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Groupes */}
-        <section className="rounded-xl border border-border-light bg-surface-container-lowest shadow-card lg:col-span-2">
-          <header className="flex items-center justify-between border-b border-border-light px-5 py-4">
-            <h2 className="font-heading text-base font-semibold text-text-main">{t("myGroups")}</h2>
+        <section className="rounded-2xl border border-border-light bg-surface-container-lowest shadow-card lg:col-span-2">
+          <header className="flex items-center justify-between px-6 pt-5 pb-4">
+            <h2 className="font-heading text-lg font-semibold text-text-main">{t("myGroups")}</h2>
             {activeMemberships.length > 0 && (
               <Link
                 href="/dashboard/groups"
-                className="font-sans text-sm font-medium text-primary hover:underline"
+                className="rounded-full border border-border-light px-4 py-1.5 font-sans text-xs font-medium text-on-surface-variant transition-colors hover:border-primary hover:text-primary"
               >
                 {t("seeAll")}
               </Link>
@@ -145,14 +200,14 @@ export default async function DashboardPage() {
           </header>
 
           {activeMemberships.length > 0 ? (
-            <ul className="divide-y divide-border-light">
+            <ul className="px-3 pb-3">
               {activeMemberships.slice(0, 5).map((m) => (
                 <li key={m.id_groupe}>
                   <Link
                     href={`/dashboard/groups/${m.id_groupe}`}
-                    className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-surface-container-low"
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-surface-container-low"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold uppercase text-primary">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold uppercase text-primary">
                       {m.groupe.nom.substring(0, 2)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -165,7 +220,9 @@ export default async function DashboardPage() {
                         {m.groupe._count.cycles} cycle{m.groupe._count.cycles > 1 ? "s" : ""}
                       </p>
                     </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border-light text-text-muted">
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -180,7 +237,7 @@ export default async function DashboardPage() {
               <Button
                 asChild
                 size="sm"
-                className="mt-4 h-9 rounded-lg bg-primary text-sm font-medium text-on-primary shadow-card hover:bg-primary/90 active:scale-95"
+                className="mt-4 h-10 rounded-full bg-primary px-5 text-sm font-medium text-on-primary shadow-card hover:bg-primary/90 active:scale-95"
               >
                 <Link href="/dashboard/groups/new">
                   <Plus className="mr-1.5 h-4 w-4" />
@@ -192,9 +249,9 @@ export default async function DashboardPage() {
         </section>
 
         {/* Activité récente */}
-        <section className="flex flex-col rounded-xl border border-border-light bg-surface-container-lowest shadow-card">
-          <header className="flex items-center justify-between border-b border-border-light px-5 py-4">
-            <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-text-main">
+        <section className="flex flex-col rounded-2xl border border-border-light bg-surface-container-lowest shadow-card">
+          <header className="flex items-center justify-between px-6 pt-5 pb-4">
+            <h2 className="flex items-center gap-2 font-heading text-lg font-semibold text-text-main">
               <Bell className="h-4 w-4 text-warning" />
               {t("activity")}
             </h2>
@@ -203,7 +260,7 @@ export default async function DashboardPage() {
             )}
           </header>
 
-          <div className="flex-1">
+          <div className="flex-1 px-6 pb-5">
             {notifications.length > 0 ? (
               <DashboardNotifications
                 initialNotifications={notifications.map((n) => ({
@@ -215,7 +272,7 @@ export default async function DashboardPage() {
                 }))}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-container">
                   <Bell className="h-5 w-5 text-outline" />
                 </div>

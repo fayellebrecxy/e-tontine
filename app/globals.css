@@ -150,6 +150,16 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     @apply bg-background text-foreground antialiased font-sans;
   }
@@ -268,6 +278,43 @@
 }
 
 @layer utilities {
+  @keyframes auth-card-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 22px, 0) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes auth-rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes page-fade-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .page-enter {
+    animation: page-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   /* Carrousel continu fluide (GPU), se met en pause au survol */
   @keyframes marquee-x {
     from {
@@ -291,6 +338,7 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-card-enter,
   .auth-rise,
+  .page-enter,
   .animate-marquee {
     animation: none;
   }

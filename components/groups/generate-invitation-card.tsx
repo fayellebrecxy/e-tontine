@@ -62,7 +62,6 @@ export function GenerateInvitationCard({ groupId }: Props) {
       if (!res.ok || !body?.ok || !body.invitation?.code) {
         const message = body?.error ?? "Erreur lors du chargement du lien d'invitation.";
         setLoadError(message);
-        toast.error(message);
       } else {
         applyInvitation(body.invitation);
       }
@@ -93,7 +92,6 @@ export function GenerateInvitationCard({ groupId }: Props) {
       }
 
       applyInvitation(body.invitation);
-      toast.success("Nouveau lien d'invitation généré avec succès.");
       router.refresh();
     });
   };
@@ -114,13 +112,11 @@ export function GenerateInvitationCard({ groupId }: Props) {
     if (copiedOk) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-      toast.success("Lien copié dans le presse-papiers.");
       return;
     }
 
     linkInputRef.current?.focus();
     linkInputRef.current?.select();
-    toast.message("Sélectionnez le lien puis utilisez Ctrl+C ou Cmd+C.");
   };
 
   const selectLink = () => {

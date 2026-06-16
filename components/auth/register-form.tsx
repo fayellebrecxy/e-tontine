@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Mail, LockKeyhole, Phone, UserRound } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { signUpSchema } from "@/lib/validations";
@@ -46,7 +46,6 @@ export function RegisterForm() {
         toast.error(res.error);
         return;
       }
-      toast.success(res.message ?? "Compte créé.");
       router.push(res.redirectTo);
       router.refresh();
     });

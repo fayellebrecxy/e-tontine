@@ -6,21 +6,39 @@ import { ShieldCheck, ArrowLeft } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 
+const AUTH_IMAGES = {
+  login: {
+    src: "/images/tontine-hero.png",
+    alt: "Groupe de tontine camerounais réuni",
+  },
+  default: {
+    src: "/images/login-3d.png",
+    alt: "Tontine E-Tontine : pot commun et cotisations en FCFA",
+  },
+} as const;
+
 export async function AuthCard({
   title,
   description,
   children,
   showImage = true,
   variant = "default",
+  imageSrc,
+  imageAlt,
 }: {
   title: string;
   description: string;
   children: React.ReactNode;
   showImage?: boolean;
   variant?: "default" | "login";
+  imageSrc?: string;
+  imageAlt?: string;
 }) {
   const t = await getTranslations("auth");
   const isLogin = variant === "login";
+  const visual = isLogin ? AUTH_IMAGES.login : AUTH_IMAGES.default;
+  const sideImage = imageSrc ?? visual.src;
+  const sideAlt = imageAlt ?? visual.alt;
 
   return (
     <div
@@ -30,27 +48,23 @@ export async function AuthCard({
           : "max-w-[480px]"
       } overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-lg`}
     >
-      {/* Left: image (modern, représente la tontine) */}
       {showImage && (
         <div className="relative hidden min-h-[560px] overflow-hidden md:block">
           <Image
-            src="/images/login-3d.png"
-            alt="Tontine E-Tontine : pot commun et cotisations en FCFA"
+            src={sideImage}
+            alt={sideAlt}
             fill
             sizes="500px"
             priority
             className="object-cover"
           />
-          {/* Voile dégradé pour lisibilité */}
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/40 to-primary/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/35 to-primary/5" />
 
-          {/* Logo en haut */}
           <div className="absolute left-8 top-8">
-            <Logo size={30} variant="light" />
+            <Logo size={36} variant="light" />
           </div>
 
-          {/* Carte verre dépoli en bas */}
-          <div className="absolute inset-x-8 bottom-8">
+          <div className="absolute inset-x-8 bottom-8 auth-rise" style={{ animationDelay: "180ms" }}>
             <div className="glass-panel rounded-2xl border-white/20 p-6 shadow-lg">
               <ShieldCheck className="mb-3 h-7 w-7 text-primary" />
               <h2 className="mb-1.5 font-heading text-lg font-bold text-on-surface">
@@ -64,12 +78,10 @@ export async function AuthCard({
         </div>
       )}
 
-      {/* Right: form */}
       <div className="flex flex-col justify-center p-7 sm:p-10 md:p-12">
-        <div className="mb-7">
-          {/* Logo mobile + retour */}
+        <div className="auth-rise mb-7" style={{ animationDelay: "120ms" }}>
           <div className="mb-7 flex items-center justify-between md:hidden">
-            <Logo size={28} />
+            <Logo size={32} />
             <Link
               href="/"
               className="inline-flex items-center gap-1 font-sans text-xs font-medium text-on-surface-variant hover:text-primary"
@@ -87,7 +99,9 @@ export async function AuthCard({
           </p>
         </div>
 
-        {children}
+        <div className="auth-rise" style={{ animationDelay: "220ms" }}>
+          {children}
+        </div>
       </div>
     </div>
   );

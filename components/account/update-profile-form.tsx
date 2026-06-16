@@ -69,7 +69,6 @@ export function UpdateProfileForm({ initial }: Props) {
       if (nextPhoto !== (initial.photo_de_profil ?? null)) payload.photo_de_profil = nextPhoto;
 
       if (!Object.keys(payload).length) {
-        toast.message("Aucun changement détecté.");
         return;
       }
 
@@ -86,7 +85,6 @@ export function UpdateProfileForm({ initial }: Props) {
         return;
       }
 
-      toast.success("Profil mis à jour.");
       router.refresh();
     });
   };

@@ -75,7 +75,6 @@ export function AdminOrdreEditor({ groupId, cycleId, participants }: Props) {
     }
     setListe(newListe);
     setModifie(true);
-    toast.info("Ordre mélangé. Cliquez sur « Enregistrer » pour confirmer.");
   };
 
   // Sauvegarder : envoyer le nouvel ordre au serveur
