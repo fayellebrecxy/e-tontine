@@ -63,6 +63,9 @@ model Groupes {
   retraits_amendes_reunions RetraitAmendeReunion[]
   reunions                  Reunion[]
   rubriques_cotisation      RubriqueCotisation[]
+  parametres_pret           ParametresPretGroupe?
+  prets                     Pret[]
+  engagements_epargne       EngagementEpargne[]
 
   @@map("groupes")
   @@schema("public")
@@ -183,6 +186,10 @@ model MembreGroupe {
   retraits_penalites        RetraitPenalite[]      @relation("retraits_penalites_valides")
   versements_effectues      Versement[]            @relation("versements_effectues")
   versements_recus          Versement[]            @relation("versements_recus")
+  prets_empruntes           Pret[]                 @relation("prets_emprunteur")
+  prets_operes              MouvementPret[]        @relation("prets_operateur")
+  avalistes_prets           AvalistePret[]
+  engagements_epargne       EngagementEpargne[]
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -394,6 +401,8 @@ model CompteEpargne {
   membre             MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
   mouvements         MouvementEpargne[]
   signalements       SignalementEpargne[]
+  engagements        EngagementEpargne[]
+  mouvements_banque  MouvementBanquePret[]
 
   @@index([id_groupe])
   @@index([id_membre_groupe])
@@ -559,6 +568,11 @@ enum StatutCompteEpargne {
 enum TypeOperationEpargne {
   DEPOT
   RETRAIT
+  PRET_DEBIT_BANQUE
+  PRET_CREDIT_BANQUE
+  PRET_INTERET
+  PRET_SAISIE_GARANTIE
+  PRET_REDISTRIBUTION_INTERETS
 
   @@schema("public")
 }
@@ -643,6 +657,7 @@ enum TypeCaisseFinanciere {
   RUBRIQUE
   AMENDES_REUNION
   PENALITES_CYCLE
+  PRETS_INTERETS
 
   @@schema("public")
 }
@@ -684,6 +699,201 @@ enum StatutEchange {
   REFUSEE_CIBLE
   REFUSEE_ADMIN
   ANNULEE
+
+  @@schema("public")
+}
+
+model ParametresPretGroupe {
+  id_parametres              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe                  String   @unique @db.Uuid
+  anciennete_min_jours       Int      @default(0)
+  plafond_pct_banque         Decimal  @default(100) @db.Decimal(5, 2)
+  modele_contrat_avaliste    String   @default("Je, {{avaliste_nom}}, m'engage à rembourser la dette de {{emprunteur_nom}} d'un montant de {{montant}} sur {{duree}} mois, taux {{taux}}%/mois, en cas de défaut de sa part. Date limite : {{date_fin}}.")
+  refus_sans_epargne         Boolean  @default(false)
+  date_creation              DateTime @default(now())
+  date_mise_a_jour           DateTime @updatedAt
+  groupe                     Groupes  @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+
+  @@map("parametres_pret_groupe")
+  @@schema("public")
+}
+
+model Pret {
+  id_pret                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe                  String              @db.Uuid
+  id_emprunteur              String              @db.Uuid
+  statut                     StatutPret          @default(EN_ATTENTE_ANALYSE)
+  montant_demande            Decimal             @db.Decimal(15, 2)
+  montant_approuve           Decimal?            @db.Decimal(15, 2)
+  duree_mois_demandee        Int
+  duree_mois_approuvee       Int?
+  taux_interet_mensuel       Decimal?            @db.Decimal(7, 4)
+  montant_interets_total     Decimal             @default(0) @db.Decimal(15, 2)
+  montant_capital_restant    Decimal             @default(0) @db.Decimal(15, 2)
+  montant_interets_restant   Decimal             @default(0) @db.Decimal(15, 2)
+  montant_garantie_emprunteur Decimal            @default(0) @db.Decimal(15, 2)
+  motif                      String?
+  notes_admin                String?
+  motif_refus                String?
+  date_demande               DateTime            @default(now())
+  date_approbation           DateTime?
+  date_decaissement          DateTime?
+  date_fin                   DateTime?
+  date_mise_a_jour           DateTime            @updatedAt
+  repartition_decaissement   Json?
+  groupe                     Groupes             @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  emprunteur                 MembreGroupe        @relation("prets_emprunteur", fields: [id_emprunteur], references: [id_membre_groupe], onDelete: Cascade)
+  avalistes                  AvalistePret[]
+  mouvements                 MouvementPret[]
+  engagements                EngagementEpargne[]
+
+  @@index([id_groupe, statut])
+  @@index([id_emprunteur])
+  @@map("prets")
+  @@schema("public")
+}
+
+model AvalistePret {
+  id_avaliste_pret           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_pret                    String              @db.Uuid
+  id_membre_groupe           String              @db.Uuid
+  statut                     StatutAvalistePret  @default(PROPOSE)
+  montant_engagement         Decimal             @default(0) @db.Decimal(15, 2)
+  contrat_texte              String?
+  motif_refus                String?
+  propose_par_emprunteur     Boolean             @default(true)
+  date_proposition           DateTime            @default(now())
+  date_reponse               DateTime?
+  date_contrat               DateTime?
+  acceptation_saisie         Boolean             @default(false)
+  date_confirmation_admin    DateTime?
+  signature_nom              String?
+  pret                       Pret                @relation(fields: [id_pret], references: [id_pret], onDelete: Cascade)
+  membre                     MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@unique([id_pret, id_membre_groupe])
+  @@index([id_pret])
+  @@index([id_membre_groupe, statut])
+  @@map("avalistes_pret")
+  @@schema("public")
+}
+
+model MouvementPret {
+  id_mouvement               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_pret                    String              @db.Uuid
+  id_groupe                  String              @db.Uuid
+  type_mouvement             TypeMouvementPret
+  montant                    Decimal             @default(0) @db.Decimal(15, 2)
+  id_operateur               String?             @db.Uuid
+  id_membre_concerne         String?             @db.Uuid
+  details                    String?
+  capital_restant_apres      Decimal?            @db.Decimal(15, 2)
+  interets_restants_apres    Decimal?            @db.Decimal(15, 2)
+  date_operation             DateTime            @default(now())
+  pret                       Pret                @relation(fields: [id_pret], references: [id_pret], onDelete: Cascade)
+  operateur                  MembreGroupe?       @relation("prets_operateur", fields: [id_operateur], references: [id_membre_groupe])
+  impacts_banque             MouvementBanquePret[]
+
+  @@index([id_pret, date_operation])
+  @@index([id_groupe, date_operation])
+  @@map("mouvements_pret")
+  @@schema("public")
+}
+
+model MouvementBanquePret {
+  id_impact                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_mouvement_pret          String          @db.Uuid
+  id_pret                    String          @db.Uuid
+  id_compte                  String          @db.Uuid
+  id_membre_groupe           String          @db.Uuid
+  montant                    Decimal         @db.Decimal(15, 2)
+  solde_avant                Decimal         @db.Decimal(15, 2)
+  solde_apres                Decimal         @db.Decimal(15, 2)
+  date_operation             DateTime        @default(now())
+  mouvement_pret             MouvementPret   @relation(fields: [id_mouvement_pret], references: [id_mouvement], onDelete: Cascade)
+  compte                     CompteEpargne   @relation(fields: [id_compte], references: [id_compte], onDelete: Cascade)
+
+  @@index([id_pret])
+  @@index([id_compte])
+  @@index([id_membre_groupe])
+  @@map("mouvements_banque_pret")
+  @@schema("public")
+}
+
+model EngagementEpargne {
+  id_engagement              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe                  String              @db.Uuid
+  id_compte                  String              @db.Uuid
+  id_membre_groupe           String              @db.Uuid
+  id_pret                    String              @db.Uuid
+  type_engagement            TypeEngagementPret
+  montant_engage             Decimal             @db.Decimal(15, 2)
+  actif                      Boolean             @default(true)
+  date_creation              DateTime            @default(now())
+  date_liberation            DateTime?
+  groupe                     Groupes             @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  compte                     CompteEpargne       @relation(fields: [id_compte], references: [id_compte], onDelete: Cascade)
+  membre                     MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+  pret                       Pret                @relation(fields: [id_pret], references: [id_pret], onDelete: Cascade)
+
+  @@index([id_compte, actif])
+  @@index([id_pret])
+  @@index([id_membre_groupe, actif])
+  @@map("engagements_epargne")
+  @@schema("public")
+}
+
+enum StatutPret {
+  EN_ATTENTE_ANALYSE
+  EN_ATTENTE_AVALISTES
+  EN_ATTENTE_CONFIRMATION_AVALISTES
+  APPROUVE
+  REFUSE
+  ANNULE
+  EN_COURS
+  EN_RETARD
+  SOLDE
+  SOLDE_PAR_GARANTIE
+  DEFAUT
+
+  @@schema("public")
+}
+
+enum StatutAvalistePret {
+  PROPOSE
+  EN_ATTENTE
+  CONTRAT_SOUMIS
+  ACCEPTE
+  REFUSE
+
+  @@schema("public")
+}
+
+enum TypeMouvementPret {
+  DEMANDE_SOUMISE
+  AVALISTE_PROPOSE
+  ENVOI_DEMANDE_AVALISTES
+  AVALISTE_ACCEPTE
+  AVALISTE_REFUSE
+  CONTRAT_AVALISTE_SOUMIS
+  CONFIRMATION_AVALISTE_ADMIN
+  ANALYSE_ADMIN
+  APPROBATION
+  REFUS
+  DECAISSEMENT
+  REMBOURSEMENT_CAPITAL
+  REMBOURSEMENT_INTERET
+  PASSAGE_EN_RETARD
+  SAISIE_GARANTIE
+  ANNULATION
+  REDISTRIBUTION_INTERETS
+
+  @@schema("public")
+}
+
+enum TypeEngagementPret {
+  GARANTIE_EMPRUNTEUR
+  GARANTIE_AVALISTE
 
   @@schema("public")
 }

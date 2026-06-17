@@ -217,12 +217,17 @@ export async function recordEpargneOperation(input: EpargneOperationInput) {
       }
 
       const soldeAvant = Number(account.solde_actuel);
-      if (input.type === "RETRAIT" && input.montant > soldeAvant) {
-        return {
-          ok: false as const,
-          status: 400,
-          error: `Solde insuffisant (disponible : ${formatMontant(soldeAvant, account.membre.groupe.devise)})`,
-        };
+      if (input.type === "RETRAIT") {
+        const { getEpargneDisponible } = await import("@/lib/pret-banque");
+        const disponible = await getEpargneDisponible(account.id_compte, tx);
+        if (input.montant > disponible) {
+          const engage = soldeAvant - disponible;
+          return {
+            ok: false as const,
+            status: 400,
+            error: `Solde disponible insuffisant (${formatMontant(disponible, account.membre.groupe.devise)}${engage > 0 ? ` — ${formatMontant(engage, account.membre.groupe.devise)} engagés en garantie prêt` : ""}).`,
+          };
+        }
       }
 
       const soldeApres = input.type === "DEPOT"

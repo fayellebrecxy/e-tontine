@@ -13,6 +13,7 @@ import {
   Wallet,
   CalendarDays,
   PiggyBank,
+  HandCoins,
 } from "lucide-react";
 
 import {
@@ -35,6 +36,7 @@ const items = [
   { label: "Cycles", href: "cycles", icon: Repeat },
   { label: "Réunions", href: "reunions", icon: CalendarDays },
   { label: "Épargne", href: "epargne", icon: PiggyBank },
+  { label: "Prêts", href: "prets", icon: HandCoins },
   { label: "Finances", href: "finances", icon: Wallet },
   { label: "Paramètres", href: "settings", icon: Settings },
 ];

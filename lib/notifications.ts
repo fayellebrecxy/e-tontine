@@ -20,7 +20,18 @@ export type NotificationType =
   // Épargne
   | "EPARGNE_COMPTE_OUVERT"
   | "EPARGNE_OPERATION"
-  | "EPARGNE_SIGNALEMENT";
+  | "EPARGNE_SIGNALEMENT"
+  // Prêts
+  | "PRET_DEMANDE"
+  | "PRET_AVALISTE_DEMANDE"
+  | "PRET_AVALISTE_ACCEPTE"
+  | "PRET_AVALISTE_REFUSE"
+  | "PRET_APPROUVE"
+  | "PRET_REFUSE"
+  | "PRET_DECAISSEMENT"
+  | "PRET_REMBOURSEMENT"
+  | "PRET_SAISIE_GARANTIE"
+  | "PRET_REDISTRIBUTION";
 
 export async function createNotification({
   userId,

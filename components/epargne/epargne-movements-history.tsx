@@ -10,7 +10,14 @@ import { SignalementEpargneButton } from "@/components/epargne/signalement-butto
 
 type EpargneMovementHistoryItem = {
   id_mouvement: string;
-  type_operation: "DEPOT" | "RETRAIT";
+  type_operation:
+    | "DEPOT"
+    | "RETRAIT"
+    | "PRET_DEBIT_BANQUE"
+    | "PRET_CREDIT_BANQUE"
+    | "PRET_INTERET"
+    | "PRET_SAISIE_GARANTIE"
+    | "PRET_REDISTRIBUTION_INTERETS";
   montant: number;
   motif: string;
   solde_apres: number;
@@ -18,6 +25,22 @@ type EpargneMovementHistoryItem = {
   operatorName: string;
   signalementsCount: number;
 };
+
+const TYPE_LABELS: Record<EpargneMovementHistoryItem["type_operation"], string> = {
+  DEPOT: "💰 Dépôt",
+  RETRAIT: "📤 Retrait",
+  PRET_DEBIT_BANQUE: "🏦 Prêt — prélèvement banque",
+  PRET_CREDIT_BANQUE: "🏦 Prêt — retour banque",
+  PRET_INTERET: "📈 Intérêts prêt",
+  PRET_SAISIE_GARANTIE: "⚠️ Saisie garantie",
+  PRET_REDISTRIBUTION_INTERETS: "🎁 Redistribution intérêts",
+};
+
+const CREDIT_TYPES = new Set<EpargneMovementHistoryItem["type_operation"]>([
+  "DEPOT",
+  "PRET_CREDIT_BANQUE",
+  "PRET_REDISTRIBUTION_INTERETS",
+]);
 
 const MONEY_FORMATTER = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
@@ -103,14 +126,14 @@ export function EpargneMovementsHistory({
             </thead>
             <tbody>
               {visibleMovements.map((movement) => {
-                const isDepot = movement.type_operation === "DEPOT";
+                const isCredit = CREDIT_TYPES.has(movement.type_operation);
                 return (
                   <tr key={movement.id_mouvement} className="border-t border-slate-100 dark:border-white/10">
                     <td className="px-4 py-3 font-medium">
-                      {isDepot ? "💰 Dépôt" : "📤 Retrait"}
+                      {TYPE_LABELS[movement.type_operation] ?? movement.type_operation}
                     </td>
-                    <td className={`px-4 py-3 font-bold ${isDepot ? "text-emerald-700" : "text-rose-700"}`}>
-                      {isDepot ? "+" : "-"}{formatMontant(movement.montant, devise)}
+                    <td className={`px-4 py-3 font-bold ${isCredit ? "text-emerald-700" : "text-rose-700"}`}>
+                      {isCredit ? "+" : "-"}{formatMontant(movement.montant, devise)}
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{fmtDate(movement.date_operation)}</td>
                     <td className="px-4 py-3">{movement.motif}</td>
