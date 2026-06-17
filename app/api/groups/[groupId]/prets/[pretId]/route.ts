@@ -6,6 +6,7 @@ import {
   adminConfirmAvaliste,
   adminSendToAvalistes,
   cancelPretDemande,
+  deletePretDemande,
   disbursePret,
   getPretWithRelations,
   recordPretRepayment,
@@ -13,6 +14,7 @@ import {
   saisieGarantiePret,
 } from "@/lib/pret";
 import { getGroupMembership, requireAdmin } from "@/lib/pret-auth";
+import { parseUniteDureePret } from "@/lib/pret-utils";
 
 export async function GET(
   _request: Request,
@@ -46,7 +48,6 @@ export async function POST(
         groupId,
         pretId,
         operatorMemberId: auth.membership!.id_membre_groupe,
-        isAdmin: auth.membership!.role === "ADMIN",
       });
       if (!result.ok) return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
       return NextResponse.json({ ok: true });
@@ -54,6 +55,25 @@ export async function POST(
     default:
       return NextResponse.json({ ok: false, error: "Action inconnue." }, { status: 400 });
   }
+}
+
+export async function DELETE(
+  _request: Request,
+  ctx: { params: Promise<{ groupId: string; pretId: string }> },
+) {
+  const { groupId, pretId } = await ctx.params;
+  const auth = await getGroupMembership(groupId);
+  if ("error" in auth && auth.error) return auth.error;
+
+  const result = await deletePretDemande({
+    groupId,
+    pretId,
+    operatorMemberId: auth.membership!.id_membre_groupe,
+  });
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
+  }
+  return NextResponse.json({ ok: true });
 }
 
 export async function PATCH(
@@ -83,6 +103,18 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  if (body.action === "cancel") {
+    const auth = await getGroupMembership(groupId);
+    if ("error" in auth && auth.error) return auth.error;
+    const result = await cancelPretDemande({
+      groupId,
+      pretId,
+      operatorMemberId: auth.membership!.id_membre_groupe,
+    });
+    if (!result.ok) return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
+    return NextResponse.json({ ok: true });
+  }
+
   const auth = await requireAdmin(groupId);
   if ("error" in auth && auth.error) return auth.error;
   const adminId = auth.membership!.id_membre_groupe;
@@ -104,13 +136,15 @@ export async function PATCH(
       return NextResponse.json({ ok: true });
     }
     case "analyze": {
+      const dureeUniteApprouvee = parseUniteDureePret(body.dureeUniteApprouvee);
       const result = await adminAnalyzePret({
         groupId,
         pretId,
         adminMemberId: adminId,
         decision: body.decision as "APPROUVE" | "REFUSE",
         montantApprouve: body.montantApprouve as number | undefined,
-        dureeMoisApprouvee: body.dureeMoisApprouvee as number | undefined,
+        dureeValeurApprouvee: body.dureeValeurApprouvee as number | undefined,
+        dureeUniteApprouvee: dureeUniteApprouvee ?? undefined,
         tauxInteretMensuel: body.tauxInteretMensuel as number | undefined,
         notesAdmin: body.notesAdmin as string | undefined,
         motifRefus: body.motifRefus as string | undefined,
@@ -130,9 +164,19 @@ export async function PATCH(
       return NextResponse.json({ ok: true });
     }
     case "disburse": {
-      const result = await disbursePret({ groupId, pretId, adminMemberId: adminId });
-      if (!result.ok) return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
-      return NextResponse.json({ ok: true, repartition: result.repartition });
+      try {
+        const result = await disbursePret({ groupId, pretId, adminMemberId: adminId });
+        if (!result.ok) {
+          return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
+        }
+        return NextResponse.json({ ok: true, repartition: result.repartition });
+      } catch (error) {
+        console.error("disburse route:", error);
+        return NextResponse.json(
+          { ok: false, error: "Erreur inattendue lors du décaissement." },
+          { status: 500 },
+        );
+      }
     }
     case "repayment": {
       const result = await recordPretRepayment({

@@ -26,6 +26,7 @@ export async function checkPretEligibility(
   groupId: string,
   memberId: string,
   montantDemande?: number,
+  excludePretId?: string,
 ): Promise<PretEligibilityResult> {
   const reasons: string[] = [];
 
@@ -44,6 +45,7 @@ export async function checkPretEligibility(
         id_emprunteur: memberId,
         id_groupe: groupId,
         statut: { in: [...ACTIVE_LOAN_STATUSES] },
+        ...(excludePretId ? { id_pret: { not: excludePretId } } : {}),
       },
       select: { id_pret: true },
     }),

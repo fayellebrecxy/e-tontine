@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculerStatutMembre } from "@/lib/membre-statut";
 import { DownloadReleveButton } from "@/components/groups/download-releve-button";
+import { MesPretsSummary } from "@/components/pret/mes-prets-summary";
+import { getMesPretsForEmprunteur, syncBorrowerPretNotifications } from "@/lib/pret-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,14 @@ export default async function GroupOverviewPage({
 
   if (!membership) {
     redirect("/dashboard");
+  }
+
+  const mesPrets =
+    membership.statut_adhesion === "ACTIF"
+      ? await getMesPretsForEmprunteur([membership.id_membre_groupe], groupId)
+      : [];
+  if (mesPrets.length > 0) {
+    await syncBorrowerPretNotifications(user.id, mesPrets);
   }
 
   // Requête directe selon le rôle pour garantir que tous les cycles du membre sont visibles
@@ -160,6 +170,15 @@ export default async function GroupOverviewPage({
           </div>
         </div>
       </div>
+
+      {mesPrets.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100">
+            Mes prêts
+          </h2>
+          <MesPretsSummary prets={mesPrets} showGroupName={false} compact />
+        </div>
+      )}
 
       {/* ─── Mon statut (membre) ─── */}
       {membership.role === "MEMBRE" && monStatutDetail && (

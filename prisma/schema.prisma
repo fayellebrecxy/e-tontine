@@ -708,7 +708,7 @@ model ParametresPretGroupe {
   id_groupe                  String   @unique @db.Uuid
   anciennete_min_jours       Int      @default(0)
   plafond_pct_banque         Decimal  @default(100) @db.Decimal(5, 2)
-  modele_contrat_avaliste    String   @default("Je, {{avaliste_nom}}, m'engage à rembourser la dette de {{emprunteur_nom}} d'un montant de {{montant}} sur {{duree}} mois, taux {{taux}}%/mois, en cas de défaut de sa part. Date limite : {{date_fin}}.")
+  modele_contrat_avaliste    String   @default("Je, {{avaliste_nom}}, m'engage à rembourser la dette de {{emprunteur_nom}} d'un montant de {{montant}} sur {{duree}}, taux {{taux}}%/mois, en cas de défaut de sa part. Date limite : {{date_fin}}.")
   refus_sans_epargne         Boolean  @default(false)
   date_creation              DateTime @default(now())
   date_mise_a_jour           DateTime @updatedAt
@@ -725,8 +725,10 @@ model Pret {
   statut                     StatutPret          @default(EN_ATTENTE_ANALYSE)
   montant_demande            Decimal             @db.Decimal(15, 2)
   montant_approuve           Decimal?            @db.Decimal(15, 2)
-  duree_mois_demandee        Int
-  duree_mois_approuvee       Int?
+  duree_valeur_demandee      Int
+  duree_unite_demandee       UniteDureePret      @default(MOIS)
+  duree_valeur_approuvee     Int?
+  duree_unite_approuvee      UniteDureePret?
   taux_interet_mensuel       Decimal?            @db.Decimal(7, 4)
   montant_interets_total     Decimal             @default(0) @db.Decimal(15, 2)
   montant_capital_restant    Decimal             @default(0) @db.Decimal(15, 2)
@@ -840,6 +842,13 @@ model EngagementEpargne {
   @@index([id_pret])
   @@index([id_membre_groupe, actif])
   @@map("engagements_epargne")
+  @@schema("public")
+}
+
+enum UniteDureePret {
+  JOUR
+  MOIS
+
   @@schema("public")
 }
 

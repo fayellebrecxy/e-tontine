@@ -3,13 +3,16 @@ import { Prisma, TypeMouvementPret } from "@/lib/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import {
   createNotification,
+  markStalePretApprovalNotificationsRead,
   notifyGroupAdmins,
   notifyMembre,
 } from "@/lib/notifications";
+import { validateAvalistesForMontant } from "@/lib/pret-avalistes";
 import { checkPretEligibility, ensureParametresPret } from "@/lib/pret-eligibility";
 import {
   applyBankMovement,
   buildRepartitionFromStored,
+  BANK_TX_OPTIONS,
   computeRepartitionForAmount,
   creditInterestCaisse,
   ensureCaisseInterets,
@@ -17,12 +20,18 @@ import {
   getEpargneDisponible,
 } from "@/lib/pret-banque";
 import {
+  addDureeToDate,
   buildContratAvalisteFromForm,
   computeElapsedInterest,
+  computeInterestForDuration,
   computeInterestForMonths,
+  formatDureePret,
   formatPretMontant,
+  parseUniteDureePret,
   roundCurrency,
+  validateDureePret,
   type RepartitionBanqueEntry,
+  type UniteDureePret,
 } from "@/lib/pret-utils";
 
 async function logMouvementPret(
@@ -124,23 +133,29 @@ export async function submitPretDemande({
   groupId,
   memberId,
   montantDemande,
-  dureeMoisDemandee,
+  dureeValeurDemandee,
+  dureeUniteDemandee,
   motif,
   avalisteIds = [],
 }: {
   groupId: string;
   memberId: string;
   montantDemande: number;
-  dureeMoisDemandee: number;
+  dureeValeurDemandee: number;
+  dureeUniteDemandee: UniteDureePret;
   motif?: string;
   avalisteIds?: string[];
 }) {
   if (!Number.isFinite(montantDemande) || montantDemande <= 0) {
     return { ok: false as const, status: 400, error: "Montant invalide." };
   }
-  if (!Number.isInteger(dureeMoisDemandee) || dureeMoisDemandee < 1) {
-    return { ok: false as const, status: 400, error: "Durée invalide (minimum 1 mois)." };
+
+  const dureeError = validateDureePret(dureeValeurDemandee, dureeUniteDemandee);
+  if (dureeError) {
+    return { ok: false as const, status: 400, error: dureeError };
   }
+
+  const dureeLabel = formatDureePret(dureeValeurDemandee, dureeUniteDemandee);
 
   const eligibility = await checkPretEligibility(groupId, memberId, montantDemande);
   if (!eligibility.eligible) {
@@ -152,6 +167,20 @@ export async function submitPretDemande({
     return { ok: false as const, status: 400, error: "Au moins un avaliste est requis." };
   }
 
+  const avalisteValidation = await validateAvalistesForMontant({
+    groupId,
+    montantDemande,
+    avalisteIds: uniqueAvalistes,
+    emprunteurId: memberId,
+  });
+  if (!avalisteValidation.ok) {
+    return {
+      ok: false as const,
+      status: 400,
+      error: avalisteValidation.errors.join(" "),
+    };
+  }
+
   const pret = await prisma.$transaction(async (tx) => {
     const created = await tx.pret.create({
       data: {
@@ -159,7 +188,8 @@ export async function submitPretDemande({
         id_emprunteur: memberId,
         statut: "EN_ATTENTE_ANALYSE",
         montant_demande: new Prisma.Decimal(montantDemande),
-        duree_mois_demandee: dureeMoisDemandee,
+        duree_valeur_demandee: dureeValeurDemandee,
+        duree_unite_demandee: dureeUniteDemandee,
         motif: motif?.trim() || null,
       },
     });
@@ -170,7 +200,7 @@ export async function submitPretDemande({
       type_mouvement: "DEMANDE_SOUMISE",
       montant: montantDemande,
       id_membre_concerne: memberId,
-      details: `Demande de ${formatPretMontant(montantDemande)} sur ${dureeMoisDemandee} mois. Avalistes : ${uniqueAvalistes.length}.`,
+      details: `Demande de ${formatPretMontant(montantDemande)} sur ${dureeLabel}. Avalistes : ${uniqueAvalistes.length}.`,
     });
 
     for (const avalisteId of uniqueAvalistes) {
@@ -182,7 +212,9 @@ export async function submitPretDemande({
         },
         include: { user: true },
       });
-      if (!avalisteMember) continue;
+      if (!avalisteMember) {
+        throw new Error("Avaliste introuvable ou inactif.");
+      }
 
       await tx.avalistePret.create({
         data: {
@@ -208,7 +240,7 @@ export async function submitPretDemande({
   await notifyGroupAdmins({
     groupId,
     type: "PRET_DEMANDE",
-    message: `Nouvelle demande de prêt : ${formatPretMontant(montantDemande)} sur ${dureeMoisDemandee} mois. ${uniqueAvalistes.length} avaliste(s) proposé(s). À analyser.`,
+    message: `Nouvelle demande de prêt : ${formatPretMontant(montantDemande)} sur ${dureeLabel}. ${uniqueAvalistes.length} avaliste(s) proposé(s). À analyser.`,
   });
 
   return { ok: true as const, pret };
@@ -362,7 +394,7 @@ export async function respondAvaliste({
     avaliste_nom: memberFullName(avaliste.membre.user),
     emprunteur_nom: memberFullName(pret.emprunteur.user),
     montant: formatPretMontant(Number(pret.montant_demande)),
-    duree: String(pret.duree_mois_demandee),
+    duree: formatDureePret(pret.duree_valeur_demandee, pret.duree_unite_demandee),
     date_contrat: dateContratParsed.toLocaleDateString("fr-FR"),
     signature_nom: signatureNom.trim(),
   });
@@ -561,7 +593,8 @@ export async function adminAnalyzePret({
   adminMemberId,
   decision,
   montantApprouve,
-  dureeMoisApprouvee,
+  dureeValeurApprouvee,
+  dureeUniteApprouvee,
   tauxInteretMensuel,
   notesAdmin,
   motifRefus,
@@ -571,7 +604,8 @@ export async function adminAnalyzePret({
   adminMemberId: string;
   decision: "APPROUVE" | "REFUSE";
   montantApprouve?: number;
-  dureeMoisApprouvee?: number;
+  dureeValeurApprouvee?: number;
+  dureeUniteApprouvee?: UniteDureePret;
   tauxInteretMensuel?: number;
   notesAdmin?: string;
   motifRefus?: string;
@@ -609,11 +643,23 @@ export async function adminAnalyzePret({
     return { ok: false as const, status: 400, error: "Décision invalide." };
   }
 
-  if (!montantApprouve || !dureeMoisApprouvee || tauxInteretMensuel === undefined) {
+  if (!montantApprouve || !dureeValeurApprouvee || !dureeUniteApprouvee || tauxInteretMensuel === undefined) {
     return { ok: false as const, status: 400, error: "Montant, durée et taux requis pour approuver." };
   }
 
-  const eligibility = await checkPretEligibility(groupId, pret.id_emprunteur, montantApprouve);
+  const dureeError = validateDureePret(dureeValeurApprouvee, dureeUniteApprouvee);
+  if (dureeError) {
+    return { ok: false as const, status: 400, error: dureeError };
+  }
+
+  const dureeLabel = formatDureePret(dureeValeurApprouvee, dureeUniteApprouvee);
+
+  const eligibility = await checkPretEligibility(
+    groupId,
+    pret.id_emprunteur,
+    montantApprouve,
+    pretId,
+  );
   if (!eligibility.eligible) {
     return { ok: false as const, status: 400, error: eligibility.reasons.join(" ") };
   }
@@ -654,9 +700,13 @@ export async function adminAnalyzePret({
     return { ok: false as const, status: 400, error: "Au moins un avaliste confirmé est requis." };
   }
 
-  const interetsTotal = computeInterestForMonths(montantApprouve, tauxInteretMensuel, dureeMoisApprouvee);
-  const dateFin = new Date();
-  dateFin.setMonth(dateFin.getMonth() + dureeMoisApprouvee);
+  const interetsTotal = computeInterestForDuration(
+    montantApprouve,
+    tauxInteretMensuel,
+    dureeValeurApprouvee,
+    dureeUniteApprouvee,
+  );
+  const dateFin = addDureeToDate(new Date(), dureeValeurApprouvee, dureeUniteApprouvee);
 
   await prisma.$transaction(async (tx) => {
     await tx.pret.update({
@@ -664,7 +714,8 @@ export async function adminAnalyzePret({
       data: {
         statut: "APPROUVE",
         montant_approuve: new Prisma.Decimal(montantApprouve),
-        duree_mois_approuvee: dureeMoisApprouvee,
+        duree_valeur_approuvee: dureeValeurApprouvee,
+        duree_unite_approuvee: dureeUniteApprouvee,
         taux_interet_mensuel: new Prisma.Decimal(tauxInteretMensuel),
         montant_interets_total: new Prisma.Decimal(interetsTotal),
         montant_capital_restant: new Prisma.Decimal(montantApprouve),
@@ -693,7 +744,7 @@ export async function adminAnalyzePret({
       type_mouvement: "APPROBATION",
       montant: montantApprouve,
       id_operateur: adminMemberId,
-      details: `Approuvé : ${formatPretMontant(montantApprouve)}, ${dureeMoisApprouvee} mois, ${tauxInteretMensuel}%/mois, intérêts ${formatPretMontant(interetsTotal)}.`,
+      details: `Approuvé : ${formatPretMontant(montantApprouve)}, ${dureeLabel}, ${tauxInteretMensuel}%/mois, intérêts ${formatPretMontant(interetsTotal)}.`,
       capital_restant_apres: montantApprouve,
       interets_restants_apres: interetsTotal,
     });
@@ -742,46 +793,69 @@ export async function disbursePret({
 
   const emprunteurName = memberFullName(pret.emprunteur.user);
 
-  await prisma.$transaction(async (tx) => {
-    const mouvement = await logMouvementPret(tx, {
-      id_pret: pretId,
-      id_groupe: groupId,
-      type_mouvement: "DECAISSEMENT",
-      montant,
-      id_operateur: adminMemberId,
-      details: `Décaissement de ${formatPretMontant(montant)} à ${emprunteurName}.`,
-      capital_restant_apres: montant,
-      interets_restants_apres: Number(pret.montant_interets_restant),
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const mouvement = await logMouvementPret(tx, {
+        id_pret: pretId,
+        id_groupe: groupId,
+        type_mouvement: "DECAISSEMENT",
+        montant,
+        id_operateur: adminMemberId,
+        details: `Décaissement de ${formatPretMontant(montant)} à ${emprunteurName}.`,
+        capital_restant_apres: montant,
+        interets_restants_apres: Number(pret.montant_interets_restant),
+      });
 
-    await applyBankMovement({
-      tx,
-      groupId,
-      pretId,
-      mouvementPretId: mouvement.id_mouvement,
-      entries: repartition,
-      direction: "DEBIT",
-      motif: `Prêt décaissé — ${emprunteurName} (${formatPretMontant(montant)})`,
-      operatorMemberId: adminMemberId,
-      epargneType: "PRET_DEBIT_BANQUE",
-    });
+      await applyBankMovement({
+        tx,
+        groupId,
+        pretId,
+        mouvementPretId: mouvement.id_mouvement,
+        entries: repartition,
+        direction: "DEBIT",
+        motif: `Prêt décaissé — ${emprunteurName} (${formatPretMontant(montant)})`,
+        operatorMemberId: adminMemberId,
+        epargneType: "PRET_DEBIT_BANQUE",
+      });
 
-    await tx.pret.update({
-      where: { id_pret: pretId },
-      data: {
-        statut: "EN_COURS",
-        date_decaissement: new Date(),
-        repartition_decaissement: repartition as unknown as Prisma.InputJsonValue,
-      },
-    });
-  });
+      await tx.pret.update({
+        where: { id_pret: pretId },
+        data: {
+          statut: "EN_COURS",
+          date_decaissement: new Date(),
+          repartition_decaissement: repartition as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }, BANK_TX_OPTIONS);
+  } catch (error) {
+    console.error("disbursePret:", error);
+    const message = error instanceof Error ? error.message : "Erreur lors du décaissement.";
+    if (message.includes("Solde insuffisant")) {
+      return { ok: false as const, status: 400, error: message };
+    }
+    if (
+      (error as { code?: string }).code === "P2028" ||
+      message.includes("Transaction already closed") ||
+      message.includes("timeout")
+    ) {
+      return {
+        ok: false as const,
+        status: 503,
+        error: "Décaissement interrompu (délai dépassé). Réessayez dans quelques secondes.",
+      };
+    }
+    return { ok: false as const, status: 500, error: message };
+  }
 
   const members = await prisma.membreGroupe.findMany({
     where: { id_groupe: groupId, statut_adhesion: "ACTIF" },
     select: { id_user: true, id_membre_groupe: true },
   });
 
+  const emprunteurUserId = pret.emprunteur.id_user;
+
   for (const member of members) {
+    if (member.id_membre_groupe === pret.id_emprunteur) continue;
     const impact = repartition.find((r) => r.id_membre_groupe === member.id_membre_groupe);
     const impactLabel = impact
       ? ` Impact sur votre épargne : −${formatPretMontant(impact.montant)}.`
@@ -793,6 +867,17 @@ export async function disbursePret({
       message: `Prêt de ${formatPretMontant(montant)} décaissé à ${emprunteurName}.${impactLabel}`,
     });
   }
+
+  await markStalePretApprovalNotificationsRead({
+    userId: emprunteurUserId,
+    groupId,
+  });
+
+  await notifyMembre({
+    id_membre_groupe: pret.id_emprunteur,
+    type: "PRET_DECAISSEMENT",
+    message: `Votre prêt de ${formatPretMontant(montant)} a été versé. Vous pouvez consulter le détail dans Mes prêts.`,
+  });
 
   return { ok: true as const, repartition };
 }
@@ -1150,23 +1235,31 @@ export async function cancelPretDemande({
   groupId,
   pretId,
   operatorMemberId,
-  isAdmin,
 }: {
   groupId: string;
   pretId: string;
   operatorMemberId: string;
-  isAdmin: boolean;
 }) {
-  const pret = await prisma.pret.findFirst({ where: { id_pret: pretId, id_groupe: groupId } });
+  const pret = await getPretWithRelations(pretId, groupId);
   if (!pret) return { ok: false as const, status: 404, error: "Introuvable." };
 
-  if (!isAdmin && pret.id_emprunteur !== operatorMemberId) {
-    return { ok: false as const, status: 403, error: "Non autorisé." };
+  if (pret.id_emprunteur !== operatorMemberId) {
+    return {
+      ok: false as const,
+      status: 403,
+      error: "Seul l'emprunteur peut annuler sa demande de prêt.",
+    };
   }
 
-  if (!["EN_ATTENTE_ANALYSE", "EN_ATTENTE_AVALISTES", "EN_ATTENTE_CONFIRMATION_AVALISTES", "APPROUVE"].includes(pret.statut)) {
-    return { ok: false as const, status: 400, error: "Annulation impossible à ce stade." };
+  if (
+    !["EN_ATTENTE_ANALYSE", "EN_ATTENTE_AVALISTES", "EN_ATTENTE_CONFIRMATION_AVALISTES", "APPROUVE"].includes(
+      pret.statut,
+    )
+  ) {
+    return { ok: false as const, status: 400, error: "Annulation impossible à ce stade (prêt déjà versé ou clos)." };
   }
+
+  const emprunteurName = memberFullName(pret.emprunteur.user);
 
   await prisma.$transaction(async (tx) => {
     await tx.pret.update({ where: { id_pret: pretId }, data: { statut: "ANNULE" } });
@@ -1179,8 +1272,75 @@ export async function cancelPretDemande({
       id_groupe: groupId,
       type_mouvement: "ANNULATION",
       id_operateur: operatorMemberId,
+      details: `Demande annulée par l'emprunteur ${emprunteurName}.`,
     });
   });
+
+  void notifyGroupAdmins({
+    groupId,
+    type: "PRET_ANNULE",
+    message: `${emprunteurName} a annulé sa demande de prêt de ${formatPretMontant(Number(pret.montant_demande))}.`,
+  });
+
+  for (const avaliste of pret.avalistes) {
+    if (["EN_ATTENTE", "CONTRAT_SOUMIS", "ACCEPTE"].includes(avaliste.statut)) {
+      void notifyMembre({
+        id_membre_groupe: avaliste.id_membre_groupe,
+        type: "PRET_ANNULE",
+        message: `La demande de prêt de ${emprunteurName} (${formatPretMontant(Number(pret.montant_demande))}) a été annulée.`,
+      });
+    }
+  }
+
+  return { ok: true as const };
+}
+
+export async function deletePretDemande({
+  groupId,
+  pretId,
+  operatorMemberId,
+}: {
+  groupId: string;
+  pretId: string;
+  operatorMemberId: string;
+}) {
+  const pret = await prisma.pret.findFirst({
+    where: { id_pret: pretId, id_groupe: groupId },
+    select: {
+      id_pret: true,
+      id_emprunteur: true,
+      statut: true,
+      date_decaissement: true,
+    },
+  });
+
+  if (!pret) return { ok: false as const, status: 404, error: "Introuvable." };
+
+  if (pret.id_emprunteur !== operatorMemberId) {
+    return {
+      ok: false as const,
+      status: 403,
+      error: "Seul l'emprunteur peut supprimer sa demande.",
+    };
+  }
+
+  if (pret.statut !== "ANNULE") {
+    return {
+      ok: false as const,
+      status: 400,
+      error: "Seules les demandes annulées peuvent être supprimées.",
+    };
+  }
+
+  if (pret.date_decaissement) {
+    return {
+      ok: false as const,
+      status: 400,
+      error: "Impossible de supprimer un prêt déjà décaissé.",
+    };
+  }
+
+  await prisma.pret.delete({ where: { id_pret: pretId } });
 
   return { ok: true as const };
 }

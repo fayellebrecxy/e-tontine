@@ -12,6 +12,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CANCELLABLE_PRET_STATUTS, PretCancelButton } from "@/components/pret/pret-cancel-button";
+import { PretDeleteButton } from "@/components/pret/pret-delete-button";
+import { pretActionSuccessMessage } from "@/components/pret/pret-action-messages";
+import {
+  BORROWER_PRET_STATUT_LABELS,
+  resolveBorrowerPretDisplayStatut,
+} from "@/lib/pret-dashboard";
+import {
+  computeInterestForDuration,
+  formatDureePret,
+  type UniteDureePret,
+} from "@/lib/pret-utils";
 
 type Mouvement = {
   id_mouvement: string;
@@ -27,8 +39,10 @@ type PretDetail = {
   statut: string;
   montant_demande: number;
   montant_approuve: number | null;
-  duree_mois_demandee: number;
-  duree_mois_approuvee: number | null;
+  duree_valeur_demandee: number;
+  duree_unite_demandee: UniteDureePret;
+  duree_valeur_approuvee: number | null;
+  duree_unite_approuvee: UniteDureePret | null;
   taux_interet_mensuel: number | null;
   montant_capital_restant: number;
   montant_interets_restant: number;
@@ -111,7 +125,12 @@ export function PretDetailClient({
   const [montantApprouve, setMontantApprouve] = React.useState(
     String(pret.montant_approuve ?? pret.montant_demande),
   );
-  const [duree, setDuree] = React.useState(String(pret.duree_mois_approuvee ?? pret.duree_mois_demandee));
+  const [duree, setDuree] = React.useState(
+    String(pret.duree_valeur_approuvee ?? pret.duree_valeur_demandee),
+  );
+  const [dureeUnite, setDureeUnite] = React.useState<UniteDureePret>(
+    pret.duree_unite_approuvee ?? pret.duree_unite_demandee,
+  );
   const [taux, setTaux] = React.useState(String(pret.taux_interet_mensuel ?? "3"));
   const [notes, setNotes] = React.useState("");
   const [motifRefus, setMotifRefus] = React.useState("");
@@ -143,9 +162,14 @@ export function PretDetailClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
-      toast.success("Opération enregistrée.");
+      const raw = await res.text();
+      const data = raw
+        ? (JSON.parse(raw) as { ok?: boolean; error?: string })
+        : null;
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error ?? `Erreur serveur (${res.status}).`);
+      }
+      toast.success(pretActionSuccessMessage(body));
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
@@ -162,6 +186,28 @@ export function PretDetailClient({
   const canDisburse = isAdmin && pret.statut === "APPROUVE";
   const canRepay = isAdmin && ["EN_COURS", "EN_RETARD"].includes(pret.statut);
   const canFillContrat = myAvaliste?.statut === "EN_ATTENTE";
+  const isEmprunteur = pret.emprunteur.id_membre_groupe === currentMemberId;
+  const canCancel =
+    isEmprunteur &&
+    CANCELLABLE_PRET_STATUTS.includes(pret.statut as (typeof CANCELLABLE_PRET_STATUTS)[number]);
+  const canDelete = isEmprunteur && pret.statut === "ANNULE";
+
+  const dureeDemandeeLabel = formatDureePret(pret.duree_valeur_demandee, pret.duree_unite_demandee);
+  const dureeApprouveeLabel =
+    pret.duree_valeur_approuvee != null && pret.duree_unite_approuvee
+      ? formatDureePret(pret.duree_valeur_approuvee, pret.duree_unite_approuvee)
+      : null;
+  const interetsEstimes =
+    canAnalyze && Number(montantApprouve) > 0 && Number(duree) > 0 && Number(taux) >= 0
+      ? computeInterestForDuration(
+          Number(montantApprouve),
+          Number(taux),
+          Number(duree),
+          dureeUnite,
+        )
+      : null;
+
+  const displayStatut = resolveBorrowerPretDisplayStatut(pret);
 
   return (
     <div className="space-y-6">
@@ -182,18 +228,36 @@ export function PretDetailClient({
               Demandé le {new Date(pret.date_demande).toLocaleString("fr-FR")}
             </p>
           </div>
-          <Badge>{pret.statut.replace(/_/g, " ")}</Badge>
+          <Badge variant={displayStatut === "EN_RETARD" ? "destructive" : displayStatut === "APPROUVE" ? "secondary" : "default"}>
+            {BORROWER_PRET_STATUT_LABELS[displayStatut]}
+          </Badge>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded border p-3">
             <p className="text-xs text-slate-500">Montant demandé</p>
             <p className="font-bold">{fmt(Number(pret.montant_demande), devise)}</p>
+          </div>
+          <div className="rounded border p-3">
+            <p className="text-xs text-slate-500">Durée demandée</p>
+            <p className="font-bold">{dureeDemandeeLabel}</p>
           </div>
           {pret.montant_approuve != null && (
             <div className="rounded border p-3">
               <p className="text-xs text-slate-500">Montant approuvé</p>
               <p className="font-bold text-emerald-700">{fmt(Number(pret.montant_approuve), devise)}</p>
+            </div>
+          )}
+          {dureeApprouveeLabel && (
+            <div className="rounded border p-3">
+              <p className="text-xs text-slate-500">Durée approuvée</p>
+              <p className="font-bold text-emerald-700">{dureeApprouveeLabel}</p>
+            </div>
+          )}
+          {pret.taux_interet_mensuel != null && (
+            <div className="rounded border p-3">
+              <p className="text-xs text-slate-500">Taux mensuel</p>
+              <p className="font-bold">{pret.taux_interet_mensuel} %</p>
             </div>
           )}
           <div className="rounded border p-3">
@@ -209,6 +273,22 @@ export function PretDetailClient({
         {pret.motif && <p className="mt-3 text-sm"><strong>Motif :</strong> {pret.motif}</p>}
         {pret.motif_refus && <p className="mt-2 text-sm text-rose-700"><strong>Refus :</strong> {pret.motif_refus}</p>}
         {pret.notes_admin && <p className="mt-2 text-sm text-slate-600"><strong>Notes admin :</strong> {pret.notes_admin}</p>}
+
+        {(canCancel || canDelete) && (
+          <div className="mt-4 space-y-3 border-t pt-4">
+            {canCancel && (
+              <PretCancelButton groupId={groupId} pretId={pret.id_pret} redirectAfter />
+            )}
+            {canDelete && (
+              <div>
+                <p className="mb-2 text-sm text-slate-500">
+                  Cette demande est annulée. Vous pouvez la retirer définitivement de la liste.
+                </p>
+                <PretDeleteButton groupId={groupId} pretId={pret.id_pret} />
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {pret.avalistes.length > 0 && (
@@ -307,7 +387,7 @@ export function PretDetailClient({
           <h2 className="mb-3 font-semibold">Contrat de garantie (avaliste)</h2>
           <p className="mb-4 text-sm text-slate-600">
             Prêt de {pret.emprunteur.user.prenom} {pret.emprunteur.user.nom} —{" "}
-            {fmt(pret.montant_demande, devise)} sur {pret.duree_mois_demandee} mois.
+            {fmt(pret.montant_demande, devise)} sur {dureeDemandeeLabel}.
             Votre acceptation sera tracée et ne pourra être niée.
           </p>
           <div className="grid gap-4 md:grid-cols-2">
@@ -414,25 +494,42 @@ export function PretDetailClient({
         <section className="rounded-lg border border-violet-200 bg-violet-50/30 p-5">
           <h2 className="mb-4 font-semibold">Étape 3 — Approuver le prêt</h2>
           <p className="mb-4 text-sm text-slate-600">
-            Tous les avalistes sont confirmés. Définissez le montant, la durée et les intérêts.
+            Durée demandée par l&apos;emprunteur : <strong>{dureeDemandeeLabel}</strong>.
+            Ajustez si besoin, puis définissez le taux d&apos;intérêt mensuel en fonction de cette durée.
           </p>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div>
               <Label>Montant approuvé</Label>
               <Input type="number" value={montantApprouve} onChange={(e) => setMontantApprouve(e.target.value)} />
             </div>
             <div>
-              <Label>Durée (mois)</Label>
-              <Input type="number" value={duree} onChange={(e) => setDuree(e.target.value)} />
+              <Label>Unité de durée</Label>
+              <select
+                className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-slate-950"
+                value={dureeUnite}
+                onChange={(e) => setDureeUnite(e.target.value as UniteDureePret)}
+              >
+                <option value="JOUR">Jours</option>
+                <option value="MOIS">Mois</option>
+              </select>
+            </div>
+            <div>
+              <Label>{dureeUnite === "JOUR" ? "Nombre de jours" : "Nombre de mois"}</Label>
+              <Input type="number" min={1} value={duree} onChange={(e) => setDuree(e.target.value)} />
             </div>
             <div>
               <Label>Taux mensuel (%)</Label>
               <Input type="number" step="0.1" value={taux} onChange={(e) => setTaux(e.target.value)} />
             </div>
-            <div className="md:col-span-3">
+            <div className="md:col-span-2 lg:col-span-4">
               <Label>Notes</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
+            {interetsEstimes != null && (
+              <p className="text-sm text-slate-600 md:col-span-2 lg:col-span-4">
+                Intérêts totaux estimés : <strong>{fmt(interetsEstimes, devise)}</strong>
+              </p>
+            )}
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
@@ -442,7 +539,8 @@ export function PretDetailClient({
                   action: "analyze",
                   decision: "APPROUVE",
                   montantApprouve: Number(montantApprouve),
-                  dureeMoisApprouvee: Number(duree),
+                  dureeValeurApprouvee: Number(duree),
+                  dureeUniteApprouvee: dureeUnite,
                   tauxInteretMensuel: Number(taux),
                   notesAdmin: notes,
                 })

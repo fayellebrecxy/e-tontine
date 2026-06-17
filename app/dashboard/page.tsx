@@ -13,10 +13,13 @@ import {
 import { getTranslations } from "next-intl/server";
 
 import { JoinGroupDialog } from "@/components/invitations/join-group-dialog";
+import { MesPretsSummary } from "@/components/pret/mes-prets-summary";
 import { DashboardNotifications } from "@/components/notifications/dashboard-notifications";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
+import { filterStalePretApprovalNotifications } from "@/lib/notifications";
+import { getMesPretsForEmprunteur, syncBorrowerPretNotifications } from "@/lib/pret-dashboard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -62,9 +65,22 @@ export default async function DashboardPage() {
 
   const memberships = dbUser?.memberships ?? [];
   const activeMemberships = memberships.filter((m) => m.statut_adhesion === "ACTIF");
+  const mesPrets = await getMesPretsForEmprunteur(
+    activeMemberships.map((m) => m.id_membre_groupe),
+  );
+  if (dbUser) {
+    await syncBorrowerPretNotifications(dbUser.id_user, mesPrets);
+  }
+  const disbursedPretGroupIds = new Set(
+    mesPrets.filter((p) => p.displayStatut !== "APPROUVE").map((p) => p.id_groupe),
+  );
+  const filteredNotifications = filterStalePretApprovalNotifications(
+    notifications,
+    disbursedPretGroupIds,
+  );
   const totalCycles = activeMemberships.reduce((t, m) => t + m.groupe._count.cycles, 0);
   const totalReunions = activeMemberships.reduce((t, m) => t + m.groupe._count.reunions, 0);
-  const pendingNotifications = notifications.filter((n) => !n.date_lecture).length;
+  const pendingNotifications = filteredNotifications.filter((n) => !n.date_lecture).length;
   const userName = dbUser ? dbUser.prenom : (user.email ?? "membre");
   const t = await getTranslations("dashboard");
 
@@ -183,6 +199,10 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {mesPrets.length > 0 && (
+        <MesPretsSummary prets={mesPrets} />
+      )}
+
       {/* Contenu principal */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Groupes */}
@@ -261,9 +281,9 @@ export default async function DashboardPage() {
           </header>
 
           <div className="flex-1 px-6 pb-5">
-            {notifications.length > 0 ? (
+            {filteredNotifications.length > 0 ? (
               <DashboardNotifications
-                initialNotifications={notifications.map((n) => ({
+                initialNotifications={filteredNotifications.map((n) => ({
                   id_notification: n.id_notification,
                   type_notification: n.type_notification,
                   message: n.message,

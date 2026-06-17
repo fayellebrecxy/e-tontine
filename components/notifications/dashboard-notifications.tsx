@@ -21,6 +21,28 @@ const notificationLabel = (type: string) => {
       return "Mise à jour du groupe";
     case "GROUP_DELETED":
       return "Suppression du groupe";
+    case "PRET_DEMANDE":
+      return "Demande de prêt";
+    case "PRET_AVALISTE_DEMANDE":
+      return "Demande de garantie";
+    case "PRET_AVALISTE_ACCEPTE":
+      return "Contrat avaliste";
+    case "PRET_AVALISTE_REFUSE":
+      return "Avaliste refusé";
+    case "PRET_APPROUVE":
+      return "Prêt approuvé";
+    case "PRET_REFUSE":
+      return "Prêt refusé";
+    case "PRET_ANNULE":
+      return "Prêt annulé";
+    case "PRET_DECAISSEMENT":
+      return "Prêt versé";
+    case "PRET_REMBOURSEMENT":
+      return "Remboursement prêt";
+    case "PRET_SAISIE_GARANTIE":
+      return "Saisie garantie";
+    case "PRET_REDISTRIBUTION":
+      return "Redistribution intérêts";
     default:
       return "Notification";
   }

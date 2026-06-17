@@ -19,17 +19,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CANCELLABLE_PRET_STATUTS, PretCancelButton } from "@/components/pret/pret-cancel-button";
+import { PretDeleteButton } from "@/components/pret/pret-delete-button";
+import {
+  formatAvalisteEpargneFourchette,
+  isAvalisteEpargneProche,
+  rankAvalisteCandidates,
+  type AvalistePoolMember,
+} from "@/lib/pret-avaliste-utils";
+import {
+  BORROWER_PRET_STATUT_LABELS,
+  resolveBorrowerPretDisplayStatut,
+} from "@/lib/pret-dashboard";
+import { formatDureePret, type UniteDureePret } from "@/lib/pret-utils";
 
 type PretRow = {
   id_pret: string;
   statut: string;
   montant_demande: string | number;
   montant_approuve: string | number | null;
-  duree_mois_demandee: number;
-  duree_mois_approuvee: number | null;
+  duree_valeur_demandee: number;
+  duree_unite_demandee: UniteDureePret;
+  duree_valeur_approuvee: number | null;
+  duree_unite_approuvee: UniteDureePret | null;
   montant_capital_restant: string | number;
   montant_interets_restant: string | number;
   date_demande: string;
+  date_decaissement: string | null;
   date_fin: string | null;
   emprunteur: { id_membre_groupe?: string; user: { nom: string; prenom: string } };
   avalistes: {
@@ -66,7 +82,27 @@ function fmt(n: number | string, devise: string) {
   return `${Number(n).toLocaleString("fr-FR")} ${devise}`;
 }
 
-function StatutBadge({ statut }: { statut: string }) {
+function pretDureeLabel(pret: PretRow) {
+  if (pret.duree_valeur_approuvee != null && pret.duree_unite_approuvee) {
+    return formatDureePret(pret.duree_valeur_approuvee, pret.duree_unite_approuvee);
+  }
+  return formatDureePret(pret.duree_valeur_demandee, pret.duree_unite_demandee);
+}
+
+function StatutBadge({ statut, pret, isOwnLoan }: { statut: string; pret?: PretRow; isOwnLoan?: boolean }) {
+  if (isOwnLoan && pret) {
+    const displayStatut = resolveBorrowerPretDisplayStatut({
+      statut: pret.statut,
+      date_decaissement: pret.date_decaissement,
+    });
+    const variant =
+      displayStatut === "EN_RETARD"
+        ? "destructive"
+        : displayStatut === "APPROUVE"
+          ? "secondary"
+          : "default";
+    return <Badge variant={variant}>{BORROWER_PRET_STATUT_LABELS[displayStatut]}</Badge>;
+  }
   const cfg = STATUT_LABELS[statut] ?? { label: statut, variant: "outline" as const };
   return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
 }
@@ -81,6 +117,7 @@ export function PretsDashboard({
   initialGaranties,
   initialEligibility,
   initialParametres,
+  avalistePool,
   members,
 }: {
   groupId: string;
@@ -98,6 +135,7 @@ export function PretsDashboard({
     ancienneteMinJours: number;
   };
   initialParametres: { anciennete_min_jours: number; plafond_pct_banque: number };
+  avalistePool: AvalistePoolMember[];
   members: { id_membre_groupe: string; label: string }[];
 }) {
   const router = useRouter();
@@ -105,11 +143,33 @@ export function PretsDashboard({
   const [showForm, setShowForm] = React.useState(false);
   const [montant, setMontant] = React.useState("");
   const [duree, setDuree] = React.useState("3");
+  const [dureeUnite, setDureeUnite] = React.useState<UniteDureePret>("MOIS");
   const [motif, setMotif] = React.useState("");
   const [avalisteIds, setAvalisteIds] = React.useState<string[]>([]);
   const [redistMontant, setRedistMontant] = React.useState("");
 
-  const pendingGaranties = initialGaranties.filter((g) => g.statut === "EN_ATTENTE");
+  const montantNum = Number(montant) || 0;
+  const rankedAvalistes = React.useMemo(
+    () => rankAvalisteCandidates(avalistePool, montantNum > 0 ? montantNum : 0),
+    [avalistePool, montantNum],
+  );
+  const eligibleAvalisteCount = rankedAvalistes.filter(
+    (m) => montantNum > 0 && m.eligible,
+  ).length;
+
+  React.useEffect(() => {
+    if (montantNum <= 0) return;
+    setAvalisteIds((prev) =>
+      prev.filter((id) => {
+        const candidate = avalistePool.find((m) => m.id_membre_groupe === id);
+        return candidate && isAvalisteEpargneProche(candidate.soldeDisponible, montantNum);
+      }),
+    );
+  }, [montantNum, avalistePool]);
+
+  const pendingGaranties = initialGaranties.filter(
+    (g) => g.statut === "EN_ATTENTE" && g.pret.statut !== "ANNULE",
+  );
 
   const adminPendingPrets = initialPrets.filter((p) =>
     ["EN_ATTENTE_ANALYSE", "EN_ATTENTE_AVALISTES", "EN_ATTENTE_CONFIRMATION_AVALISTES", "APPROUVE"].includes(
@@ -117,7 +177,8 @@ export function PretsDashboard({
     ),
   );
 
-  function toggleAvaliste(id: string) {
+  function toggleAvaliste(id: string, eligible: boolean) {
+    if (!eligible) return;
     setAvalisteIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
@@ -125,8 +186,22 @@ export function PretsDashboard({
 
   async function submitDemande(e: React.FormEvent) {
     e.preventDefault();
+    if (montantNum <= 0) {
+      toast.error("Indiquez un montant valide.");
+      return;
+    }
     if (avalisteIds.length === 0) {
       toast.error("Au moins un avaliste est requis.");
+      return;
+    }
+    const invalidAvaliste = avalisteIds.find((id) => {
+      const candidate = avalistePool.find((m) => m.id_membre_groupe === id);
+      return !candidate || !isAvalisteEpargneProche(candidate.soldeDisponible, montantNum);
+    });
+    if (invalidAvaliste) {
+      toast.error(
+        `Choisissez des avalistes dont l'épargne est proche du montant (${formatAvalisteEpargneFourchette(montantNum, devise)}).`,
+      );
       return;
     }
     setLoading(true);
@@ -136,7 +211,8 @@ export function PretsDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           montantDemande: Number(montant),
-          dureeMoisDemandee: Number(duree),
+          dureeValeurDemandee: Number(duree),
+          dureeUniteDemandee: dureeUnite,
           motif: motif || undefined,
           avalisteIds,
         }),
@@ -174,7 +250,6 @@ export function PretsDashboard({
     }
   }
 
-  const autresMembres = members.filter((m) => m.id_membre_groupe !== memberId);
   const partSuggestion =
     members.length > 0 ? Math.floor(Number(redistMontant || 0) / members.length) : 0;
 
@@ -282,7 +357,8 @@ export function PretsDashboard({
                     {pret.emprunteur.user.prenom} {pret.emprunteur.user.nom}
                   </p>
                   <p className="text-sm text-slate-500">
-                    {fmt(pret.montant_demande, devise)} · {pret.duree_mois_demandee} mois
+                    {fmt(pret.montant_demande, devise)} ·{" "}
+                    {formatDureePret(pret.duree_valeur_demandee, pret.duree_unite_demandee)}
                   </p>
                 </div>
                 <StatutBadge statut={pret.statut} />
@@ -342,7 +418,21 @@ export function PretsDashboard({
               />
             </div>
             <div>
-              <Label htmlFor="duree">Durée (mois)</Label>
+              <Label htmlFor="duree-unite">Unité de durée</Label>
+              <select
+                id="duree-unite"
+                className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-slate-950"
+                value={dureeUnite}
+                onChange={(e) => setDureeUnite(e.target.value as UniteDureePret)}
+              >
+                <option value="JOUR">Jours</option>
+                <option value="MOIS">Mois</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="duree">
+                Durée ({dureeUnite === "JOUR" ? "nombre de jours" : "nombre de mois"})
+              </Label>
               <Input
                 id="duree"
                 type="number"
@@ -358,21 +448,66 @@ export function PretsDashboard({
             </div>
             <div className="md:col-span-2">
               <Label>Avalistes (au moins un requis)</Label>
+              {montantNum > 0 ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Choisissez des membres dont l&apos;épargne disponible est proche du montant demandé (
+                  {formatAvalisteEpargneFourchette(montantNum, devise)}). Les candidats recommandés
+                  apparaissent en premier.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">
+                  Saisissez d&apos;abord le montant pour voir les avalistes recommandés.
+                </p>
+              )}
+              {montantNum > 0 && eligibleAvalisteCount === 0 && (
+                <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                  Aucun membre n&apos;a une épargne suffisamment proche de {fmt(montantNum, devise)}.
+                  Ajustez le montant ou attendez que des membres augmentent leur épargne.
+                </p>
+              )}
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {autresMembres.map((m) => (
-                  <label
-                    key={m.id_membre_groupe}
-                    className="flex cursor-pointer items-center gap-2 rounded border px-3 py-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={avalisteIds.includes(m.id_membre_groupe)}
-                      onChange={() => toggleAvaliste(m.id_membre_groupe)}
-                      className="size-4"
-                    />
-                    {m.label}
-                  </label>
-                ))}
+                {rankedAvalistes.map((m) => {
+                  const eligible = montantNum > 0 && m.eligible;
+                  const showRecommended = eligible;
+
+                  return (
+                    <label
+                      key={m.id_membre_groupe}
+                      className={`flex items-start gap-2 rounded border px-3 py-2 text-sm ${
+                        eligible
+                          ? "cursor-pointer border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                          : "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-800 dark:bg-slate-900/40"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={avalisteIds.includes(m.id_membre_groupe)}
+                        disabled={!eligible}
+                        onChange={() => toggleAvaliste(m.id_membre_groupe, eligible)}
+                        className="mt-0.5 size-4"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{m.label}</span>
+                          {showRecommended && (
+                            <Badge variant="default" className="text-[10px]">
+                              Recommandé
+                            </Badge>
+                          )}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-slate-500">
+                          Épargne dispo. : {fmt(m.soldeDisponible, devise)}
+                          {montantNum > 0 && (
+                            <>
+                              {" "}
+                              · écart {fmt(m.ecartMontant, devise)}
+                            </>
+                          )}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
             <div className="flex gap-2 md:col-span-2">
@@ -391,25 +526,44 @@ export function PretsDashboard({
           {initialPrets.length === 0 ? (
             <p className="text-sm text-slate-500">Aucun prêt pour le moment.</p>
           ) : (
-            initialPrets.map((pret) => (
-                <Link
+            initialPrets.map((pret) => {
+              const canCancelOwn =
+                pret.emprunteur.id_membre_groupe === memberId &&
+                CANCELLABLE_PRET_STATUTS.includes(pret.statut as (typeof CANCELLABLE_PRET_STATUTS)[number]);
+              const canDeleteOwn =
+                pret.emprunteur.id_membre_groupe === memberId && pret.statut === "ANNULE";
+              const isOwnLoan = pret.emprunteur.id_membre_groupe === memberId;
+
+              return (
+                <div
                   key={pret.id_pret}
-                  href={`/dashboard/groups/${groupId}/prets/${pret.id_pret}`}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 transition hover:bg-slate-50 dark:hover:bg-slate-900/50"
                 >
-                  <div>
+                  <Link
+                    href={`/dashboard/groups/${groupId}/prets/${pret.id_pret}`}
+                    className="min-w-0 flex-1"
+                  >
                     <p className="font-medium">
                       {pret.emprunteur.user.prenom} {pret.emprunteur.user.nom}
                     </p>
                     <p className="text-sm text-slate-500">
                       {fmt(pret.montant_approuve ?? pret.montant_demande, devise)} ·{" "}
-                      {pret.duree_mois_approuvee ?? pret.duree_mois_demandee} mois ·{" "}
+                      {pretDureeLabel(pret)} ·{" "}
                       {new Date(pret.date_demande).toLocaleDateString("fr-FR")}
                     </p>
+                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatutBadge statut={pret.statut} pret={pret} isOwnLoan={isOwnLoan} />
+                    {canCancelOwn && (
+                      <PretCancelButton groupId={groupId} pretId={pret.id_pret} />
+                    )}
+                    {canDeleteOwn && (
+                      <PretDeleteButton groupId={groupId} pretId={pret.id_pret} redirectAfter={false} />
+                    )}
                   </div>
-                  <StatutBadge statut={pret.statut} />
-                </Link>
-            ))
+                </div>
+              );
+            })
           )}
         </div>
       </section>

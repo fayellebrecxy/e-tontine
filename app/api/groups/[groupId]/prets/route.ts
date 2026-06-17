@@ -5,6 +5,7 @@ import { getBanqueSummary } from "@/lib/pret-banque";
 import { checkPretEligibility, ensureParametresPret } from "@/lib/pret-eligibility";
 import { submitPretDemande } from "@/lib/pret";
 import { getGroupMembership } from "@/lib/pret-auth";
+import { parseUniteDureePret } from "@/lib/pret-utils";
 
 export async function GET(
   _request: Request,
@@ -65,12 +66,15 @@ export async function POST(
 
   const body = (await request.json().catch(() => null)) as {
     montantDemande?: number;
-    dureeMoisDemandee?: number;
+    dureeValeurDemandee?: number;
+    dureeUniteDemandee?: string;
     motif?: string;
     avalisteIds?: string[];
   } | null;
 
-  if (!body?.montantDemande || !body.dureeMoisDemandee) {
+  const dureeUniteDemandee = parseUniteDureePret(body?.dureeUniteDemandee) ?? "MOIS";
+
+  if (!body?.montantDemande || !body.dureeValeurDemandee) {
     return NextResponse.json({ ok: false, error: "Données invalides." }, { status: 400 });
   }
 
@@ -78,7 +82,8 @@ export async function POST(
     groupId,
     memberId: auth.membership!.id_membre_groupe,
     montantDemande: body.montantDemande,
-    dureeMoisDemandee: body.dureeMoisDemandee,
+    dureeValeurDemandee: body.dureeValeurDemandee,
+    dureeUniteDemandee,
     motif: body.motif,
     avalisteIds: body.avalisteIds ?? [],
   });

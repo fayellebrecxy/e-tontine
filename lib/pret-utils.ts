@@ -64,6 +64,58 @@ export function computeInterestForMonths(
   return roundCurrency(principal * (rateMonthlyPct / 100) * months);
 }
 
+export type UniteDureePret = "JOUR" | "MOIS";
+
+export function formatDureePret(valeur: number, unite: UniteDureePret): string {
+  if (unite === "JOUR") {
+    return valeur === 1 ? "1 jour" : `${valeur} jours`;
+  }
+  return valeur === 1 ? "1 mois" : `${valeur} mois`;
+}
+
+export function dureeToMonthEquivalent(valeur: number, unite: UniteDureePret): number {
+  if (valeur <= 0) return 0;
+  return unite === "JOUR" ? valeur / 30 : valeur;
+}
+
+export function addDureeToDate(start: Date, valeur: number, unite: UniteDureePret): Date {
+  const end = new Date(start);
+  if (unite === "JOUR") {
+    end.setDate(end.getDate() + valeur);
+    return end;
+  }
+  end.setMonth(end.getMonth() + valeur);
+  return end;
+}
+
+export function computeInterestForDuration(
+  principal: number,
+  rateMonthlyPct: number,
+  valeur: number,
+  unite: UniteDureePret,
+): number {
+  return computeInterestForMonths(principal, rateMonthlyPct, dureeToMonthEquivalent(valeur, unite));
+}
+
+export function validateDureePret(valeur: number, unite: UniteDureePret): string | null {
+  if (!Number.isInteger(valeur) || valeur < 1) {
+    return unite === "JOUR"
+      ? "Durée invalide (minimum 1 jour)."
+      : "Durée invalide (minimum 1 mois).";
+  }
+  if (unite === "JOUR" && valeur > 3650) {
+    return "Durée maximale : 3650 jours (10 ans).";
+  }
+  if (unite === "MOIS" && valeur > 120) {
+    return "Durée maximale : 120 mois (10 ans).";
+  }
+  return null;
+}
+
+export function parseUniteDureePret(value: unknown): UniteDureePret | null {
+  return value === "JOUR" || value === "MOIS" ? value : null;
+}
+
 export function monthsBetween(start: Date, end: Date): number {
   const ms = Math.max(0, end.getTime() - start.getTime());
   return ms / (30 * 24 * 60 * 60 * 1000);
@@ -91,7 +143,7 @@ export function buildContratAvalisteFromForm(vars: {
     ``,
     `Je soussigné(e) ${vars.avaliste_nom}, en date du ${vars.date_contrat},`,
     `accepte de me porter garant pour ${vars.emprunteur_nom}`,
-    `concernant un prêt de ${vars.montant} sur ${vars.duree} mois.`,
+    `concernant un prêt de ${vars.montant} sur ${vars.duree}.`,
     ``,
     `J'autorise expressément la saisie de mes fonds d'épargne`,
     `en cas de défaut de remboursement de l'emprunteur.`,

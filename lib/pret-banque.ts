@@ -6,6 +6,8 @@ import { allocateProportional, roundCurrency, type RepartitionBanqueEntry } from
 
 type Tx = PrismaNamespace.TransactionClient;
 
+const BANK_TX_OPTIONS = { maxWait: 15_000, timeout: 30_000 } as const;
+
 export type BanqueSummary = {
   total: number;
   disponible: number;
@@ -121,20 +123,24 @@ export async function applyBankMovement({
   operatorMemberId?: string;
   epargneType: "PRET_DEBIT_BANQUE" | "PRET_CREDIT_BANQUE";
 }) {
+  const activeEntries = entries.filter((entry) => entry.montant > 0);
+  if (activeEntries.length === 0) return [];
+
+  const accounts = await tx.compteEpargne.findMany({
+    where: { id_compte: { in: activeEntries.map((entry) => entry.id_compte) } },
+    select: {
+      id_compte: true,
+      id_membre_groupe: true,
+      solde_actuel: true,
+      statut: true,
+    },
+  });
+  const accountById = new Map(accounts.map((account) => [account.id_compte, account]));
+
   const impacts = [];
 
-  for (const entry of entries) {
-    if (entry.montant <= 0) continue;
-
-    const account = await tx.compteEpargne.findUnique({
-      where: { id_compte: entry.id_compte },
-      select: {
-        id_compte: true,
-        id_membre_groupe: true,
-        solde_actuel: true,
-        statut: true,
-      },
-    });
+  for (const entry of activeEntries) {
+    const account = accountById.get(entry.id_compte);
 
     if (!account || account.statut !== "ACTIF") continue;
 
@@ -244,4 +250,4 @@ export function computeRepartitionForAmount(
   return allocateProportional(amount, accounts);
 }
 
-export { ensureCaisseInterets };
+export { ensureCaisseInterets, BANK_TX_OPTIONS };

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBanqueSummary } from "@/lib/pret-banque";
+import { getAvalistePoolForGroup } from "@/lib/pret-avalistes";
 import { checkPretEligibility, ensureParametresPret } from "@/lib/pret-eligibility";
 import { PretsDashboard } from "@/components/pret/prets-dashboard";
 
@@ -23,7 +24,7 @@ export default async function PretsPage({ params }: { params: Promise<{ groupId:
   });
   if (!membership) redirect(`/dashboard/groups/${groupId}`);
 
-  const [prets, bank, garanties, eligibility, membersRaw, parametres] = await Promise.all([
+  const [prets, bank, garanties, eligibility, membersRaw, parametres, avalistePool] = await Promise.all([
     prisma.pret.findMany({
       where: { id_groupe: groupId },
       orderBy: { date_demande: "desc" },
@@ -42,7 +43,12 @@ export default async function PretsPage({ params }: { params: Promise<{ groupId:
       },
       include: {
         pret: {
-          include: { emprunteur: { include: { user: { select: { nom: true, prenom: true } } } } },
+          include: {
+            emprunteur: { include: { user: { select: { nom: true, prenom: true } } } },
+            avalistes: {
+              include: { membre: { include: { user: { select: { nom: true, prenom: true } } } } },
+            },
+          },
         },
       },
       orderBy: { date_proposition: "desc" },
@@ -54,6 +60,7 @@ export default async function PretsPage({ params }: { params: Promise<{ groupId:
       orderBy: { user: { prenom: "asc" } },
     }),
     ensureParametresPret(groupId),
+    getAvalistePoolForGroup(groupId, membership.id_membre_groupe),
   ]);
 
   const members = membersRaw.map((m) => ({
@@ -68,12 +75,13 @@ export default async function PretsPage({ params }: { params: Promise<{ groupId:
     montant_capital_restant: Number(p.montant_capital_restant),
     montant_interets_restant: Number(p.montant_interets_restant),
     date_demande: p.date_demande.toISOString(),
+    date_decaissement: p.date_decaissement?.toISOString() ?? null,
     date_fin: p.date_fin?.toISOString() ?? null,
     emprunteur: {
       id_membre_groupe: p.id_emprunteur,
       user: p.emprunteur.user,
     },
-    avalistes: p.avalistes.map((a) => ({
+    avalistes: (p.avalistes ?? []).map((a) => ({
       ...a,
       montant_engagement: Number(a.montant_engagement),
     })),
@@ -97,6 +105,7 @@ export default async function PretsPage({ params }: { params: Promise<{ groupId:
         anciennete_min_jours: parametres.anciennete_min_jours,
         plafond_pct_banque: Number(parametres.plafond_pct_banque),
       }}
+      avalistePool={avalistePool}
       members={members}
     />
   );
