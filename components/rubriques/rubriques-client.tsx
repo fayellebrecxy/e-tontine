@@ -53,6 +53,7 @@ type Props = {
   members: any[];
   isAdmin: boolean;
   adminId: string;
+  memberTelephone?: string;
 };
 
 function getMemberBalance(rubrique: any, membreId: string) {
@@ -63,7 +64,7 @@ function getMemberBalance(rubrique: any, membreId: string) {
   return Math.max(0, Math.round((due - paid) * 100) / 100);
 }
 
-export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId }: Props) {
+export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId, memberTelephone }: Props) {
   const router = useRouter();
   const [selectedRubriqueId, setSelectedRubriqueId] = React.useState<string | null>(
     rubriques.length > 0 ? rubriques[0].id_rubrique : null,
@@ -322,6 +323,9 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId 
             <RubriquePlanningBanner
               rubrique={planningRubrique}
               resteAPayer={isAdmin ? 0 : memberReste}
+              groupId={!isAdmin ? groupId : undefined}
+              rubriqueId={!isAdmin && selectedRubriqueId ? selectedRubriqueId : undefined}
+              memberTelephone={memberTelephone}
             />
 
             {isAdmin && (

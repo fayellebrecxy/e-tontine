@@ -1,6 +1,7 @@
 import { Prisma } from "@/lib/generated/prisma";
 
 import { prisma } from "@/lib/prisma";
+import { runExtendedTransaction } from "@/lib/prisma-transaction";
 import { createNotification, notifyGroupAdmins } from "@/lib/notifications";
 
 const MONEY_FORMATTER = new Intl.NumberFormat("fr-FR", {
@@ -170,7 +171,7 @@ export async function recordEpargneOperation(input: EpargneOperationInput) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await runExtendedTransaction(async (tx) => {
       const account = await tx.compteEpargne.findFirst({
         where: { id_compte: input.accountId, id_groupe: input.groupId },
         select: {

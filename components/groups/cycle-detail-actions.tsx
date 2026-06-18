@@ -17,7 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-type PanelKey = "overview" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments" | "ordrePassage" | "caissePenalites";
+type PanelKey = "overview" | "memberPay" | "edit" | "payment" | "distribution" | "history" | "allCotisations" | "participants" | "myPayments" | "ordrePassage" | "caissePenalites";
 
 type Panel = {
   key: PanelKey;
@@ -25,11 +25,14 @@ type Panel = {
   icon: React.ComponentType<{ className?: string }>;
   content: React.ReactNode;
   adminOnly?: boolean;
+  memberOnly?: boolean;
 };
 
 type CycleDetailActionsProps = {
   isAdmin: boolean;
   overview: React.ReactNode;
+  memberPay?: React.ReactNode;
+  defaultPanel?: PanelKey;
   edit?: React.ReactNode;
   payment?: React.ReactNode;
   distribution?: React.ReactNode;
@@ -47,6 +50,8 @@ type CycleDetailActionsProps = {
 export function CycleDetailActions({
   isAdmin,
   overview,
+  memberPay,
+  defaultPanel = "overview",
   edit,
   payment,
   distribution,
@@ -63,6 +68,7 @@ export function CycleDetailActions({
   const panels = React.useMemo<Panel[]>(
     () => [
       { key: "overview", label: "Aperçu", icon: Eye, content: overview },
+      { key: "memberPay", label: "Payer", icon: Banknote, content: memberPay, memberOnly: true },
       { key: "ordrePassage", label: "Ordre de passage", icon: ArrowUpDown, content: ordrePassage },
       { key: "edit", label: "Modifier", icon: Pencil, content: edit, adminOnly: true },
       { key: "payment", label: "Cotisation", icon: Banknote, content: payment, adminOnly: true },
@@ -73,12 +79,23 @@ export function CycleDetailActions({
       { key: "participants", label: "Participants", icon: Users, content: participants },
       { key: "myPayments", label: "Mes versements", icon: Receipt, content: myPayments },
     ],
-    [allCotisations, caissePenalites, distribution, edit, history, myPayments, ordrePassage, overview, participants, payment],
+    [allCotisations, caissePenalites, distribution, edit, history, memberPay, myPayments, ordrePassage, overview, participants, payment],
   );
 
-  const visiblePanels = panels.filter((panel) => panel.content && (!panel.adminOnly || isAdmin));
-  const [activePanel, setActivePanel] = React.useState<PanelKey>("overview");
+  const visiblePanels = panels.filter(
+    (panel) =>
+      panel.content &&
+      (!panel.adminOnly || isAdmin) &&
+      (!panel.memberOnly || !isAdmin),
+  );
+  const [activePanel, setActivePanel] = React.useState<PanelKey>(defaultPanel);
   const active = visiblePanels.find((panel) => panel.key === activePanel) ?? visiblePanels[0];
+
+  React.useEffect(() => {
+    if (!visiblePanels.some((panel) => panel.key === activePanel)) {
+      setActivePanel(visiblePanels[0]?.key ?? "overview");
+    }
+  }, [activePanel, visiblePanels]);
 
   return (
     <div className="space-y-4">

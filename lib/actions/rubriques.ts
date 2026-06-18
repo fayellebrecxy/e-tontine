@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { runExtendedTransaction } from "@/lib/prisma-transaction";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
 import { majStatutMembre } from "@/lib/membre-statut";
@@ -389,7 +390,7 @@ export async function enregistrerPaiement(data: {
     };
   }
 
-  const paiement = await prisma.$transaction(async (tx) => {
+  const paiement = await runExtendedTransaction(async (tx) => {
     const created = await tx.paiementRubrique.create({
       data: {
         id_rubrique: data.rubriqueId,

@@ -66,6 +66,7 @@ model Groupes {
   parametres_pret           ParametresPretGroupe?
   prets                     Pret[]
   engagements_epargne       EngagementEpargne[]
+  transactions_paiement     PaymentTransaction[]
 
   @@map("groupes")
   @@schema("public")
@@ -190,6 +191,7 @@ model MembreGroupe {
   prets_operes              MouvementPret[]        @relation("prets_operateur")
   avalistes_prets           AvalistePret[]
   engagements_epargne       EngagementEpargne[]
+  transactions_paiement     PaymentTransaction[]
 
   @@unique([id_user, id_groupe])
   @@index([id_groupe])
@@ -903,6 +905,74 @@ enum TypeMouvementPret {
 enum TypeEngagementPret {
   GARANTIE_EMPRUNTEUR
   GARANTIE_AVALISTE
+
+  @@schema("public")
+}
+
+model PaymentTransaction {
+  id_transaction     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_groupe          String              @db.Uuid
+  id_membre_groupe   String              @db.Uuid
+  context_type       PaymentContextType
+  context_id         String              @db.Uuid
+  direction          PaymentDirection    @default(INBOUND)
+  montant            Decimal             @db.Decimal(15, 2)
+  devise             String              @default("XAF")
+  provider           PaymentProvider
+  telephone          String
+  provider_reference String?
+  statut             PaymentStatut       @default(PENDING)
+  message_erreur     String?
+  metadata           Json?
+  id_resultat        String?
+  date_creation      DateTime            @default(now())
+  date_confirmation  DateTime?
+  groupe             Groupes             @relation(fields: [id_groupe], references: [id_groupe], onDelete: Cascade)
+  membre             MembreGroupe        @relation(fields: [id_membre_groupe], references: [id_membre_groupe], onDelete: Cascade)
+
+  @@index([id_groupe])
+  @@index([id_membre_groupe])
+  @@index([statut])
+  @@index([date_creation])
+  @@map("transactions_paiement")
+  @@schema("public")
+}
+
+enum PaymentContextType {
+  CYCLE_COTISATION
+  RUBRIQUE
+  AMENDE_REUNION
+  EPARGNE_DEPOT
+  PRET_REMBOURSEMENT
+  CYCLE_DISTRIBUTION
+  PRET_DECAISSEMENT
+  RUBRIQUE_RETRAIT
+  PENALITE_RETRAIT
+  AMENDE_RETRAIT
+  EPARGNE_RETRAIT
+
+  @@schema("public")
+}
+
+enum PaymentProvider {
+  ORANGE_MONEY
+  MTN_MOMO
+
+  @@schema("public")
+}
+
+enum PaymentStatut {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum PaymentDirection {
+  INBOUND
+  OUTBOUND
 
   @@schema("public")
 }

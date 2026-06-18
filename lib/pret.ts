@@ -1,6 +1,7 @@
 import { Prisma, TypeMouvementPret } from "@/lib/generated/prisma";
 
 import { prisma } from "@/lib/prisma";
+import { runExtendedTransaction } from "@/lib/prisma-transaction";
 import {
   createNotification,
   markStalePretApprovalNotificationsRead,
@@ -965,7 +966,7 @@ export async function recordPretRepayment({
 
   const emprunteurName = memberFullName(pret.emprunteur.user);
 
-  await prisma.$transaction(async (tx) => {
+  await runExtendedTransaction(async (tx) => {
     if (toInterest > 0) {
       await logMouvementPret(tx, {
         id_pret: pretId,

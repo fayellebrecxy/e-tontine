@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { enregistrerRetrait } from "@/lib/actions/rubriques";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type Props = {
   groupId: string;
@@ -32,6 +33,7 @@ type Props = {
 export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
   const [formData, setFormData] = React.useState({
     montant: "",
     motif: "",
@@ -109,12 +111,40 @@ export function RetraitForm({ groupId, adminId, rubriques, onClose }: Props) {
 
         <SheetFooter className="flex-col gap-2 sm:flex-col">
           <Button onClick={handleSubmit} className="w-full" disabled={loading || !formData.montant || !formData.motif}>
-            {loading ? "Enregistrement..." : "Enregistrer"}
+            {loading ? "Enregistrement..." : "Enregistrer manuellement"}
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={!formData.montant || !formData.motif}
+            onClick={() => setShowMobileMoney(true)}
+          >
+            Retrait via Mobile Money
           </Button>
           <Button variant="outline" className="w-full" onClick={onClose}>
             Annuler
           </Button>
         </SheetFooter>
+
+        <MobileMoneyCheckout
+          groupId={groupId}
+          contextType="RUBRIQUE_RETRAIT"
+          contextId={formData.rubriqueId === "GLOBAL" ? groupId : formData.rubriqueId}
+          direction="OUTBOUND"
+          montant={Number(formData.montant)}
+          metadata={{
+            montant: Number(formData.montant),
+            motif: formData.motif,
+            ...(formData.rubriqueId !== "GLOBAL" ? { rubriqueId: formData.rubriqueId } : {}),
+          }}
+          open={showMobileMoney}
+          onOpenChange={setShowMobileMoney}
+          onSuccess={() => {
+            onClose();
+            router.refresh();
+          }}
+          title="Retrait via Mobile Money"
+        />
       </SheetContent>
     </Sheet>
   );

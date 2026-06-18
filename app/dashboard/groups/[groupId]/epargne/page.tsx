@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { EpargneAccountAdminActions } from "@/components/epargne/account-admin-actions";
 import { CreateAllEpargneAccountsButton, CreateEpargneAccountButton } from "@/components/epargne/create-account-actions";
 import { EpargneMovementsHistory } from "@/components/epargne/epargne-movements-history";
+import { EpargneMemberDepositButton } from "@/components/epargne/epargne-member-deposit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
       id_membre_groupe: true,
       role: true,
       groupe: { select: { devise: true } },
+      user: { select: { telephone: true } },
     },
   });
   if (!membership) redirect(`/dashboard/groups/${groupId}`);
@@ -116,10 +118,10 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
               <div>
                 <h1 className="text-xl font-bold text-slate-950 dark:text-white">Ma banque</h1>
                 <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                  Pour déposer ou retirer, contactez votre administrateur.
+                  Consultez votre solde et déposez via Mobile Money.
                 </p>
               </div>
-              <Badge className="bg-emerald-600 text-white">Lecture seule</Badge>
+              <Badge className="bg-emerald-600 text-white">Mon compte</Badge>
             </div>
           </div>
           <div className="grid gap-5 p-5 lg:grid-cols-[1.3fr_0.7fr]">
@@ -145,6 +147,13 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
             </div>
           </div>
         </section>
+
+        <EpargneMemberDepositButton
+          groupId={groupId}
+          accountId={account.id_compte}
+          devise={devise}
+          defaultTelephone={membership.user.telephone}
+        />
 
         <EpargneMovementsHistory
           groupId={groupId}

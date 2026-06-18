@@ -6,12 +6,14 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MobileMoneyPayButton } from "@/components/payments/mobile-money-checkout";
 
 type Props = {
   groupId: string;
   reunionId: string;
   statut: "PLANIFIEE" | "TERMINEE" | "ANNULEE";
   myPresence: {
+    id_presence: string;
     statut_presence: "PRESENT" | "ABSENT" | "EXCUSE" | "DEMANDE_EXCUSE" | "EN_RETARD";
     amende_payee: boolean;
     note_absence: string | null;
@@ -19,6 +21,7 @@ type Props = {
   montantAmende: number;
   devise: string;
   dateReunion: string;
+  memberTelephone?: string;
 };
 
 const PRESENCE_DISPLAY: Record<string, { label: string; badgeClass: string }> = {
@@ -37,6 +40,7 @@ export function ReunionDetailMembre({
   montantAmende,
   devise,
   dateReunion,
+  memberTelephone,
 }: Props) {
   const router = useRouter();
   const [showExcuseForm, setShowExcuseForm] = React.useState(false);
@@ -110,13 +114,28 @@ export function ReunionDetailMembre({
                   </p>
                 </div>
               ) : (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 space-y-1">
-                  <p className="text-sm font-semibold text-rose-700">⚠️ Amende en attente de paiement</p>
-                  <p className="text-xs text-rose-600">
-                    Vous avez une amende de{" "}
-                    <strong>{montantAmende.toLocaleString("fr-FR")} {devise}</strong>{" "}
-                    à régler. Contactez votre administrateur pour effectuer le paiement.
-                  </p>
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-rose-700">⚠️ Amende en attente de paiement</p>
+                    <p className="text-xs text-rose-600">
+                      Vous avez une amende de{" "}
+                      <strong>{montantAmende.toLocaleString("fr-FR")} {devise}</strong>{" "}
+                      à régler.
+                    </p>
+                  </div>
+                  <MobileMoneyPayButton
+                    groupId={groupId}
+                    contextType="AMENDE_REUNION"
+                    contextId={myPresence.id_presence}
+                    metadata={{ reunionId }}
+                    montant={montantAmende}
+                    montantLabel={`${montantAmende.toLocaleString("fr-FR")} ${devise}`}
+                    defaultTelephone={memberTelephone}
+                    onSuccess={() => router.refresh()}
+                    buttonSize="sm"
+                  >
+                    Payer mon amende
+                  </MobileMoneyPayButton>
                 </div>
               )
             ) : (

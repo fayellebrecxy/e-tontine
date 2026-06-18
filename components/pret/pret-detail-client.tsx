@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 import { CANCELLABLE_PRET_STATUTS, PretCancelButton } from "@/components/pret/pret-cancel-button";
 import { PretDeleteButton } from "@/components/pret/pret-delete-button";
 import { pretActionSuccessMessage } from "@/components/pret/pret-action-messages";
@@ -55,7 +56,7 @@ type PretDetail = {
   date_approbation: string | null;
   date_decaissement: string | null;
   date_fin: string | null;
-  emprunteur: { id_membre_groupe: string; user: { prenom: string; nom: string } };
+  emprunteur: { id_membre_groupe: string; user: { prenom: string; nom: string; telephone?: string } };
   avalistes: {
     id_avaliste_pret: string;
     statut: string;
@@ -109,6 +110,7 @@ export function PretDetailClient({
   devise,
   isAdmin,
   currentMemberId,
+  currentMemberTelephone,
   pret,
   members,
 }: {
@@ -118,6 +120,7 @@ export function PretDetailClient({
   currentMemberId: string;
   pret: PretDetail;
   members: { id_membre_groupe: string; label: string }[];
+  currentMemberTelephone?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
@@ -145,6 +148,8 @@ export function PretDetailClient({
   const [contratSignature, setContratSignature] = React.useState("");
   const [contratSaisie, setContratSaisie] = React.useState(false);
   const [refusMotif, setRefusMotif] = React.useState("");
+  const [showDisburseMobileMoney, setShowDisburseMobileMoney] = React.useState(false);
+  const [showRepayMobileMoney, setShowRepayMobileMoney] = React.useState(false);
 
   const myAvaliste = pret.avalistes.find((a) => a.membre.id_membre_groupe === currentMemberId);
   const proposesCount = pret.avalistes.filter((a) => a.statut === "PROPOSE").length;
@@ -183,10 +188,10 @@ export function PretDetailClient({
     isAdmin &&
     ["EN_ATTENTE_AVALISTES", "EN_ATTENTE_CONFIRMATION_AVALISTES"].includes(pret.statut);
   const canAnalyze = isAdmin && pret.statut === "EN_ATTENTE_ANALYSE" && allAvalistesReady;
-  const canDisburse = isAdmin && pret.statut === "APPROUVE";
-  const canRepay = isAdmin && ["EN_COURS", "EN_RETARD"].includes(pret.statut);
-  const canFillContrat = myAvaliste?.statut === "EN_ATTENTE";
   const isEmprunteur = pret.emprunteur.id_membre_groupe === currentMemberId;
+  const canDisburse = isAdmin && pret.statut === "APPROUVE";
+  const canRepay = (isAdmin || isEmprunteur) && ["EN_COURS", "EN_RETARD"].includes(pret.statut);
+  const canFillContrat = myAvaliste?.statut === "EN_ATTENTE";
   const canCancel =
     isEmprunteur &&
     CANCELLABLE_PRET_STATUTS.includes(pret.statut as (typeof CANCELLABLE_PRET_STATUTS)[number]);
@@ -290,6 +295,55 @@ export function PretDetailClient({
           </div>
         )}
       </section>
+
+      {isEmprunteur && canRepay && (
+        <section className="rounded-xl border-2 border-brand-200 bg-brand-50/60 p-5 shadow-sm">
+          <h2 className="mb-1 text-lg font-semibold text-brand-900">Rembourser mon prêt</h2>
+          <p className="mb-4 text-sm text-brand-800">
+            Versez votre remboursement au groupe via Orange Money ou MTN MoMo.
+            Capital restant :{" "}
+            <strong>{fmt(Number(pret.montant_capital_restant), devise)}</strong>
+            {Number(pret.montant_interets_restant) > 0 ? (
+              <>
+                {" "}
+                · Intérêts : <strong>{fmt(Number(pret.montant_interets_restant), devise)}</strong>
+              </>
+            ) : null}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              type="number"
+              placeholder="Montant à payer"
+              value={repayment}
+              onChange={(e) => setRepayment(e.target.value)}
+              className="w-full max-w-xs bg-white"
+            />
+            <Button
+              disabled={!repayment || Number(repayment) <= 0}
+              onClick={() => setShowRepayMobileMoney(true)}
+              className="gap-2"
+            >
+              Payer via Mobile Money
+            </Button>
+          </div>
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="PRET_REMBOURSEMENT"
+            contextId={pret.id_pret}
+            montant={Number(repayment)}
+            montantLabel={fmt(Number(repayment), devise)}
+            defaultTelephone={currentMemberTelephone ?? pret.emprunteur.user.telephone}
+            open={showRepayMobileMoney}
+            onOpenChange={setShowRepayMobileMoney}
+            onSuccess={() => {
+              setRepayment("");
+              router.refresh();
+            }}
+            title="Remboursement Mobile Money"
+            description="Choisissez Orange Money ou MTN MoMo pour rembourser votre prêt."
+          />
+        </section>
+      )}
 
       {pret.avalistes.length > 0 && (
         <section className="rounded-lg border p-5">
@@ -577,16 +631,35 @@ export function PretDetailClient({
           <p className="mb-3 text-sm text-slate-600">
             Action séparée : l&apos;argent sera prélevé proportionnellement sur la banque. Tous les membres seront notifiés.
           </p>
-          <Button disabled={loading} onClick={() => apiAction({ action: "disburse" })}>
-            {loading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
-            Verser le prêt
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={loading} onClick={() => apiAction({ action: "disburse" })}>
+              {loading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
+              Verser manuellement
+            </Button>
+            <Button variant="outline" onClick={() => setShowDisburseMobileMoney(true)}>
+              Verser via Mobile Money
+            </Button>
+          </div>
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="PRET_DECAISSEMENT"
+            contextId={pret.id_pret}
+            direction="OUTBOUND"
+            montant={Number(pret.montant_approuve ?? 0)}
+            montantLabel={fmt(Number(pret.montant_approuve ?? 0), devise)}
+            defaultTelephone={pret.emprunteur.user.telephone}
+            open={showDisburseMobileMoney}
+            onOpenChange={setShowDisburseMobileMoney}
+            onSuccess={() => router.refresh()}
+            title="Décaissement Mobile Money"
+            description={`Transfert simulé vers ${pret.emprunteur.user.prenom} ${pret.emprunteur.user.nom}.`}
+          />
         </section>
       )}
 
-      {canRepay && (
+      {isAdmin && canRepay && (
         <section className="rounded-lg border p-5">
-          <h2 className="mb-3 font-semibold">Enregistrer un remboursement</h2>
+          <h2 className="mb-3 font-semibold">Enregistrer un remboursement (admin)</h2>
           <div className="flex flex-wrap gap-2">
             <Input
               type="number"
@@ -595,13 +668,42 @@ export function PretDetailClient({
               onChange={(e) => setRepayment(e.target.value)}
               className="w-40"
             />
-            <Button
-              disabled={loading || !repayment}
-              onClick={() => apiAction({ action: "repayment", montant: Number(repayment) })}
-            >
-              Enregistrer
-            </Button>
+            {isAdmin ? (
+              <Button
+                disabled={loading || !repayment}
+                onClick={() => apiAction({ action: "repayment", montant: Number(repayment) })}
+              >
+                Enregistrer manuellement
+              </Button>
+            ) : null}
+            {isAdmin ? (
+              <Button
+                variant="outline"
+                disabled={!repayment || Number(repayment) <= 0}
+                onClick={() => setShowRepayMobileMoney(true)}
+              >
+                Simuler Mobile Money
+              </Button>
+            ) : null}
           </div>
+          {isAdmin ? (
+            <MobileMoneyCheckout
+              groupId={groupId}
+              contextType="PRET_REMBOURSEMENT"
+              contextId={pret.id_pret}
+              montant={Number(repayment)}
+              montantLabel={fmt(Number(repayment), devise)}
+              targetMemberId={pret.emprunteur.id_membre_groupe}
+              defaultTelephone={pret.emprunteur.user.telephone}
+              open={showRepayMobileMoney}
+              onOpenChange={setShowRepayMobileMoney}
+              onSuccess={() => {
+                setRepayment("");
+                router.refresh();
+              }}
+              title="Remboursement Mobile Money (admin)"
+            />
+          ) : null}
         </section>
       )}
 

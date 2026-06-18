@@ -22,7 +22,7 @@ export default async function PretDetailPage({
 
   const membership = await prisma.membreGroupe.findFirst({
     where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
-    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } } },
+    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } }, user: { select: { telephone: true } } },
   });
   if (!membership) redirect(`/dashboard/groups/${groupId}`);
 
@@ -92,6 +92,7 @@ export default async function PretDetailPage({
       devise={membership.groupe.devise}
       isAdmin={membership.role === "ADMIN"}
       currentMemberId={membership.id_membre_groupe}
+      currentMemberTelephone={membership.user.telephone}
       pret={serialized}
       members={members.map((m) => ({
         id_membre_groupe: m.id_membre_groupe,

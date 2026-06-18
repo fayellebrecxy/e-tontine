@@ -13,6 +13,7 @@ import {
 } from "@/lib/cycle-member-debts";
 import { applyPaymentAllocations } from "@/lib/cycle-payment-processor";
 import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
+import { runExtendedTransaction } from "@/lib/prisma-transaction";
 
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
@@ -124,7 +125,7 @@ export async function POST(
       return NextResponse.json({ ok: false, error: allocationError }, { status: 400 });
     }
 
-    const createdIds = await prisma.$transaction((tx) =>
+    const createdIds = await runExtendedTransaction((tx) =>
       applyPaymentAllocations(tx, {
         groupId,
         cycle: {

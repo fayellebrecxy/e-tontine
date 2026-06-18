@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type OperationType = "DEPOT" | "RETRAIT";
 
@@ -24,6 +25,7 @@ export function OperationEpargneForm({
   const [montant, setMontant] = React.useState("");
   const [motif, setMotif] = React.useState("");
   const [pending, setPending] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,10 +110,37 @@ export function OperationEpargneForm({
             placeholder="Ex : dépôt reçu en espèces"
           />
         </div>
-        <Button type="submit" disabled={pending} className="self-end">
-          {pending ? "Enregistrement..." : type === "DEPOT" ? "Enregistrer le dépôt" : "Enregistrer le retrait"}
-        </Button>
+        <div className="flex flex-wrap gap-2 self-end">
+          <Button type="submit" disabled={pending}>
+            {pending ? "Enregistrement..." : type === "DEPOT" ? "Enregistrer manuellement" : "Enregistrer manuellement"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || !Number.isFinite(Number(montant)) || Number(montant) <= 0 || !motif.trim()}
+            onClick={() => setShowMobileMoney(true)}
+          >
+            {type === "DEPOT" ? "Dépôt Mobile Money" : "Retrait Mobile Money"}
+          </Button>
+        </div>
       </div>
+
+      <MobileMoneyCheckout
+        groupId={groupId}
+        contextType={type === "DEPOT" ? "EPARGNE_DEPOT" : "EPARGNE_RETRAIT"}
+        contextId={accountId}
+        direction={type === "DEPOT" ? "INBOUND" : "OUTBOUND"}
+        montant={Number(montant)}
+        metadata={{ montant: Number(montant), motif: motif.trim() }}
+        open={showMobileMoney}
+        onOpenChange={setShowMobileMoney}
+        onSuccess={() => {
+          setMontant("");
+          setMotif("");
+          router.refresh();
+        }}
+        title={type === "DEPOT" ? "Dépôt épargne Mobile Money" : "Retrait épargne Mobile Money"}
+      />
     </form>
   );
 }

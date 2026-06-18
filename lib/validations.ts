@@ -201,6 +201,36 @@ export const createVersementSchema = z
 
 export type CreateVersementInput = z.infer<typeof createVersementSchema>;
 
+export const initiatePaymentSchema = z
+  .object({
+    context_type: z.enum([
+      "CYCLE_COTISATION",
+      "RUBRIQUE",
+      "AMENDE_REUNION",
+      "EPARGNE_DEPOT",
+      "PRET_REMBOURSEMENT",
+      "CYCLE_DISTRIBUTION",
+      "PRET_DECAISSEMENT",
+      "RUBRIQUE_RETRAIT",
+      "PENALITE_RETRAIT",
+      "AMENDE_RETRAIT",
+      "EPARGNE_RETRAIT",
+    ]),
+    context_id: z.string().uuid("Identifiant de contexte invalide."),
+    provider: z.enum(["ORANGE_MONEY", "MTN_MOMO"]),
+    telephone: z
+      .string()
+      .trim()
+      .min(8, "Numéro de téléphone invalide.")
+      .max(24, "Numéro de téléphone trop long."),
+    montant: z.number().positive().optional(),
+    metadata: z.record(z.unknown()).optional(),
+    target_member_id: z.string().uuid().optional(),
+  })
+  .strict();
+
+export type InitiatePaymentInput = z.infer<typeof initiatePaymentSchema>;
+
 export function normalizeNextPath(next?: string | null) {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
     return "/dashboard";

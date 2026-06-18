@@ -7,6 +7,7 @@ import { applyAutomaticOverduePenalties } from "@/lib/cycle-penalties";
 import { getMemberDebtSummary, getCycleOutstandingDebtTotal } from "@/lib/cycle-member-debts";
 import { Button } from "@/components/ui/button";
 import { CyclePaymentForm } from "@/components/groups/cycle-payment-form";
+import { CycleMemberPaymentPanel } from "@/components/groups/cycle-member-payment-panel";
 import { CloseCycleButton } from "@/components/groups/close-cycle-button";
 import { EditCycleForm } from "@/components/groups/edit-cycle-form";
 import { DistributionForm } from "@/components/groups/distribution-form";
@@ -67,7 +68,7 @@ export default async function GroupCycleDetailPage({
 
   const membership = await prisma.membreGroupe.findFirst({
     where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
-    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } } },
+    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } }, user: { select: { telephone: true } } },
   });
 
   if (!membership) {
@@ -198,6 +199,11 @@ export default async function GroupCycleDetailPage({
 
   const outstandingDebtTotal =
     membership.role === "ADMIN" ? await getCycleOutstandingDebtTotal(cycleId) : 0;
+
+  const myDebtSummary =
+    membership.role !== "ADMIN"
+      ? await getMemberDebtSummary(cycleId, membership.id_membre_groupe, now)
+      : null;
 
   const participantsForForm = cycle.participants.map((participant) => {
     const debt = memberDebtSummaries.find(
@@ -565,12 +571,25 @@ export default async function GroupCycleDetailPage({
           {/* Le formulaire de retrait est désormais dans l'onglet "Caisse pénalités" */}
         </>
       ) : (
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-          <p className="text-sm font-semibold text-blue-800">Votre espace membre</p>
-          <p className="mt-1 text-xs text-blue-700">
-            Vous voyez ici votre situation personnelle dans ce cycle. Contactez l'administrateur si
-            un versement effectué n'apparaît pas.
-          </p>
+        <div className="space-y-4">
+          {(myDebtSummary?.totalDue ?? 0) > 0 ? (
+            <CycleMemberPaymentPanel
+              groupId={groupId}
+              cycleId={cycleId}
+              totalDue={myDebtSummary?.totalDue ?? 0}
+              cotisationDue={myDebtSummary?.cotisationDue ?? 0}
+              penaltyDue={myDebtSummary?.penaltyDue ?? 0}
+              devise={devise}
+              defaultTelephone={membership.user.telephone}
+            />
+          ) : (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-800">✅ Vous êtes à jour</p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Aucune cotisation ni pénalité en attente pour ce cycle.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -748,7 +767,19 @@ export default async function GroupCycleDetailPage({
   const myMemberPayments = paymentsByMember.get(membership.id_membre_groupe) ?? [];
 
   const myPaymentsContent = (
-    <CyclePaymentsHistory
+    <div className="space-y-4">
+      {membership.role !== "ADMIN" ? (
+        <CycleMemberPaymentPanel
+          groupId={groupId}
+          cycleId={cycleId}
+          totalDue={myDebtSummary?.totalDue ?? 0}
+          cotisationDue={myDebtSummary?.cotisationDue ?? 0}
+          penaltyDue={myDebtSummary?.penaltyDue ?? 0}
+          devise={devise}
+          defaultTelephone={membership.user.telephone}
+        />
+      ) : null}
+      <CyclePaymentsHistory
       payments={myMemberPayments.map((payment) => ({
         id_cotisation: payment.id_cotisation,
         numero_tour: payment.numero_tour,
@@ -765,7 +796,26 @@ export default async function GroupCycleDetailPage({
       emptyLabel="Aucune cotisation visible pour vous dans ce cycle."
       showSummary
     />
+    </div>
   );
+
+  const memberPayContent =
+    membership.role !== "ADMIN" && (myDebtSummary?.totalDue ?? 0) > 0 ? (
+      <CycleMemberPaymentPanel
+        groupId={groupId}
+        cycleId={cycleId}
+        totalDue={myDebtSummary?.totalDue ?? 0}
+        cotisationDue={myDebtSummary?.cotisationDue ?? 0}
+        penaltyDue={myDebtSummary?.penaltyDue ?? 0}
+        devise={devise}
+        defaultTelephone={membership.user.telephone}
+      />
+    ) : null;
+
+  const memberDefaultPanel =
+    membership.role !== "ADMIN" && (myDebtSummary?.totalDue ?? 0) > 0
+      ? ("memberPay" as const)
+      : ("overview" as const);
 
   return (
     <div className="space-y-6">
@@ -782,6 +832,8 @@ export default async function GroupCycleDetailPage({
       <CycleDetailActions
         isAdmin={membership.role === "ADMIN"}
         overview={overviewContent}
+        memberPay={memberPayContent}
+        defaultPanel={memberDefaultPanel}
         edit={editContent}
         payment={paymentContent}
         distribution={distributionContent}

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { enregistrerPaiement } from "@/lib/actions/rubriques";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type Paiement = {
   id_membre_groupe: string;
@@ -55,6 +56,7 @@ export function PaiementForm({
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
   const [formData, setFormData] = React.useState({
     membreId: "",
     montant: "",
@@ -190,12 +192,42 @@ export function PaiementForm({
               remainingDue === 0
             }
           >
-            {loading ? "Enregistrement..." : "Enregistrer"}
+            {loading ? "Enregistrement..." : "Enregistrer manuellement"}
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={
+              !formData.membreId ||
+              !formData.montant ||
+              montantInvalide ||
+              remainingDue === 0
+            }
+            onClick={() => setShowMobileMoney(true)}
+          >
+            Simuler Mobile Money
           </Button>
           <Button variant="outline" className="w-full" onClick={onClose}>
             Annuler
           </Button>
         </SheetFooter>
+
+        {formData.membreId && formData.montant && !montantInvalide ? (
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="RUBRIQUE"
+            contextId={rubriqueId}
+            montant={montantSaisi}
+            targetMemberId={formData.membreId}
+            open={showMobileMoney}
+            onOpenChange={setShowMobileMoney}
+            onSuccess={() => {
+              onClose();
+              router.refresh();
+            }}
+            title="Paiement rubrique Mobile Money"
+          />
+        ) : null}
       </SheetContent>
     </Sheet>
   );

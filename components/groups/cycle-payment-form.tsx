@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type DebtSlice = {
   type: "COTISATION" | "PENALITE";
@@ -54,6 +55,7 @@ export function CyclePaymentForm({
   const [montant, setMontant] = React.useState("");
   const [datePaiement, setDatePaiement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
 
   const selectedParticipant = participants.find((participant) => participant.id_membre_groupe === selected);
   const activeTourInfo = tours[0];
@@ -191,9 +193,39 @@ export function CyclePaymentForm({
             />
           </div>
         </div>
-        <Button type="button" onClick={submit} disabled={submitting || !selectedParticipant?.totalDue}>
-          {submitting ? "Enregistrement…" : "✅ Enregistrer le versement"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={submit} disabled={submitting || !selectedParticipant?.totalDue}>
+            {submitting ? "Enregistrement…" : "✅ Enregistrer manuellement"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!selectedParticipant?.totalDue}
+            onClick={() => setShowMobileMoney(true)}
+          >
+            📱 Simuler Mobile Money
+          </Button>
+        </div>
+
+        {selectedParticipant && selectedParticipant.totalDue > 0 ? (
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="CYCLE_COTISATION"
+            contextId={cycleId}
+            montant={Number(montant) > 0 ? Number(montant) : selectedParticipant.totalDue}
+            montantLabel={`${(Number(montant) > 0 ? Number(montant) : selectedParticipant.totalDue).toLocaleString("fr-FR")} XAF`}
+            targetMemberId={selected}
+            open={showMobileMoney}
+            onOpenChange={setShowMobileMoney}
+            onSuccess={() => {
+              setMontant("");
+              setDatePaiement("");
+              router.refresh();
+            }}
+            title="Encaisser via Mobile Money"
+            description="Simulez un paiement Mobile Money pour le membre sélectionné."
+          />
+        ) : null}
       </CardContent>
     </Card>
   );

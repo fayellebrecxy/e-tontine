@@ -101,6 +101,7 @@ export default async function RubriquesPage({
       members={plainMembers}
       isAdmin={isAdmin}
       adminId={membership.id_membre_groupe}
+      memberTelephone={membership.user.telephone}
     />
   );
 }

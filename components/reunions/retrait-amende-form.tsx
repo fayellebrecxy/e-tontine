@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type Props = {
   groupId: string;
@@ -28,6 +29,7 @@ export function RetraitAmendeForm({ groupId, solde, devise }: Props) {
   const [montant, setMontant] = React.useState("");
   const [motif, setMotif] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
 
   const montantNum = Number(montant);
   const isValid = montantNum > 0 && montantNum <= solde && motif.trim().length >= 3;
@@ -149,9 +151,36 @@ export function RetraitAmendeForm({ groupId, solde, devise }: Props) {
               onClick={handleSubmit}
               disabled={submitting || !isValid}
             >
-              {submitting ? "Traitement…" : "✅ Confirmer le retrait"}
+              {submitting ? "Traitement…" : "Confirmer manuellement"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              disabled={!isValid}
+              onClick={() => setShowMobileMoney(true)}
+            >
+              Via Mobile Money
             </Button>
           </div>
+
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="AMENDE_RETRAIT"
+            contextId={groupId}
+            direction="OUTBOUND"
+            montant={montantNum}
+            metadata={{ montant: montantNum, motif: motif.trim() }}
+            open={showMobileMoney}
+            onOpenChange={setShowMobileMoney}
+            onSuccess={() => {
+              setMontant("");
+              setMotif("");
+              setOpen(false);
+              router.refresh();
+            }}
+            title="Retrait amendes Mobile Money"
+          />
         </div>
       </SheetContent>
     </Sheet>

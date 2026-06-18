@@ -39,7 +39,7 @@ export default async function ReunionDetailPage({
 
   const membership = await prisma.membreGroupe.findFirst({
     where: { id_user: user.id, id_groupe: groupId, statut_adhesion: "ACTIF" },
-    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } } },
+    select: { id_membre_groupe: true, role: true, groupe: { select: { devise: true } }, user: { select: { telephone: true } } },
   });
   if (!membership) redirect(`/dashboard/groups/${groupId}`);
 
@@ -252,6 +252,7 @@ export default async function ReunionDetailPage({
           reunionId={reunionId}
           statut={reunion.statut}
           myPresence={myPresence ? {
+            id_presence: myPresence.id_presence,
             statut_presence: myPresence.statut_presence,
             amende_payee: myPresence.amende_payee,
             note_absence: myPresence.note_absence,
@@ -259,6 +260,7 @@ export default async function ReunionDetailPage({
           montantAmende={montantAmende}
           devise={devise}
           dateReunion={reunion.date_reunion.toISOString()}
+          memberTelephone={membership.user.telephone}
         />
       )}
     </div>

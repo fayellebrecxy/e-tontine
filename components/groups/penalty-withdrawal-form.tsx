@@ -14,6 +14,7 @@ import {
   enregistrerRetraitPenalite,
   type PenaltyWithdrawalScope,
 } from "@/lib/actions/cycle-penalty-withdrawals";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type Props = {
   groupId: string;
@@ -40,6 +41,7 @@ export function PenaltyWithdrawalForm({
   const [montant, setMontant] = React.useState("");
   const [motif, setMotif] = React.useState("");
   const [pending, setPending] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
 
   const available = scope === "TOUR" ? caisseTour : caisseCycle;
 
@@ -193,9 +195,40 @@ export function PenaltyWithdrawalForm({
               </div>
             </div>
 
-            <Button type="button" onClick={submit} disabled={pending || available <= 0}>
-              {pending ? "Enregistrement..." : "Retirer"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={submit} disabled={pending || available <= 0}>
+                {pending ? "Enregistrement..." : "Retirer manuellement"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={available <= 0 || !montant || !motif.trim()}
+                onClick={() => setShowMobileMoney(true)}
+              >
+                Retrait via Mobile Money
+              </Button>
+            </div>
+
+            <MobileMoneyCheckout
+              groupId={groupId}
+              contextType="PENALITE_RETRAIT"
+              contextId={cycleId}
+              direction="OUTBOUND"
+              montant={Number(montant)}
+              metadata={{
+                montant: Number(montant),
+                motif,
+                scope,
+              }}
+              open={showMobileMoney}
+              onOpenChange={setShowMobileMoney}
+              onSuccess={() => {
+                setMontant("");
+                setMotif("");
+                router.refresh();
+              }}
+              title="Retrait pénalités Mobile Money"
+            />
           </>
         )}
       </CardContent>

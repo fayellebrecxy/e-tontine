@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type TourItem = {
   numero: number;
@@ -57,6 +58,7 @@ export function DistributionForm({
   const [referenceExterne, setReferenceExterne] = React.useState("");
   const [dateVersement, setDateVersement] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [showMobileMoney, setShowMobileMoney] = React.useState(false);
 
   const tourSelectionne = tours.find((t) => t.numero === Number(numeroTour));
 
@@ -93,6 +95,15 @@ export function DistributionForm({
       return;
     }
 
+    if (modeVersement === "MOBILE_MONEY") {
+      setShowMobileMoney(true);
+      return;
+    }
+
+    await submitManual(montantValue);
+  };
+
+  const submitManual = async (montantValue: number) => {
     setSubmitting(true);
 
     const res = await fetch(`/api/groups/${groupId}/cycles/${cycleId}/distributions`, {
@@ -259,8 +270,38 @@ export function DistributionForm({
           disabled={submitting || !tourSelectionne?.canDistribute}
           className="w-full sm:w-auto"
         >
-          {submitting ? "Enregistrement…" : "💰 Verser le pot au bénéficiaire"}
+          {submitting
+            ? "Enregistrement…"
+            : modeVersement === "MOBILE_MONEY"
+              ? "📱 Verser via Mobile Money"
+              : "💰 Verser le pot au bénéficiaire"}
         </Button>
+
+        {tourSelectionne?.canDistribute ? (
+          <MobileMoneyCheckout
+            groupId={groupId}
+            contextType="CYCLE_DISTRIBUTION"
+            contextId={cycleId}
+            direction="OUTBOUND"
+            montant={Number(montantVerse)}
+            montantLabel={`${Number(montantVerse).toLocaleString("fr-FR")} ${devise}`}
+            metadata={{
+              numero_tour: Number(numeroTour),
+              montant: Number(montantVerse),
+            }}
+            open={showMobileMoney}
+            onOpenChange={setShowMobileMoney}
+            onSuccess={() => {
+              setMontantVerse("");
+              setReferenceExterne("");
+              setDateVersement("");
+              setModeVersement("");
+              router.refresh();
+            }}
+            title="Verser le pot via Mobile Money"
+            description={`Transfert simulé vers ${tourSelectionne.beneficiaire}.`}
+          />
+        ) : null}
       </CardContent>
     </Card>
   );
