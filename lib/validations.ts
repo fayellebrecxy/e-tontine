@@ -21,11 +21,11 @@ export const resetPasswordSchema = z.object({
 
 export const updatePasswordSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string().min(8, "Password must be at least 8 characters."),
+    password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères."),
+    confirmPassword: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères."),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
+    message: "Les mots de passe ne correspondent pas.",
     path: ["confirmPassword"],
   });
 

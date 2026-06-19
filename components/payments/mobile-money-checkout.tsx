@@ -39,7 +39,7 @@ type PaymentContextType =
 
 type TransactionStatus = {
   id: string;
-  statut: "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
+  statut: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED" | "CANCELLED";
   provider: PaymentProvider;
   providerReference: string | null;
   montant: number;
@@ -97,6 +97,10 @@ export function MobileMoneyCheckout({
   const [elapsed, setElapsed] = React.useState(0);
   const onSuccessRef = React.useRef(onSuccess);
   const transactionIdRef = React.useRef<string | null>(null);
+  const terminalRef = React.useRef(false);
+  const successNotifiedRef = React.useRef(false);
+  const confirmSentRef = React.useRef(false);
+  const confirmInFlightRef = React.useRef(false);
 
   React.useEffect(() => {
     onSuccessRef.current = onSuccess;
@@ -105,36 +109,20 @@ export function MobileMoneyCheckout({
   const applyTransactionResult = React.useCallback((tx: TransactionStatus) => {
     setTransaction(tx);
     if (tx.statut === "SUCCESS") {
+      terminalRef.current = true;
       setStep("success");
-      onSuccessRef.current?.(tx);
-    } else if (tx.statut === "FAILED") {
+      if (!successNotifiedRef.current) {
+        successNotifiedRef.current = true;
+        onSuccessRef.current?.(tx);
+      }
+    } else if (tx.statut === "FAILED" || tx.statut === "CANCELLED") {
+      terminalRef.current = true;
       setStep("failed");
     }
   }, []);
 
-  const refreshTransaction = React.useCallback(
-    async (transactionId: string, attemptConfirm = false) => {
-      if (attemptConfirm) {
-        const confirmRes = await fetch(
-          `/api/groups/${groupId}/payments/${transactionId}/confirm`,
-          { method: "POST", credentials: "same-origin" },
-        );
-        const confirmBody = await confirmRes.json().catch(() => null) as null | {
-          ok?: boolean;
-          error?: string;
-          transaction?: TransactionStatus;
-        };
-
-        if (confirmRes.ok && confirmBody?.ok && confirmBody.transaction) {
-          applyTransactionResult(confirmBody.transaction);
-          return;
-        }
-
-        if (!confirmRes.ok) {
-          toast.error(confirmBody?.error ?? "Impossible de confirmer le paiement.");
-        }
-      }
-
+  const fetchStatus = React.useCallback(
+    async (transactionId: string) => {
       const statusRes = await fetch(
         `/api/groups/${groupId}/payments/${transactionId}/status`,
         { credentials: "same-origin" },
@@ -146,13 +134,56 @@ export function MobileMoneyCheckout({
       };
 
       if (!statusRes.ok || !statusBody?.ok || !statusBody.transaction) {
-        toast.error(statusBody?.error ?? "Impossible de vérifier le paiement.");
-        return;
+        if (!terminalRef.current) {
+          toast.error(statusBody?.error ?? "Impossible de vérifier le paiement.");
+        }
+        return null;
       }
 
-      applyTransactionResult(statusBody.transaction);
+      return statusBody.transaction;
     },
-    [applyTransactionResult, groupId],
+    [groupId],
+  );
+
+  const confirmPayment = React.useCallback(
+    async (transactionId: string) => {
+      const confirmRes = await fetch(
+        `/api/groups/${groupId}/payments/${transactionId}/confirm`,
+        { method: "POST", credentials: "same-origin" },
+      );
+      const confirmBody = await confirmRes.json().catch(() => null) as null | {
+        ok?: boolean;
+        error?: string;
+        transaction?: TransactionStatus;
+      };
+
+      if (confirmRes.ok && confirmBody?.ok && confirmBody.transaction) {
+        return confirmBody.transaction;
+      }
+
+      if (!confirmRes.ok && confirmBody?.error && !terminalRef.current) {
+        toast.error(confirmBody.error);
+      }
+
+      return fetchStatus(transactionId);
+    },
+    [fetchStatus, groupId],
+  );
+
+  const refreshTransaction = React.useCallback(
+    async (transactionId: string, mode: "poll" | "confirm") => {
+      if (terminalRef.current) return;
+
+      const tx =
+        mode === "confirm"
+          ? await confirmPayment(transactionId)
+          : await fetchStatus(transactionId);
+
+      if (tx) {
+        applyTransactionResult(tx);
+      }
+    },
+    [applyTransactionResult, confirmPayment, fetchStatus],
   );
 
   const reset = React.useCallback(() => {
@@ -163,6 +194,10 @@ export function MobileMoneyCheckout({
     setSubmitting(false);
     setElapsed(0);
     transactionIdRef.current = null;
+    terminalRef.current = false;
+    successNotifiedRef.current = false;
+    confirmSentRef.current = false;
+    confirmInFlightRef.current = false;
   }, [defaultTelephone]);
 
   React.useEffect(() => {
@@ -181,29 +216,48 @@ export function MobileMoneyCheckout({
 
     const delayMs = getSimulationDelayMs(direction);
     const startedAt = Date.now();
-    let confirmSent = false;
 
     const tick = window.setInterval(() => {
       setElapsed(Math.min(delayMs, Date.now() - startedAt));
-    }, 250);
+    }, 200);
 
-    const pollOnce = async () => {
-      const elapsedMs = Date.now() - startedAt;
-      const shouldConfirm = elapsedMs >= delayMs && !confirmSent;
-      if (shouldConfirm) {
-        confirmSent = true;
+    const runConfirmOnce = async () => {
+      if (terminalRef.current || confirmSentRef.current || confirmInFlightRef.current) return;
+      confirmInFlightRef.current = true;
+      confirmSentRef.current = true;
+      try {
+        await refreshTransaction(transactionId, "confirm");
+      } finally {
+        confirmInFlightRef.current = false;
       }
-      await refreshTransaction(transactionId, shouldConfirm);
     };
 
-    void pollOnce();
+    const pollStatus = () => {
+      if (terminalRef.current) return;
+      void refreshTransaction(transactionId, "poll");
+    };
+
+    pollStatus();
+
+    const confirmTimer = window.setTimeout(() => {
+      void runConfirmOnce();
+    }, delayMs);
+
     const poll = window.setInterval(() => {
-      void pollOnce();
-    }, 1500);
+      if (terminalRef.current) return;
+      if (Date.now() - startedAt >= delayMs) {
+        if (!confirmSentRef.current) {
+          void runConfirmOnce();
+          return;
+        }
+        pollStatus();
+      }
+    }, 2000);
 
     return () => {
       window.clearInterval(tick);
       window.clearInterval(poll);
+      window.clearTimeout(confirmTimer);
     };
   }, [direction, refreshTransaction, step, transaction?.id]);
 

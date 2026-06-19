@@ -230,8 +230,13 @@ export default async function GroupOverviewPage({
             {normalizedCycles.map((cycle) => {
               const now = new Date();
               const isActive = cycle.date_debut <= now && cycle.date_fin >= now;
+              const cycleHref = `/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`;
               return (
-                <div key={cycle.id_cycle} className="rounded-lg border border-gray-200 px-3 py-2">
+                <Link
+                  key={cycle.id_cycle}
+                  href={cycleHref}
+                  className="block rounded-lg border border-gray-200 px-3 py-2 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+                >
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-gray-900">{cycle.nom_cycle}</p>
                     {isActive ? (
@@ -241,21 +246,14 @@ export default async function GroupOverviewPage({
                     ) : null}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    {cycle.date_debut.toLocaleDateString("fr-FR")} - {" "}
+                    {cycle.date_debut.toLocaleDateString("fr-FR")} -{" "}
                     {cycle.date_fin.toLocaleDateString("fr-FR")}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
                     Duree tour: {cycle.duree_tour_de_gain} jours
                   </p>
-                  <div className="mt-2">
-                    <Link
-                      href={`/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`}
-                      className="text-xs font-semibold text-brand-600 hover:underline"
-                    >
-                      Voir le cycle
-                    </Link>
-                  </div>
-                </div>
+                  <p className="mt-2 text-xs font-semibold text-brand-600">Ouvrir le cycle →</p>
+                </Link>
               );
             })}
           </div>

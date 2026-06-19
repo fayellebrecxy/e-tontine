@@ -1,6 +1,10 @@
 import type { PaymentTransaction } from "@/lib/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import {
+  getRubriqueSolde,
+  notifyGroupMembersRubriqueRetrait,
+} from "@/lib/rubrique-caisse";
 import { majStatutMembre } from "@/lib/membre-statut";
 import {
   allocateMemberPayment,
@@ -48,9 +52,69 @@ async function resolveOperatorId(groupId: string, memberId: string) {
   return admin?.id_membre_groupe ?? memberId;
 }
 
+function paymentTransactionNote(transaction: PaymentTransaction) {
+  return `Mobile Money tx:${transaction.id_transaction} ref:${transaction.provider_reference ?? "pending"}`;
+}
+
+async function findRubriquePaymentResult(
+  transaction: PaymentTransaction,
+  rubriqueId: string,
+  memberId: string,
+) {
+  if (transaction.id_resultat) {
+    return transaction.id_resultat;
+  }
+
+  const existingPaiement = await prisma.paiementRubrique.findFirst({
+    where: {
+      id_rubrique: rubriqueId,
+      id_membre_groupe: memberId,
+      note: { contains: transaction.id_transaction },
+    },
+    orderBy: { date_paiement: "desc" },
+    select: { id_paiement: true },
+  });
+
+  if (existingPaiement) {
+    return existingPaiement.id_paiement;
+  }
+
+  const existingMovement = await prisma.mouvementFinancier.findFirst({
+    where: {
+      id_groupe: transaction.id_groupe,
+      reference_type: "payment_transactions",
+      reference_id: transaction.id_transaction,
+    },
+    select: { id_mouvement: true },
+  });
+
+  if (!existingMovement) {
+    return null;
+  }
+
+  return null;
+}
+
 export async function finalizePaymentTransaction(
   transaction: PaymentTransaction,
 ): Promise<{ ok: true; resultId?: string } | { ok: false; error: string }> {
+  if (transaction.id_resultat) {
+    return { ok: true, resultId: transaction.id_resultat };
+  }
+
+  const existingMovement = await prisma.mouvementFinancier.findFirst({
+    where: {
+      id_groupe: transaction.id_groupe,
+      reference_type: "payment_transactions",
+      reference_id: transaction.id_transaction,
+    },
+    select: { id_mouvement: true },
+  });
+
+  if (existingMovement) {
+    return { ok: true, resultId: transaction.id_resultat ?? undefined };
+  }
+
   const metadata = asMetadata(transaction.metadata);
   const operatorId = await resolveOperatorId(transaction.id_groupe, transaction.id_membre_groupe);
 
@@ -201,13 +265,41 @@ async function finalizeRubriquePayment(
   const remaining = roundCurrency(due - paid);
   if (montant > remaining) return { ok: false as const, error: "Montant trop élevé." };
 
+  const existingResultId = await findRubriquePaymentResult(transaction, rubriqueId, memberId);
+  if (existingResultId) {
+    return { ok: true as const, resultId: existingResultId };
+  }
+
   const paiement = await runExtendedTransaction(async (tx) => {
+    const existingMovement = await tx.mouvementFinancier.findFirst({
+      where: {
+        id_groupe: transaction.id_groupe,
+        reference_type: "payment_transactions",
+        reference_id: transaction.id_transaction,
+      },
+      select: { id_mouvement: true },
+    });
+
+    if (existingMovement) {
+      const existing = await tx.paiementRubrique.findFirst({
+        where: {
+          id_rubrique: rubriqueId,
+          id_membre_groupe: memberId,
+          note: { contains: transaction.id_transaction },
+        },
+        include: { membre: { select: { id_user: true } }, rubrique: { select: { nom: true } } },
+      });
+      if (existing) {
+        return existing;
+      }
+    }
+
     const created = await tx.paiementRubrique.create({
       data: {
         id_rubrique: rubriqueId,
         id_membre_groupe: memberId,
         montant_paye: montant,
-        note: `Mobile Money - ${transaction.provider_reference}`,
+        note: paymentTransactionNote(transaction),
       },
       include: { membre: { select: { id_user: true } }, rubrique: { select: { nom: true } } },
     });
@@ -270,8 +362,11 @@ async function finalizeAmendePayment(
     },
   });
 
-  if (!presence || presence.amende_payee) {
-    return { ok: false as const, error: "Amende déjà réglée ou introuvable." };
+  if (!presence) {
+    return { ok: false as const, error: "Amende introuvable." };
+  }
+  if (presence.amende_payee) {
+    return { ok: true as const, resultId: presenceId };
   }
 
   const montantAmende = Number(presence.reunion.montant_amende ?? 0);
@@ -497,6 +592,17 @@ async function finalizeRubriqueRetrait(
 
     return created;
   });
+
+  if (rubrique) {
+    const soldeRestant = await getRubriqueSolde(rubrique.id_rubrique);
+    await notifyGroupMembersRubriqueRetrait({
+      groupId: transaction.id_groupe,
+      rubriqueNom: rubrique.nom,
+      montant,
+      motif,
+      soldeRestant,
+    });
+  }
 
   return { ok: true as const, resultId: retrait.id_retrait };
 }

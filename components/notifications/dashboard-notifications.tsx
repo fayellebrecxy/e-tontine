@@ -43,6 +43,8 @@ const notificationLabel = (type: string) => {
       return "Saisie garantie";
     case "PRET_REDISTRIBUTION":
       return "Redistribution intérêts";
+    case "RETRAIT_RUBRIQUE":
+      return "Retrait rubrique";
     default:
       return "Notification";
   }

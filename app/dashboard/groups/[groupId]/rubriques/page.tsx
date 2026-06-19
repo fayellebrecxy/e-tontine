@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { RubriquesClient } from "@/components/rubriques/rubriques-client";
 import { sendRubriqueEcheanceReminders } from "@/lib/rubrique-reminders";
+import { getRubriqueCaisseStatsMap } from "@/lib/rubrique-caisse";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export default async function RubriquesPage({
     },
     include: {
       user: true,
+      groupe: { select: { devise: true } },
     },
   });
 
@@ -45,6 +47,7 @@ export default async function RubriquesPage({
   await sendRubriqueEcheanceReminders(groupId);
 
   const isAdmin = membership.role === "ADMIN";
+  const devise = membership.groupe.devise;
 
   const rubriques = await prisma.rubriqueCotisation.findMany({
     where: { id_groupe: groupId },
@@ -69,17 +72,16 @@ export default async function RubriquesPage({
           },
         },
       },
-      retraits: isAdmin
-        ? {
+      retraits: {
+        orderBy: { date_retrait: "desc" },
+        include: {
+          valideur: {
             include: {
-              valideur: {
-                include: {
-                  user: true,
-                },
-              },
+              user: { select: { prenom: true, nom: true } },
             },
-          }
-        : false,
+          },
+        },
+      },
     },
     orderBy: { date_creation: "desc" },
   });
@@ -93,6 +95,9 @@ export default async function RubriquesPage({
 
   const plainRubriques = JSON.parse(JSON.stringify(rubriques));
   const plainMembers = JSON.parse(JSON.stringify(members));
+  const caisseStats = await getRubriqueCaisseStatsMap(
+    rubriques.map((r) => r.id_rubrique),
+  );
 
   return (
     <RubriquesClient
@@ -100,8 +105,10 @@ export default async function RubriquesPage({
       rubriques={plainRubriques}
       members={plainMembers}
       isAdmin={isAdmin}
-      adminId={membership.id_membre_groupe}
+      currentMemberId={membership.id_membre_groupe}
       memberTelephone={membership.user.telephone}
+      caisseStats={caisseStats}
+      devise={devise}
     />
   );
 }

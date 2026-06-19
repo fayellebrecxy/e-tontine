@@ -197,12 +197,23 @@ export async function updatePasswordAction(
 ): Promise<AuthActionResult> {
   const parsed = updatePasswordSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false as const, error: "Invalid input." };
+    return { ok: false as const, error: "Vérifie les champs du formulaire." };
   }
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
-    return { ok: false as const, error: "Missing Supabase environment variables." };
+    return { ok: false as const, error: "Configuration Supabase manquante." };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false as const,
+      error: "Session expirée. Rouvre le lien reçu par email ou demande un nouveau lien.",
+    };
   }
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });

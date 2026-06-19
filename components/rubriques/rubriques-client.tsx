@@ -45,6 +45,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FrequenceRubrique, TypeRubriqueCotisation } from "@/lib/rubrique-dates";
+import type { RubriqueCaisseStats } from "@/lib/rubrique-caisse";
 import { useHistoryVisibility } from "@/hooks/use-history-visibility";
 
 type Props = {
@@ -52,8 +53,10 @@ type Props = {
   rubriques: any[];
   members: any[];
   isAdmin: boolean;
-  adminId: string;
+  currentMemberId: string;
   memberTelephone?: string;
+  caisseStats: Record<string, RubriqueCaisseStats>;
+  devise: string;
 };
 
 function getMemberBalance(rubrique: any, membreId: string) {
@@ -64,7 +67,16 @@ function getMemberBalance(rubrique: any, membreId: string) {
   return Math.max(0, Math.round((due - paid) * 100) / 100);
 }
 
-export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId, memberTelephone }: Props) {
+export function RubriquesClient({
+  groupId,
+  rubriques,
+  members,
+  isAdmin,
+  currentMemberId,
+  memberTelephone,
+  caisseStats,
+  devise,
+}: Props) {
   const router = useRouter();
   const [selectedRubriqueId, setSelectedRubriqueId] = React.useState<string | null>(
     rubriques.length > 0 ? rubriques[0].id_rubrique : null,
@@ -85,13 +97,19 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
     ? historyVisibility.isHidden(selectedRubriqueId)
     : false;
 
-  const memberReste = selectedRubrique ? getMemberBalance(selectedRubrique, adminId) : 0;
+  const memberReste = selectedRubrique ? getMemberBalance(selectedRubrique, currentMemberId) : 0;
+  const isConcernedBySelectedRubrique = Boolean(
+    selectedRubrique?.membres_concernes?.some(
+      (mc: { id_membre_groupe: string }) => mc.id_membre_groupe === currentMemberId,
+    ),
+  );
+  const canPaySelectedRubrique = isConcernedBySelectedRubrique && memberReste > 0;
 
-  React.useEffect(() => {
-    if (!isAdmin && tab === "historique") {
-      setTab("solde");
-    }
-  }, [isAdmin, tab]);
+  const selectedCaisseStats = selectedRubriqueId ? caisseStats[selectedRubriqueId] : null;
+  const totalCollected = selectedCaisseStats?.totalCollecte ?? 0;
+  const totalWithdrawn = selectedCaisseStats?.totalRetraits ?? 0;
+  const currentBalance = selectedCaisseStats?.solde ?? 0;
+  const selectedRetraits = selectedRubrique?.retraits ?? [];
 
   const hideSelectedHistory = () => {
     if (!selectedRubriqueId) return;
@@ -112,19 +130,6 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
     r.nom.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const totalCollected = selectedRubrique
-    ? selectedRubrique.paiements.reduce(
-        (acc: number, p: any) => acc + parseFloat(p.montant_paye),
-        0,
-      )
-    : 0;
-  const totalWithdrawn = selectedRubrique
-    ? (selectedRubrique.retraits ?? []).reduce(
-        (acc: number, r: any) => acc + parseFloat(r.montant),
-        0,
-      )
-    : 0;
-  const currentBalance = totalCollected - totalWithdrawn;
   const canRelaunch =
     !!selectedRubrique?.date_fin && new Date(selectedRubrique.date_fin) < new Date();
 
@@ -244,7 +249,12 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                     <div className="ml-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
                   )}
                 </div>
-                <span className="truncate text-xs">{rubrique.montant_fixe} XAF</span>
+                <span className="truncate text-xs">{rubrique.montant_fixe} {devise}</span>
+                {caisseStats[rubrique.id_rubrique] ? (
+                  <span className="block truncate text-[10px] text-muted-foreground">
+                    Caisse : {caisseStats[rubrique.id_rubrique].solde.toLocaleString("fr-FR")} {devise}
+                  </span>
+                ) : null}
                 <RubriquePlanningBanner
                   rubrique={{
                     type_rubrique: rubrique.type_rubrique,
@@ -292,7 +302,7 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                 <p className="mt-1 text-muted-foreground">
                   {isAdmin
                     ? "Gestion et suivi de la rubrique de cotisation"
-                    : "Votre situation sur cette rubrique"}
+                    : "Votre situation et la caisse de la rubrique (transparence)"}
                 </p>
               </div>
               {isAdmin && (
@@ -322,46 +332,50 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
 
             <RubriquePlanningBanner
               rubrique={planningRubrique}
-              resteAPayer={isAdmin ? 0 : memberReste}
-              groupId={!isAdmin ? groupId : undefined}
-              rubriqueId={!isAdmin && selectedRubriqueId ? selectedRubriqueId : undefined}
+              resteAPayer={canPaySelectedRubrique ? memberReste : 0}
+              groupId={canPaySelectedRubrique ? groupId : undefined}
+              rubriqueId={canPaySelectedRubrique && selectedRubriqueId ? selectedRubriqueId : undefined}
               memberTelephone={memberTelephone}
             />
 
-            {isAdmin && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-green-100 bg-green-50/50 shadow-none dark:border-green-900/20 dark:bg-green-900/10">
-                  <CardHeader className="px-4 pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase text-green-600 dark:text-green-400">
-                      Fonds Collectés
-                    </CardDescription>
-                    <CardTitle className="text-2xl">
-                      {totalCollected.toLocaleString()} XAF
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card className="border-red-100 bg-red-50/50 shadow-none dark:border-red-900/20 dark:bg-red-900/10">
-                  <CardHeader className="px-4 pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase text-red-600 dark:text-red-400">
-                      Total Retraits
-                    </CardDescription>
-                    <CardTitle className="text-2xl">
-                      {totalWithdrawn.toLocaleString()} XAF
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card className="border-brand-100 bg-brand-50/50 shadow-none dark:border-brand-900/20 dark:bg-brand-900/10">
-                  <CardHeader className="px-4 pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase text-brand-600 dark:text-brand-400">
-                      Solde Disponible
-                    </CardDescription>
-                    <CardTitle className="text-2xl">
-                      {currentBalance.toLocaleString()} XAF
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-              </div>
-            )}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card className="border-green-100 bg-green-50/50 shadow-none dark:border-green-900/20 dark:bg-green-900/10">
+                <CardHeader className="px-4 pb-2">
+                  <CardDescription className="text-xs font-semibold uppercase text-green-600 dark:text-green-400">
+                    Fonds collectés
+                  </CardDescription>
+                  <CardTitle className="text-2xl">
+                    {totalCollected.toLocaleString("fr-FR")} {devise}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card className="border-red-100 bg-red-50/50 shadow-none dark:border-red-900/20 dark:bg-red-900/10">
+                <CardHeader className="px-4 pb-2">
+                  <CardDescription className="text-xs font-semibold uppercase text-red-600 dark:text-red-400">
+                    Total retraits
+                  </CardDescription>
+                  <CardTitle className="text-2xl">
+                    {totalWithdrawn.toLocaleString("fr-FR")} {devise}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card className="border-brand-100 bg-brand-50/50 shadow-none dark:border-brand-900/20 dark:bg-brand-900/10">
+                <CardHeader className="px-4 pb-2">
+                  <CardDescription className="text-xs font-semibold uppercase text-brand-600 dark:text-brand-400">
+                    Solde caisse
+                  </CardDescription>
+                  <CardTitle className="text-2xl">
+                    {currentBalance.toLocaleString("fr-FR")} {devise}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+            {!isAdmin ? (
+              <p className="text-xs text-muted-foreground">
+                Solde visible par tous les membres. Vous êtes notifié à chaque retrait effectué par
+                l&apos;administrateur.
+              </p>
+            ) : null}
 
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
@@ -377,19 +391,17 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                   >
                     Soldes
                   </button>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setTab("historique")}
-                      className={cn(
-                        "text-sm font-medium transition-colors hover:text-primary",
-                        tab === "historique"
-                          ? "-mb-2.5 border-b-2 border-primary pb-2 text-primary"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      Historique
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setTab("historique")}
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-primary",
+                      tab === "historique"
+                        ? "-mb-2.5 border-b-2 border-primary pb-2 text-primary"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    Historique
+                  </button>
                 </div>
                 {isAdmin && tab === "solde" && (
                   <div className="flex gap-2">
@@ -403,7 +415,7 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                     </Button>
                   </div>
                 )}
-                {tab === "historique" && (
+                {tab === "historique" && isAdmin && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -435,7 +447,7 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                       <TableBody>
                         {selectedRubrique.membres_concernes
                           .filter((mc: any) =>
-                            !isAdmin ? mc.membre.id_membre_groupe === adminId : true,
+                            !isAdmin ? mc.membre.id_membre_groupe === currentMemberId : true,
                           )
                           .map((mc: any) => {
                             const due = parseFloat(selectedRubrique.montant_fixe);
@@ -448,22 +460,22 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                               <TableRow key={mc.id_membre_rubrique}>
                                 <TableCell className="font-medium">
                                   {mc.membre.user.prenom} {mc.membre.user.nom}
-                                  {mc.membre.id_membre_groupe === adminId && (
+                                  {mc.membre.id_membre_groupe === currentMemberId && (
                                     <Badge variant="outline" className="ml-2 h-4 text-[10px]">
                                       Vous
                                     </Badge>
                                   )}
                                 </TableCell>
-                                <TableCell>{due.toLocaleString()} XAF</TableCell>
+                                <TableCell>{due.toLocaleString("fr-FR")} {devise}</TableCell>
                                 <TableCell className="font-medium text-green-600">
-                                  {paid.toLocaleString()} XAF
+                                  {paid.toLocaleString("fr-FR")} {devise}
                                 </TableCell>
                                 <TableCell
                                   className={
                                     balance > 0 ? "font-bold text-red-500" : "text-muted-foreground"
                                   }
                                 >
-                                  {balance > 0 ? `${balance.toLocaleString()} XAF` : "0 XAF"}
+                                  {balance > 0 ? `${balance.toLocaleString("fr-FR")} ${devise}` : `0 ${devise}`}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   {balance <= 0 ? (
@@ -489,7 +501,7 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                   {/* Détail des versements avec dates — visible par le membre pour traçabilité */}
                   {(() => {
                     const myPayments = selectedRubrique.paiements.filter(
-                      (p: any) => p.id_membre_groupe === adminId,
+                      (p: any) => p.id_membre_groupe === currentMemberId,
                     );
                     if (myPayments.length === 0) return null;
                     return (
@@ -549,7 +561,7 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                                     </div>
                                   </div>
                                   <p className="text-sm font-bold text-green-600">
-                                    +{parseFloat(p.montant_paye).toLocaleString()} XAF
+                                    +{parseFloat(p.montant_paye).toLocaleString("fr-FR")} {devise}
                                   </p>
                                 </div>
                               ))}
@@ -558,80 +570,140 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
                       </div>
                     );
                   })()}
+
+                  {selectedRetraits.length > 0 ? (
+                    <div className="space-y-3 rounded-xl border bg-card p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Retraits de la caisse
+                      </p>
+                      <div className="space-y-2">
+                        {selectedRetraits.map((op: any) => (
+                          <div
+                            key={op.id_retrait}
+                            className="flex items-center justify-between rounded-lg border bg-red-50/40 px-4 py-2.5 dark:bg-red-900/10"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="rounded-full bg-red-100 p-1.5 dark:bg-red-900/30">
+                                <Download className="h-3.5 w-3.5 rotate-180 text-red-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-foreground">{op.motif}</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {format(new Date(op.date_retrait), "PPP", { locale: fr })}
+                                  {op.valideur?.user
+                                    ? ` • Validé par ${op.valideur.user.prenom} ${op.valideur.user.nom}`
+                                    : null}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-sm font-bold text-red-600">
+                              -{parseFloat(op.montant).toLocaleString("fr-FR")} {devise}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Solde restant après retraits :{" "}
+                        <strong>
+                          {currentBalance.toLocaleString("fr-FR")} {devise}
+                        </strong>
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {isSelectedHistoryHidden ? (
-                    <div className="rounded-xl border-2 border-dashed py-12 text-center">
-                      <History className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-20" />
-                      <p className="text-muted-foreground">
-                        Historique masqué pour cette rubrique.
-                      </p>
-                    </div>
-                  ) : (
-                    [...selectedRubrique.paiements, ...(selectedRubrique.retraits ?? [])]
-                      .sort(
-                        (a, b) =>
-                          new Date(b.date_paiement || b.date_retrait).getTime() -
-                          new Date(a.date_paiement || a.date_retrait).getTime(),
-                      )
-                      .map((op: any, i) => {
-                        const isRetrait = !!op.id_retrait;
-                        const date = new Date(op.date_paiement || op.date_retrait);
+                  {(() => {
+                    const historiqueOps = [
+                      ...(isSelectedHistoryHidden ? [] : selectedRubrique.paiements),
+                      ...selectedRetraits,
+                    ].sort(
+                      (a, b) =>
+                        new Date(b.date_paiement || b.date_retrait).getTime() -
+                        new Date(a.date_paiement || a.date_retrait).getTime(),
+                    );
 
-                        return (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between rounded-xl border bg-card p-4 transition-shadow hover:shadow-sm"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div
-                                className={cn(
-                                  "rounded-full p-2.5",
-                                  isRetrait
-                                    ? "bg-red-50 text-red-600 dark:bg-red-900/20"
-                                    : "bg-green-50 text-green-600 dark:bg-green-900/20",
-                                )}
-                              >
-                                {isRetrait ? (
-                                  <Download className="h-5 w-5 rotate-180" />
-                                ) : (
-                                  <Download className="h-5 w-5" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-semibold">
-                                  {isRetrait
-                                    ? `Retrait : ${op.motif}`
-                                    : `Paiement : ${op.membre.user.prenom} ${op.membre.user.nom}`}
-                                </p>
-                                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(date, "PPP", { locale: fr })}
-                                  {op.note && <span>• {op.note}</span>}
+                    if (historiqueOps.length === 0) {
+                      return (
+                        <div className="rounded-xl border-2 border-dashed py-12 text-center">
+                          <History className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-20" />
+                          <p className="text-muted-foreground">Aucune transaction enregistrée</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {historiqueOps.map((op: any, i) => {
+                          const isRetrait = !!op.id_retrait;
+                          const date = new Date(op.date_paiement || op.date_retrait);
+
+                          return (
+                            <div
+                              key={isRetrait ? op.id_retrait : op.id_paiement ?? i}
+                              className="flex items-center justify-between rounded-xl border bg-card p-4 transition-shadow hover:shadow-sm"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={cn(
+                                    "rounded-full p-2.5",
+                                    isRetrait
+                                      ? "bg-red-50 text-red-600 dark:bg-red-900/20"
+                                      : "bg-green-50 text-green-600 dark:bg-green-900/20",
+                                  )}
+                                >
+                                  {isRetrait ? (
+                                    <Download className="h-5 w-5 rotate-180" />
+                                  ) : (
+                                    <Download className="h-5 w-5" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-semibold">
+                                    {isRetrait
+                                      ? `Retrait : ${op.motif}`
+                                      : `Paiement : ${op.membre.user.prenom} ${op.membre.user.nom}`}
+                                  </p>
+                                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                    <Calendar className="h-3 w-3" />
+                                    {format(date, "PPP", { locale: fr })}
+                                    {op.note && <span>• {op.note}</span>}
+                                    {isRetrait && op.valideur?.user ? (
+                                      <span>
+                                        • Validé par {op.valideur.user.prenom} {op.valideur.user.nom}
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </div>
                               </div>
+                              <p
+                                className={cn(
+                                  "text-lg font-bold",
+                                  isRetrait ? "text-red-600" : "text-green-600",
+                                )}
+                              >
+                                {isRetrait ? "-" : "+"}
+                                {parseFloat(op.montant_paye || op.montant).toLocaleString("fr-FR")}{" "}
+                                {devise}
+                              </p>
                             </div>
-                            <p
-                              className={cn(
-                                "text-lg font-bold",
-                                isRetrait ? "text-red-600" : "text-green-600",
-                              )}
-                            >
-                              {isRetrait ? "-" : "+"}
-                              {parseFloat(op.montant_paye || op.montant).toLocaleString()} XAF
-                            </p>
-                          </div>
-                        );
-                      })
-                  )}
-                  {!isSelectedHistoryHidden &&
-                    [...selectedRubrique.paiements, ...selectedRubrique.retraits].length === 0 && (
-                      <div className="rounded-xl border-2 border-dashed py-12 text-center">
-                        <History className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-20" />
-                        <p className="text-muted-foreground">Aucune transaction enregistrée</p>
-                      </div>
-                    )}
+                          );
+                        })}
+                        {isSelectedHistoryHidden && selectedRubrique.paiements.length > 0 ? (
+                          <p className="text-center text-xs text-muted-foreground">
+                            Vos versements sont masqués. Les retraits restent visibles pour la
+                            transparence.
+                          </p>
+                        ) : null}
+                        <p className="text-center text-xs text-muted-foreground">
+                          Solde caisse actuel :{" "}
+                          <strong>
+                            {currentBalance.toLocaleString("fr-FR")} {devise}
+                          </strong>
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -710,10 +782,10 @@ export function RubriquesClient({ groupId, rubriques, members, isAdmin, adminId,
         />
       )}
 
-      {showRetrait && (
+      {isAdmin && showRetrait && (
         <RetraitForm
           groupId={groupId}
-          adminId={adminId}
+          adminId={currentMemberId}
           rubriques={rubriques}
           onClose={() => setShowRetrait(false)}
         />

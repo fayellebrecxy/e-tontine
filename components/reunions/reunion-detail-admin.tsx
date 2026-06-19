@@ -6,11 +6,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MobileMoneyCheckout } from "@/components/payments/mobile-money-checkout";
 
 type Member = {
   id_membre_groupe: string;
   name: string;
   email: string;
+  telephone?: string | null;
 };
 
 type StatutPresence = "PRESENT" | "ABSENT" | "EXCUSE" | "DEMANDE_EXCUSE" | "EN_RETARD";
@@ -74,6 +76,7 @@ export function ReunionDetailAdmin({
   const [compteRendu, setCompteRendu] = React.useState(compteRenduInitial ?? "");
   const [submittingCR, setSubmittingCR] = React.useState(false);
   const [pendingAmendeId, setPendingAmendeId] = React.useState<string | null>(null);
+  const [checkoutPresenceId, setCheckoutPresenceId] = React.useState<string | null>(null);
 
   const absentsCount = Object.values(presences).filter((s) => s === "ABSENT" || s === "EN_RETARD").length;
   const totalAmendePrevisionnelle = absentsCount * montantAmende;
@@ -160,6 +163,13 @@ export function ReunionDetailAdmin({
   const amendesEnAttente = amendesAvecAmende.filter(
     (p) => !p.amende_payee && montantAmende > 0,
   );
+
+  const checkoutPresence = checkoutPresenceId
+    ? presencesInitiales.find((p) => p.id_presence === checkoutPresenceId)
+    : null;
+  const checkoutMember = checkoutPresence
+    ? membres.find((m) => m.id_membre_groupe === checkoutPresence.id_membre_groupe)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -345,16 +355,25 @@ export function ReunionDetailAdmin({
                           ✅ Payée
                         </Badge>
                       ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => markAmendePaid(presence.id_presence)}
-                          disabled={pendingAmendeId === presence.id_presence}
-                          className="border-amber-300 text-amber-800 hover:bg-amber-50 font-medium"
-                        >
-                          {pendingAmendeId === presence.id_presence ? "…" : "Marquer comme payée"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setCheckoutPresenceId(presence.id_presence)}
+                          >
+                            Payer via Mobile Money
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => markAmendePaid(presence.id_presence)}
+                            disabled={pendingAmendeId === presence.id_presence}
+                            className="border-amber-300 text-amber-800 hover:bg-amber-50 font-medium"
+                          >
+                            {pendingAmendeId === presence.id_presence ? "…" : "Marquer payée (manuel)"}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   );
@@ -364,6 +383,29 @@ export function ReunionDetailAdmin({
           )}
         </div>
       )}
+
+      {checkoutPresence && checkoutMember && montantAmende > 0 ? (
+        <MobileMoneyCheckout
+          groupId={groupId}
+          contextType="AMENDE_REUNION"
+          contextId={checkoutPresence.id_presence}
+          metadata={{ reunionId }}
+          montant={montantAmende}
+          montantLabel={`${montantAmende.toLocaleString("fr-FR")} ${devise}`}
+          targetMemberId={checkoutPresence.id_membre_groupe}
+          defaultTelephone={checkoutMember.telephone ?? undefined}
+          open={Boolean(checkoutPresenceId)}
+          onOpenChange={(open) => {
+            if (!open) setCheckoutPresenceId(null);
+          }}
+          onSuccess={() => {
+            setCheckoutPresenceId(null);
+            router.refresh();
+          }}
+          title="Paiement amende Mobile Money"
+          description={`Simuler le paiement de l'amende de ${checkoutMember.name} via Orange Money ou MTN MoMo.`}
+        />
+      ) : null}
 
       {/* ─── Section compte-rendu ─── */}
       {statut === "TERMINEE" && (

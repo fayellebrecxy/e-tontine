@@ -68,7 +68,7 @@ export function CycleDetailActions({
   const panels = React.useMemo<Panel[]>(
     () => [
       { key: "overview", label: "Aperçu", icon: Eye, content: overview },
-      { key: "memberPay", label: "Payer", icon: Banknote, content: memberPay, memberOnly: true },
+      { key: "memberPay", label: "Payer", icon: Banknote, content: memberPay },
       { key: "ordrePassage", label: "Ordre de passage", icon: ArrowUpDown, content: ordrePassage },
       { key: "edit", label: "Modifier", icon: Pencil, content: edit, adminOnly: true },
       { key: "payment", label: "Cotisation", icon: Banknote, content: payment, adminOnly: true },

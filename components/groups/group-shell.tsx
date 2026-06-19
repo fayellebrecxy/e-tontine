@@ -32,12 +32,12 @@ type GroupSummaryBody = {
 
 function GroupShellSkeleton({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="rounded-2xl border border-border-light bg-surface-container-lowest p-5 shadow-card">
         <div className="h-5 w-48 animate-pulse rounded bg-surface-container-high" />
         <div className="mt-3 h-4 w-64 animate-pulse rounded bg-surface-container" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
         <div className="hidden h-64 animate-pulse rounded-2xl bg-surface-container-lowest lg:block" />
         <div className="min-h-64 min-w-0">
           {children ?? <div className="h-64 animate-pulse rounded-2xl bg-surface-container-lowest" />}
@@ -169,7 +169,7 @@ export function GroupShell({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="overflow-hidden rounded-2xl border border-border-light bg-surface-container-lowest shadow-card">
         <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_auto]">
           <div className="flex gap-4">
@@ -214,7 +214,7 @@ export function GroupShell({
         </div>
       </header>
 
-      <div className={navOpen ? "grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]" : "block"}>
+      <div className={navOpen ? "grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]" : "block"}>
         {navOpen ? (
           <aside className="rounded-2xl border border-border-light bg-surface-container-lowest p-3 shadow-card lg:sticky lg:top-20 lg:self-start">
             <GroupNav groupId={groupId} isAdmin={membership?.role === "ADMIN"} />

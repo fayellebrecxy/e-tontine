@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Backdrop />
       <div className={`flex min-h-screen flex-col transition-all duration-200 ${mainOffset}`}>
         <AppHeader />
-        <main className="mx-auto w-full max-w-container-max flex-1 p-4 pb-28 md:p-8 lg:pb-8">
+        <main className="w-full flex-1 px-3 py-4 pb-28 md:px-4 md:py-5 lg:px-5 lg:pb-8">
           <PageReveal key={pathname}>{children}</PageReveal>
         </main>
       </div>

@@ -8,6 +8,7 @@ export type NotificationType =
   | "RAPPEL_ECHEANCE"
   | "NOUVEAU_CYCLE"
   | "NOUVELLE_RUBRIQUE"
+  | "RETRAIT_RUBRIQUE"
   // Réunions
   | "REUNION_PLANIFIEE"
   | "REUNION_ANNULEE"

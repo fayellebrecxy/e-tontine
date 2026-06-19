@@ -1,6 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import {
+  getRubriqueSolde,
+  notifyGroupMembersRubriqueRetrait,
+} from "@/lib/rubrique-caisse";
 import { runExtendedTransaction } from "@/lib/prisma-transaction";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
@@ -487,6 +491,17 @@ export async function enregistrerRetrait(data: {
 
     return created;
   });
+
+  if (rubrique) {
+    const soldeRestant = await getRubriqueSolde(rubrique.id_rubrique);
+    await notifyGroupMembersRubriqueRetrait({
+      groupId: data.groupId,
+      rubriqueNom: rubrique.nom,
+      montant: data.montant,
+      motif: data.motif,
+      soldeRestant,
+    });
+  }
 
   revalidatePath(`/dashboard/groups/${data.groupId}/rubriques`);
   return { ok: true as const, retrait };

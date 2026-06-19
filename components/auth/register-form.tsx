@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Mail, LockKeyhole, Phone, UserRound } from "lucide-react";
+import { ArrowRight, Mail, Phone, UserRound } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/auth/password-input";
 
 type Values = z.infer<typeof signUpSchema>;
 
@@ -162,16 +163,12 @@ export function RegisterForm() {
                 Mot de passe
               </FormLabel>
               <FormControl>
-                <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
-                  <Input
-                    className={inputClass}
-                    placeholder="Au moins 8 caractères"
-                    type="password"
-                    autoComplete="new-password"
-                    {...field}
-                  />
-                </div>
+                <PasswordInput
+                  className="w-full h-11 rounded-lg border border-outline-variant bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors font-sans text-sm text-on-surface"
+                  placeholder="Au moins 8 caractères"
+                  autoComplete="new-password"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

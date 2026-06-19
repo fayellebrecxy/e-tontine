@@ -1,7 +1,7 @@
 import type { PaymentProvider } from "@/lib/generated/prisma";
 
-export const PAYMENT_SIMULATION_DELAY_MS = 12_000;
-export const PAYMENT_SIMULATION_OUTBOUND_DELAY_MS = 8_000;
+export const PAYMENT_SIMULATION_DELAY_MS = 5_000;
+export const PAYMENT_SIMULATION_OUTBOUND_DELAY_MS = 4_000;
 
 const PROVIDER_PREFIX: Record<PaymentProvider, string> = {
   ORANGE_MONEY: "OM",

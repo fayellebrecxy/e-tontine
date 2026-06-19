@@ -83,7 +83,7 @@ export default async function ReunionDetailPage({
         where: { id_groupe: groupId, statut_adhesion: "ACTIF" },
         select: {
           id_membre_groupe: true,
-          user: { select: { nom: true, prenom: true, email: true } },
+          user: { select: { nom: true, prenom: true, email: true, telephone: true } },
         },
         orderBy: { user: { prenom: "asc" } },
       })
@@ -97,10 +97,9 @@ export default async function ReunionDetailPage({
   const canDeleteReunion = reunion.statut === "PLANIFIEE" && !hasHistory && !hasPaidFine;
   const canCancelReunion = reunion.statut === "PLANIFIEE";
 
-  // Ma présence (pour le membre)
-  const myPresence = !isAdmin
-    ? reunion.presences.find((p) => p.id_membre_groupe === membership.id_membre_groupe) ?? null
-    : null;
+  // Ma présence (membre connecté, y compris admin)
+  const myPresence =
+    reunion.presences.find((p) => p.id_membre_groupe === membership.id_membre_groupe) ?? null;
 
   const dateLabel = reunion.date_reunion.toLocaleDateString("fr-FR", {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
@@ -229,6 +228,7 @@ export default async function ReunionDetailPage({
             id_membre_groupe: m.id_membre_groupe,
             name: `${m.user.prenom} ${m.user.nom}`,
             email: m.user.email,
+            telephone: m.user.telephone,
           }))}
           presencesInitiales={reunion.presences.map((p) => ({
             id_presence: p.id_presence,
@@ -245,24 +245,26 @@ export default async function ReunionDetailPage({
         />
       )}
 
-      {/* Vue membre */}
-      {!isAdmin && (
-        <ReunionDetailMembre
-          groupId={groupId}
-          reunionId={reunionId}
-          statut={reunion.statut}
-          myPresence={myPresence ? {
-            id_presence: myPresence.id_presence,
-            statut_presence: myPresence.statut_presence,
-            amende_payee: myPresence.amende_payee,
-            note_absence: myPresence.note_absence,
-          } : null}
-          montantAmende={montantAmende}
-          devise={devise}
-          dateReunion={reunion.date_reunion.toISOString()}
-          memberTelephone={membership.user.telephone}
-        />
-      )}
+      {/* Vue membre — admin inclus pour payer sa propre amende / gérer sa présence */}
+      <ReunionDetailMembre
+        groupId={groupId}
+        reunionId={reunionId}
+        statut={reunion.statut}
+        myPresence={
+          myPresence
+            ? {
+                id_presence: myPresence.id_presence,
+                statut_presence: myPresence.statut_presence,
+                amende_payee: myPresence.amende_payee,
+                note_absence: myPresence.note_absence,
+              }
+            : null
+        }
+        montantAmende={montantAmende}
+        devise={devise}
+        dateReunion={reunion.date_reunion.toISOString()}
+        memberTelephone={membership.user.telephone}
+      />
     </div>
   );
 }

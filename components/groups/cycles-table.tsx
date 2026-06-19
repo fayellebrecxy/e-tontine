@@ -161,8 +161,23 @@ export function CyclesTable({ groupId, cycles, isAdmin, devise, statusFilter }: 
             ) : (
               paginated.map((cycle) => {
                 const status = getCycleStatus(cycle);
+                const cycleHref = `/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`;
+
                 return (
-                  <TableRow key={cycle.id_cycle}>
+                  <TableRow
+                    key={cycle.id_cycle}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(cycleHref)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(cycleHref);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Ouvrir le cycle ${cycle.nom_cycle}`}
+                  >
                     <TableCell className="font-medium">{cycle.nom_cycle}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                       {new Date(cycle.date_debut).toLocaleDateString("fr-FR")}
@@ -189,10 +204,13 @@ export function CyclesTable({ groupId, cycles, isAdmin, devise, statusFilter }: 
                         <Badge variant="outline">À venir</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell
+                      className="text-right"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <div className="flex items-center justify-end gap-1">
                         <Button asChild variant="ghost" size="icon" title="Voir détails">
-                          <Link href={`/dashboard/groups/${groupId}/cycles/${cycle.id_cycle}`}>
+                          <Link href={cycleHref}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>

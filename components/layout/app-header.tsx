@@ -24,7 +24,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-20 w-full bg-surface-container-lowest border-b border-border-light h-16 flex items-center justify-between px-4 md:px-8">
+    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-border-light bg-surface-container-lowest px-3 md:px-4 lg:px-5">
       {/* Left: toggle + search */}
       <div className="flex items-center gap-3">
         <button

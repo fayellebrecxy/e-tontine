@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { getActiveMembership } from "@/lib/payment-auth";
-import { processPendingPaymentIfReady, serializePaymentStatus } from "@/lib/payment-process";
+import { getPaymentTransactionStatus, serializePaymentStatus } from "@/lib/payment-process";
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +15,7 @@ export async function GET(
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
-  const result = await processPendingPaymentIfReady(
+  const result = await getPaymentTransactionStatus(
     transactionId,
     groupId,
     auth.membership.id_membre_groupe,

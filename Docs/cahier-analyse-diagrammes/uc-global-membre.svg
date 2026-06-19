@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="480" viewBox="0 0 820 480">
+<defs>
+  <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+    <polygon points="0 0, 10 4, 0 8" fill="#000000"/>
+  </marker>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+
+<rect x="180" y="40" width="580" height="400" fill="none" stroke="#333" stroke-width="1.5" rx="4"/>
+<text x="470" y="62" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#000" font-weight="bold"><tspan x="470" dy="0">Système E-Tontine</tspan></text>
+<g transform="translate(60,160)">
+  <circle cx="0" cy="0" r="12" fill="none" stroke="#333" stroke-width="1.5"/>
+  <line x1="0" y1="12" x2="0" y2="38" stroke="#333" stroke-width="1.5"/>
+  <line x1="-16" y1="22" x2="16" y2="22" stroke="#333" stroke-width="1.5"/>
+  <line x1="0" y1="38" x2="-14" y2="58" stroke="#333" stroke-width="1.5"/>
+  <line x1="0" y1="38" x2="14" y2="58" stroke="#333" stroke-width="1.5"/>
+  <text x="0" y="78" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="0" dy="0">Membre /</tspan><tspan x="0" dy="12">Visiteur</tspan></text>
+</g>
+<ellipse cx="250" cy="80" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="250" y="84" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="250" dy="0">S'inscrire / Se connecter</tspan></text><line x1="88" y1="210" x2="140" y2="80" stroke="#555" stroke-width="1"/>
+<ellipse cx="490" cy="80" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="490" y="84" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="490" dy="0">Rejoindre un groupe</tspan></text><line x1="88" y1="210" x2="380" y2="80" stroke="#555" stroke-width="1"/>
+<ellipse cx="250" cy="150" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="250" y="154" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="250" dy="0">Payer une cotisation</tspan></text><line x1="88" y1="210" x2="140" y2="150" stroke="#555" stroke-width="1"/>
+<ellipse cx="490" cy="150" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="490" y="154" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="490" dy="0">Payer une rubrique</tspan></text><line x1="88" y1="210" x2="380" y2="150" stroke="#555" stroke-width="1"/>
+<ellipse cx="250" cy="220" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="250" y="224" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="250" dy="0">Consulter son cycle</tspan></text><line x1="88" y1="210" x2="140" y2="220" stroke="#555" stroke-width="1"/>
+<ellipse cx="490" cy="220" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="490" y="224" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="490" dy="0">Demander un échange</tspan></text><line x1="88" y1="210" x2="380" y2="220" stroke="#555" stroke-width="1"/>
+<ellipse cx="250" cy="290" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="250" y="294" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="250" dy="0">Déposer épargne</tspan></text><line x1="88" y1="210" x2="140" y2="290" stroke="#555" stroke-width="1"/>
+<ellipse cx="490" cy="290" rx="110" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="490" y="294" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="490" dy="0">Demander un prêt</tspan></text><line x1="88" y1="210" x2="380" y2="290" stroke="#555" stroke-width="1"/>
+<ellipse cx="370" cy="360" rx="120" ry="22" fill="#f7fbff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="370" y="364" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#000"><tspan x="370" dy="0">Consulter notifications</tspan></text><line x1="88" y1="210" x2="250" y2="360" stroke="#555" stroke-width="1"/>
+</svg>

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LogIn, Mail, LockKeyhole, Eye, EyeOff } from "lucide-react";
+import { LogIn, Mail } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/auth/password-input";
 
 type Values = z.infer<typeof signInSchema>;
 
@@ -37,7 +38,6 @@ export function LoginForm() {
   });
 
   const [pending, startTransition] = React.useTransition();
-  const [showPassword, setShowPassword] = React.useState(false);
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
@@ -96,28 +96,14 @@ export function LoginForm() {
                 </Link>
               </div>
               <FormControl>
-                <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
-                  <Input
-                    className="w-full h-11 pl-10 pr-11 rounded-lg border border-outline-variant bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors font-sans text-sm text-on-surface"
-                    placeholder="••••••••"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    {...field}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-outline transition-colors hover:text-on-surface"
-                    aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <Eye className="h-4 w-4" aria-hidden />
-                    )}
-                  </button>
-                </div>
+                <PasswordInput
+                  className="w-full h-11 rounded-lg border border-outline-variant bg-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors font-sans text-sm text-on-surface"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  showPasswordLabel={t("showPassword")}
+                  hidePasswordLabel={t("hidePassword")}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

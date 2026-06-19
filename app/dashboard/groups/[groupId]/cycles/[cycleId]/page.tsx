@@ -200,10 +200,11 @@ export default async function GroupCycleDetailPage({
   const outstandingDebtTotal =
     membership.role === "ADMIN" ? await getCycleOutstandingDebtTotal(cycleId) : 0;
 
-  const myDebtSummary =
-    membership.role !== "ADMIN"
-      ? await getMemberDebtSummary(cycleId, membership.id_membre_groupe, now)
-      : null;
+  const myDebtSummary = await getMemberDebtSummary(
+    cycleId,
+    membership.id_membre_groupe,
+    now,
+  );
 
   const participantsForForm = cycle.participants.map((participant) => {
     const debt = memberDebtSummaries.find(
@@ -800,7 +801,7 @@ export default async function GroupCycleDetailPage({
   );
 
   const memberPayContent =
-    membership.role !== "ADMIN" && (myDebtSummary?.totalDue ?? 0) > 0 ? (
+    (myDebtSummary?.totalDue ?? 0) > 0 ? (
       <CycleMemberPaymentPanel
         groupId={groupId}
         cycleId={cycleId}
@@ -813,9 +814,7 @@ export default async function GroupCycleDetailPage({
     ) : null;
 
   const memberDefaultPanel =
-    membership.role !== "ADMIN" && (myDebtSummary?.totalDue ?? 0) > 0
-      ? ("memberPay" as const)
-      : ("overview" as const);
+    (myDebtSummary?.totalDue ?? 0) > 0 ? ("memberPay" as const) : ("overview" as const);
 
   return (
     <div className="space-y-6">
