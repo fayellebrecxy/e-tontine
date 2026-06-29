@@ -7,6 +7,7 @@ import {
   type BorrowerPretDisplayStatut,
   type MesPretDashboardItem,
 } from "@/lib/pret-dashboard";
+import { computePretCapitalSummary } from "@/lib/pret-utils";
 
 const STATUT_CONFIG: Record<
   BorrowerPretDisplayStatut,
@@ -53,6 +54,11 @@ export function MesPretsSummary({
           const displayStatut = pret.displayStatut;
           const cfg = STATUT_CONFIG[displayStatut];
           const verse = displayStatut === "EN_COURS" || displayStatut === "EN_RETARD";
+          const capital = computePretCapitalSummary({
+            montant_approuve: pret.montant_approuve,
+            montant_capital_restant: pret.montant_capital_restant,
+            date_decaissement: pret.date_decaissement,
+          });
 
           return (
             <li key={pret.id_pret}>
@@ -79,17 +85,31 @@ export function MesPretsSummary({
 
                 {verse && pret.date_decaissement && (
                   <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    Versé le{" "}
+                    Retiré de la banque le{" "}
                     {new Date(pret.date_decaissement).toLocaleDateString("fr-FR", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
                     })}
+                    {capital.montantDecaisse > 0 ? (
+                      <>
+                        {" "}
+                        — <strong>{fmt(capital.montantDecaisse, pret.devise)}</strong>
+                      </>
+                    ) : null}
                   </p>
                 )}
 
                 {(displayStatut === "EN_COURS" || displayStatut === "EN_RETARD") && (
                   <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2 dark:text-slate-400">
+                    {capital.capitalRembourse > 0 ? (
+                      <p>
+                        Capital remboursé :{" "}
+                        <strong className="text-emerald-700 dark:text-emerald-300">
+                          {fmt(capital.capitalRembourse, pret.devise)}
+                        </strong>
+                      </p>
+                    ) : null}
                     <p>
                       Capital restant :{" "}
                       <strong className="text-slate-900 dark:text-white">

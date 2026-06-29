@@ -22,6 +22,7 @@ import {
 } from "@/lib/pret-dashboard";
 import {
   computeInterestForDuration,
+  computePretCapitalSummary,
   formatDureePret,
   type UniteDureePret,
 } from "@/lib/pret-utils";
@@ -213,6 +214,11 @@ export function PretDetailClient({
       : null;
 
   const displayStatut = resolveBorrowerPretDisplayStatut(pret);
+  const capital = computePretCapitalSummary({
+    montant_approuve: pret.montant_approuve,
+    montant_capital_restant: Number(pret.montant_capital_restant),
+    date_decaissement: pret.date_decaissement,
+  });
 
   return (
     <div className="space-y-6">
@@ -263,6 +269,18 @@ export function PretDetailClient({
             <div className="rounded border p-3">
               <p className="text-xs text-slate-500">Taux mensuel</p>
               <p className="font-bold">{pret.taux_interet_mensuel} %</p>
+            </div>
+          )}
+          {capital.montantDecaisse > 0 && (
+            <div className="rounded border border-amber-200 bg-amber-50/50 p-3">
+              <p className="text-xs text-amber-800">Retiré de la banque</p>
+              <p className="font-bold text-amber-900">{fmt(capital.montantDecaisse, devise)}</p>
+            </div>
+          )}
+          {capital.capitalRembourse > 0 && (
+            <div className="rounded border border-emerald-200 bg-emerald-50/50 p-3">
+              <p className="text-xs text-emerald-800">Capital remboursé</p>
+              <p className="font-bold text-emerald-900">{fmt(capital.capitalRembourse, devise)}</p>
             </div>
           )}
           <div className="rounded border p-3">

@@ -16,6 +16,23 @@ export type RepartitionBanqueEntry = {
   montant: number;
 };
 
+/** Montants capital affichés pour un prêt (décaissement / remboursements). */
+export function computePretCapitalSummary(pret: {
+  montant_approuve: number | null;
+  montant_capital_restant: number;
+  date_decaissement: string | Date | null;
+}) {
+  const montantDecaisse =
+    pret.date_decaissement != null && pret.montant_approuve != null
+      ? Number(pret.montant_approuve)
+      : 0;
+  const capitalRestant = Number(pret.montant_capital_restant);
+  const capitalRembourse =
+    montantDecaisse > 0 ? roundCurrency(Math.max(0, montantDecaisse - capitalRestant)) : 0;
+
+  return { montantDecaisse, capitalRestant, capitalRembourse };
+}
+
 /** Répartition proportionnelle avec arrondi entier (FCFA). */
 export function allocateProportional(
   total: number,

@@ -9,8 +9,17 @@ type Tx = PrismaNamespace.TransactionClient;
 const BANK_TX_OPTIONS = { maxWait: 15_000, timeout: 30_000 } as const;
 
 export type BanqueSummary = {
+  /** Épargne collective reconstituée (soldes actuels + montants retirés). */
   total: number;
+  /** Soldes épargne actuels, disponibles pour de nouveaux prêts. */
   disponible: number;
+  /** Retraits membres (admin) + capital prêts encore en circulation. */
+  retraits: number;
+  /** Retraits manuels enregistrés sur les comptes épargne. */
+  retraitsManuels: number;
+  /** Capital prêt non encore remboursé (prélevé sur la banque). */
+  retraitsPrets: number;
+  /** Alias de retraitsPrets — compatibilité. */
   pretsEnCours: number;
   caisseInterets: number;
   nbComptesActifs: number;
@@ -75,8 +84,12 @@ async function ensureCaisseInterets(groupId: string, tx: Tx = prisma) {
 }
 
 export async function getBanqueSummary(groupId: string): Promise<BanqueSummary> {
-  const [accounts, pretsEnCours, caisse] = await Promise.all([
+  const [accounts, retraitsManuelsAgg, pretsEnCours, caisse] = await Promise.all([
     getActiveEpargneAccounts(groupId),
+    prisma.mouvementEpargne.aggregate({
+      where: { id_groupe: groupId, type_operation: "RETRAIT" },
+      _sum: { montant: true },
+    }),
     prisma.pret.aggregate({
       where: { id_groupe: groupId, statut: { in: ["EN_COURS", "EN_RETARD"] } },
       _sum: { montant_capital_restant: true },
@@ -91,12 +104,19 @@ export async function getBanqueSummary(groupId: string): Promise<BanqueSummary> 
     }),
   ]);
 
-  const total = accounts.reduce((sum, account) => sum + Number(account.solde_actuel), 0);
+  const soldeComptes = accounts.reduce((sum, account) => sum + Number(account.solde_actuel), 0);
+  const retraitsManuels = roundCurrency(Number(retraitsManuelsAgg._sum.montant ?? 0));
+  const retraitsPrets = roundCurrency(Number(pretsEnCours._sum.montant_capital_restant ?? 0));
+  const retraits = roundCurrency(retraitsManuels + retraitsPrets);
+  const disponible = roundCurrency(soldeComptes);
 
   return {
-    total: roundCurrency(total),
-    disponible: roundCurrency(total),
-    pretsEnCours: roundCurrency(Number(pretsEnCours._sum.montant_capital_restant ?? 0)),
+    total: roundCurrency(disponible + retraits),
+    disponible,
+    retraits,
+    retraitsManuels,
+    retraitsPrets,
+    pretsEnCours: retraitsPrets,
     caisseInterets: roundCurrency(Number(caisse?.solde_actuel ?? 0)),
     nbComptesActifs: accounts.length,
   };

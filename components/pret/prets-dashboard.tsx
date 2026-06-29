@@ -31,7 +31,7 @@ import {
   BORROWER_PRET_STATUT_LABELS,
   resolveBorrowerPretDisplayStatut,
 } from "@/lib/pret-dashboard";
-import { formatDureePret, type UniteDureePret } from "@/lib/pret-utils";
+import { formatDureePret, computePretCapitalSummary, type UniteDureePret } from "@/lib/pret-utils";
 
 type PretRow = {
   id_pret: string;
@@ -124,7 +124,15 @@ export function PretsDashboard({
   devise: string;
   isAdmin: boolean;
   memberId: string;
-  initialBank: { total: number; disponible: number; caisseInterets: number; pretsEnCours: number };
+  initialBank: {
+    total: number;
+    disponible: number;
+    retraits: number;
+    retraitsManuels: number;
+    retraitsPrets: number;
+    caisseInterets: number;
+    pretsEnCours: number;
+  };
   initialPrets: PretRow[];
   initialGaranties: GarantieRow[];
   initialEligibility: {
@@ -262,23 +270,34 @@ export function PretsDashboard({
             <div>
               <h1 className="text-xl font-bold text-slate-950 dark:text-white">Prêts — Banque du groupe</h1>
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                Somme des épargnes actives — visible par tous les membres.
+                Épargne collective = disponible + retraits (membres et prêts).
               </p>
             </div>
           </div>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-slate-500">Banque totale</p>
+            <p className="text-xs text-slate-500">Épargne collective</p>
             <p className="mt-1 text-2xl font-bold text-blue-700">{fmt(initialBank.total, devise)}</p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              {fmt(initialBank.disponible, devise)} dispo. + {fmt(initialBank.retraits, devise)}{" "}
+              retirés
+            </p>
           </div>
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-slate-500">Disponible</p>
+            <p className="text-xs text-slate-500">Disponible pour prêts</p>
             <p className="mt-1 text-2xl font-bold">{fmt(initialBank.disponible, devise)}</p>
+            <p className="mt-1 text-[11px] text-slate-500">Soldes épargne actuels</p>
           </div>
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-slate-500">Prêts en cours (capital)</p>
-            <p className="mt-1 text-2xl font-bold text-amber-700">{fmt(initialBank.pretsEnCours, devise)}</p>
+            <p className="text-xs text-slate-500">Retraits</p>
+            <p className="mt-1 text-2xl font-bold text-amber-700">
+              {fmt(initialBank.retraits, devise)}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              {fmt(initialBank.retraitsManuels, devise)} membres ·{" "}
+              {fmt(initialBank.retraitsPrets, devise)} prêts en cours
+            </p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-slate-500">Caisse intérêts</p>
@@ -533,6 +552,12 @@ export function PretsDashboard({
               const canDeleteOwn =
                 pret.emprunteur.id_membre_groupe === memberId && pret.statut === "ANNULE";
               const isOwnLoan = pret.emprunteur.id_membre_groupe === memberId;
+              const capital = computePretCapitalSummary({
+                montant_approuve:
+                  pret.montant_approuve != null ? Number(pret.montant_approuve) : null,
+                montant_capital_restant: Number(pret.montant_capital_restant),
+                date_decaissement: pret.date_decaissement,
+              });
 
               return (
                 <div
@@ -551,6 +576,23 @@ export function PretsDashboard({
                       {pretDureeLabel(pret)} ·{" "}
                       {new Date(pret.date_demande).toLocaleDateString("fr-FR")}
                     </p>
+                    {capital.montantDecaisse > 0 ? (
+                      <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
+                        Retiré de la banque : {fmt(capital.montantDecaisse, devise)}
+                        {capital.capitalRembourse > 0 ? (
+                          <>
+                            {" "}
+                            · Remboursé : {fmt(capital.capitalRembourse, devise)}
+                          </>
+                        ) : null}
+                        {capital.capitalRestant > 0 ? (
+                          <>
+                            {" "}
+                            · Restant : {fmt(capital.capitalRestant, devise)}
+                          </>
+                        ) : null}
+                      </p>
+                    ) : null}
                   </Link>
                   <div className="flex flex-wrap items-center gap-2">
                     <StatutBadge statut={pret.statut} pret={pret} isOwnLoan={isOwnLoan} />

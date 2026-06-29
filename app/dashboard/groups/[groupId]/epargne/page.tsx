@@ -176,7 +176,7 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
     );
   }
 
-  const [accounts, membersWithoutAccount, ownAccount, totalSaved, monthDeposits, monthWithdrawals, monthCounts] = await Promise.all([
+  const [accounts, membersWithoutAccount, ownAccount, totalSaved, monthDeposits, totalRetraits, monthCounts] = await Promise.all([
     prisma.compteEpargne.findMany({
       where: { id_groupe: groupId },
       orderBy: { membre: { user: { prenom: "asc" } } },
@@ -223,7 +223,10 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
       _sum: { montant: true },
     }),
     prisma.mouvementEpargne.aggregate({
-      where: { id_groupe: groupId, type_operation: "RETRAIT", date_operation: { gte: monthStart } },
+      where: {
+        id_groupe: groupId,
+        type_operation: { in: ["RETRAIT", "PRET_DEBIT_BANQUE"] },
+      },
       _sum: { montant: true },
     }),
     prisma.mouvementEpargne.groupBy({
@@ -350,8 +353,9 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950">
           <ArrowUpCircle className="mb-3 h-5 w-5 text-rose-700" />
-          <p className="text-xs font-semibold uppercase text-slate-500">Retraits du mois</p>
-          <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{formatMontant(monthWithdrawals._sum.montant ?? 0, devise)}</p>
+          <p className="text-xs font-semibold uppercase text-slate-500">Retraits</p>
+          <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{formatMontant(totalRetraits._sum.montant ?? 0, devise)}</p>
+          <p className="mt-1 text-[11px] text-slate-500">Membres + prêts (cumul)</p>
         </div>
       </div>
 
