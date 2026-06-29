@@ -343,8 +343,9 @@ export default async function EpargnePage({ params }: { params: Promise<{ groupI
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
           <Landmark className="mb-3 h-5 w-5 text-emerald-700" />
-          <p className="text-xs font-semibold uppercase text-emerald-800">Total épargné</p>
+          <p className="text-xs font-semibold uppercase text-emerald-800">Solde restant</p>
           <p className="mt-1 text-2xl font-black text-emerald-800">{formatMontant(totalSaved._sum.solde_actuel ?? 0, devise)}</p>
+          <p className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-300">Caisse épargne du groupe</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950">
           <ArrowDownCircle className="mb-3 h-5 w-5 text-emerald-700" />

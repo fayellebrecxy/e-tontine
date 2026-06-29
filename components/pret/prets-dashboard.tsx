@@ -281,14 +281,16 @@ export function PretsDashboard({
             <p className="text-xs text-slate-500">Épargne collective</p>
             <p className="mt-1 text-2xl font-bold text-blue-700">{fmt(initialBank.total, devise)}</p>
             <p className="mt-1 text-[11px] text-slate-500">
-              {fmt(initialBank.disponible, devise)} dispo. + {fmt(initialBank.retraits, devise)}{" "}
+              {fmt(initialBank.disponible, devise)} solde restant + {fmt(initialBank.retraits, devise)}{" "}
               retirés
             </p>
           </div>
           <div className="rounded-lg border p-4">
-            <p className="text-xs text-slate-500">Disponible pour prêts</p>
-            <p className="mt-1 text-2xl font-bold">{fmt(initialBank.disponible, devise)}</p>
-            <p className="mt-1 text-[11px] text-slate-500">Soldes épargne actuels</p>
+            <p className="text-xs text-slate-500">Solde restant</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-700">
+              {fmt(initialBank.disponible, devise)}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">Caisse épargne du groupe</p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-slate-500">Dépôts</p>
@@ -654,6 +656,34 @@ export function PretsDashboard({
                   )}
                 </div>
               ))}
+          </div>
+        </section>
+      )}
+
+      {isAdmin && (
+        <section className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-emerald-950 dark:text-emerald-100">
+                Caisse épargne du groupe
+              </h2>
+              <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
+                Montant actuellement disponible dans les comptes épargne des membres.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium uppercase text-emerald-700 dark:text-emerald-300">
+                Solde restant
+              </p>
+              <p className="text-3xl font-bold text-emerald-800 dark:text-emerald-100">
+                {fmt(initialBank.disponible, devise)}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild className="border-emerald-300 bg-white">
+              <Link href={`/dashboard/groups/${groupId}/epargne`}>Gérer la banque épargne</Link>
+            </Button>
           </div>
         </section>
       )}
