@@ -19,6 +19,8 @@ export type BanqueSummary = {
   retraitsManuels: number;
   /** Capital prêt non encore remboursé (prélevé sur la banque). */
   retraitsPrets: number;
+  /** Cumul des dépôts enregistrés sur les comptes épargne. */
+  depots: number;
   /** Alias de retraitsPrets — compatibilité. */
   pretsEnCours: number;
   caisseInterets: number;
@@ -84,10 +86,14 @@ async function ensureCaisseInterets(groupId: string, tx: Tx = prisma) {
 }
 
 export async function getBanqueSummary(groupId: string): Promise<BanqueSummary> {
-  const [accounts, retraitsManuelsAgg, pretsEnCours, caisse] = await Promise.all([
+  const [accounts, retraitsManuelsAgg, depotsAgg, pretsEnCours, caisse] = await Promise.all([
     getActiveEpargneAccounts(groupId),
     prisma.mouvementEpargne.aggregate({
       where: { id_groupe: groupId, type_operation: "RETRAIT" },
+      _sum: { montant: true },
+    }),
+    prisma.mouvementEpargne.aggregate({
+      where: { id_groupe: groupId, type_operation: "DEPOT" },
       _sum: { montant: true },
     }),
     prisma.pret.aggregate({
@@ -106,6 +112,7 @@ export async function getBanqueSummary(groupId: string): Promise<BanqueSummary> 
 
   const soldeComptes = accounts.reduce((sum, account) => sum + Number(account.solde_actuel), 0);
   const retraitsManuels = roundCurrency(Number(retraitsManuelsAgg._sum.montant ?? 0));
+  const depots = roundCurrency(Number(depotsAgg._sum.montant ?? 0));
   const retraitsPrets = roundCurrency(Number(pretsEnCours._sum.montant_capital_restant ?? 0));
   const retraits = roundCurrency(retraitsManuels + retraitsPrets);
   const disponible = roundCurrency(soldeComptes);
@@ -116,6 +123,7 @@ export async function getBanqueSummary(groupId: string): Promise<BanqueSummary> 
     retraits,
     retraitsManuels,
     retraitsPrets,
+    depots,
     pretsEnCours: retraitsPrets,
     caisseInterets: roundCurrency(Number(caisse?.solde_actuel ?? 0)),
     nbComptesActifs: accounts.length,

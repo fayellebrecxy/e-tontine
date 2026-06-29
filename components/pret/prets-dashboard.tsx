@@ -130,6 +130,7 @@ export function PretsDashboard({
     retraits: number;
     retraitsManuels: number;
     retraitsPrets: number;
+    depots: number;
     caisseInterets: number;
     pretsEnCours: number;
   };
@@ -275,7 +276,7 @@ export function PretsDashboard({
             </div>
           </div>
         </div>
-        <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-lg border p-4">
             <p className="text-xs text-slate-500">Épargne collective</p>
             <p className="mt-1 text-2xl font-bold text-blue-700">{fmt(initialBank.total, devise)}</p>
@@ -288,6 +289,13 @@ export function PretsDashboard({
             <p className="text-xs text-slate-500">Disponible pour prêts</p>
             <p className="mt-1 text-2xl font-bold">{fmt(initialBank.disponible, devise)}</p>
             <p className="mt-1 text-[11px] text-slate-500">Soldes épargne actuels</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-xs text-slate-500">Dépôts</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-700">
+              {fmt(initialBank.depots, devise)}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">Cumul des versements sur la banque</p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-slate-500">Retraits</p>
