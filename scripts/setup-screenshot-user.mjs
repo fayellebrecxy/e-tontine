@@ -8,6 +8,7 @@ import { PrismaClient } from "../lib/generated/prisma/index.js";
 
 const EMAIL = process.env.SCREENSHOT_USER_EMAIL ?? "screenshots-internal@etontine.dev";
 const PASSWORD = process.env.SCREENSHOT_USER_PASSWORD ?? "ScreenshotCapture2026!";
+const DEMO_GROUP_NAME = "Groupe démo captures";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey =
@@ -59,11 +60,16 @@ async function ensureUser() {
     },
   });
 
-  const group =
-    (await prisma.groupes.findFirst({ orderBy: { date_de_creation: "asc" } })) ??
-    (await prisma.groupes.create({
-      data: { nom: "Groupe démo captures", description: "Groupe pour captures d'écran" },
-    }));
+  const groupIdFromEnv = process.env.SCREENSHOT_GROUP_ID?.trim();
+  const group = groupIdFromEnv
+    ? await prisma.groupes.findUniqueOrThrow({ where: { id_groupe: groupIdFromEnv } })
+    : ((await prisma.groupes.findFirst({ where: { nom: DEMO_GROUP_NAME } })) ??
+      (await prisma.groupes.create({
+        data: {
+          nom: DEMO_GROUP_NAME,
+          description: "Groupe dédié aux captures d'écran (usage interne uniquement)",
+        },
+      })));
 
   await prisma.membreGroupe.upsert({
     where: { id_user_id_groupe: { id_user: user.id, id_groupe: group.id_groupe } },
