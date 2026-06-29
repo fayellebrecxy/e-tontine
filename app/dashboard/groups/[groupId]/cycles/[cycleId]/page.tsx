@@ -620,14 +620,14 @@ export default async function GroupCycleDetailPage({
           <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
             <span>Progression du cycle</span>
             <span>
-              {Math.min(currentIndex, totalTours)} / {totalTours} tours complétés
+              {tresorerie.toursVerses} / {totalTours} tours soldés
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-gray-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
             <div
-              className="h-2 rounded-full bg-brand-500"
+              className="h-full rounded-full bg-primary transition-all duration-300"
               style={{
-                width: `${Math.min((currentIndex / Math.max(totalTours, 1)) * 100, 100)}%`,
+                width: `${Math.min((tresorerie.toursVerses / Math.max(totalTours, 1)) * 100, 100)}%`,
               }}
             />
           </div>

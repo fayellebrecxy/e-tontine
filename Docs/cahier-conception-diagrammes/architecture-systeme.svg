@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<defs>
+  <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+    <polygon points="0 0, 9 3.5, 0 7" fill="#111111"/>
+  </marker>
+  <marker id="open" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+    <polygon points="0 0, 9 3.5, 0 7" fill="none" stroke="#111111" stroke-width="1"/>
+  </marker>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="300" y="24" width="300" height="52" rx="8" fill="#fff" stroke="#111111" stroke-width="1.5"/><text x="450" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="450" dy="0">Navigateur</tspan><tspan x="450" dy="13">web
+(Client)</tspan></text><line x1="450" y1="76" x2="450" y2="98" stroke="#111111" stroke-width="1.3" marker-end="url(#arr)"/><text x="450" y="79" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#111"><tspan x="450" dy="0">HTTPS</tspan></text><rect x="80" y="98" width="740" height="110" rx="8" fill="#f0f4f8" stroke="#111111" stroke-width="1.5"/><text x="450" y="147" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="450" dy="0">Vercel —</tspan><tspan x="450" dy="13">Application</tspan><tspan x="450" dy="13">Next.js 15</tspan></text><rect x="110" y="118" width="180" height="72" rx="8" fill="#fff" stroke="#111111" stroke-width="1.5"/><text x="200" y="148" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="200" dy="0">Pages React
+(App</tspan><tspan x="200" dy="13">Router)</tspan></text><rect x="310" y="118" width="180" height="72" rx="8" fill="#fff" stroke="#111111" stroke-width="1.5"/><text x="400" y="154" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="400" dy="0">API</tspan><tspan x="400" dy="13">Routes
+app/api/*</tspan></text><rect x="510" y="118" width="180" height="72" rx="8" fill="#fff" stroke="#111111" stroke-width="1.5"/><text x="600" y="142" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="600" dy="0">Server</tspan><tspan x="600" dy="13">Actions
+app/auth,</tspan><tspan x="600" dy="13">lib/*</tspan></text><rect x="710" y="118" width="90" height="72" rx="8" fill="#fff" stroke="#111111" stroke-width="1.5"/><text x="755" y="154" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="755" dy="0">Middleware
+Auth</tspan><tspan x="755" dy="13">SSR</tspan></text><line x1="450" y1="208" x2="450" y2="232" stroke="#111111" stroke-width="1.3" marker-end="url(#arr)"/><rect x="80" y="232" width="360" height="88" rx="8" fill="#eef6ff" stroke="#111111" stroke-width="1.5"/><text x="260" y="270" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="260" dy="0">Supabase</tspan><tspan x="260" dy="13">Auth
+Sessions JWT</tspan><tspan x="260" dy="13">/ cookies</tspan></text><rect x="460" y="232" width="360" height="88" rx="8" fill="#eef6ff" stroke="#111111" stroke-width="1.5"/><text x="640" y="270" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="640" dy="0">Prisma ORM</tspan><tspan x="640" dy="13">6
+lib/prisma.ts</tspan></text><line x1="640" y1="320" x2="640" y2="348" stroke="#111111" stroke-width="1.3" marker-end="url(#arr)"/><rect x="460" y="348" width="360" height="64" rx="8" fill="#f5f5f5" stroke="#111111" stroke-width="1.5"/><text x="640" y="380" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="640" dy="0">PostgreSQL
+(Supabase)</tspan></text><line x1="260" y1="320" x2="260" y2="420" stroke="#111111" stroke-width="1.3" marker-end="url(#arr)"/><rect x="80" y="420" width="360" height="64" rx="8" fill="#fff8ee" stroke="#111111" stroke-width="1.5"/><text x="260" y="440" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#111" font-weight="bold"><tspan x="260" dy="0">Services</tspan><tspan x="260" dy="13">externes
+Mobile</tspan><tspan x="260" dy="13">Money, SMTP</tspan></text><text x="450" y="500" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#111" font-weight="bold"><tspan x="450" dy="0">Architecture de déploiement E-Tontine</tspan></text>
+</svg>

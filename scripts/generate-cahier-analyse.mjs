@@ -136,57 +136,6 @@ function genSimpleUseCase(name, opts) {
   writeSvg(name, w, h, body);
 }
 
-function genGlobalAdmin() {
-  const bx = 180,
-    by = 40,
-    bw = 580,
-    bh = 440;
-  const cases = [
-    [240, 80, 100, 22, "Créer un groupe"],
-    [460, 80, 110, 22, "Gérer les membres"],
-    [240, 150, 100, 22, "Gérer les cycles"],
-    [460, 150, 110, 22, "Gérer les rubriques"],
-    [240, 220, 100, 22, "Gérer les réunions"],
-    [460, 220, 110, 22, "Gérer l'épargne"],
-    [240, 290, 100, 22, "Gérer les prêts"],
-    [460, 290, 130, 28, "Effectuer les\npaiements sortants"],
-    [240, 360, 100, 22, "Consulter finances"],
-    [460, 360, 110, 22, "Générer rapports"],
-  ];
-  let body = ucBoundary(bx, by, bw, bh, "Système E-Tontine");
-  body += actor(60, 180, "Administrateur\nde groupe");
-  cases.forEach(([x, y, rx, ry, lbl]) => {
-    body += ucOval(x, y, rx, ry, lbl);
-    body += ucLink(88, 230, x - rx, y);
-  });
-  writeSvg("uc-global-admin", 820, 520, body);
-}
-
-function genGlobalMembre() {
-  const bx = 180,
-    by = 40,
-    bw = 580,
-    bh = 400;
-  const cases = [
-    [250, 80, 110, 22, "S'inscrire / Se connecter"],
-    [490, 80, 110, 22, "Rejoindre un groupe"],
-    [250, 150, 110, 22, "Payer une cotisation"],
-    [490, 150, 110, 22, "Payer une rubrique"],
-    [250, 220, 110, 22, "Consulter son cycle"],
-    [490, 220, 110, 22, "Demander un échange"],
-    [250, 290, 110, 22, "Déposer épargne"],
-    [490, 290, 110, 22, "Demander un prêt"],
-    [370, 360, 120, 22, "Consulter notifications"],
-  ];
-  let body = ucBoundary(bx, by, bw, bh, "Système E-Tontine");
-  body += actor(60, 160, "Membre /\nVisiteur");
-  cases.forEach(([x, y, rx, ry, lbl]) => {
-    body += ucOval(x, y, rx, ry, lbl);
-    body += ucLink(88, 210, x - rx, y);
-  });
-  writeSvg("uc-global-membre", 820, 480, body);
-}
-
 // ─── Diagrammes d'activité — style TAMELA (vertical, centré, espacé) ────
 function actBox(x, y, w, h, label) {
   const lines = wrap(label, 30);
@@ -730,14 +679,21 @@ const useCases = [
   },
 ];
 
-genGlobalAdmin();
-genGlobalMembre();
+execSync(`python3 "${path.join(ROOT, "scripts", "generate_cahier_analyse_uc.py")}"`, { stdio: "inherit" });
 genClassDiagram();
-for (const uc of useCases) genSimpleUseCase(uc.ucDiagram, uc.ucSpec);
 
 const pngFiles = {};
+for (const f of fs.readdirSync(DIAG).filter((n) => n.endsWith(".png"))) {
+  pngFiles[f.replace(".png", "")] = path.join(DIAG, f);
+}
 for (const f of fs.readdirSync(DIAG).filter((n) => n.endsWith(".svg"))) {
-  pngFiles[f.replace(".svg", "")] = svgToPng(f.replace(".svg", ""));
+  const key = f.replace(".svg", "");
+  if (!pngFiles[key]) pngFiles[key] = svgToPng(key);
+}
+
+function pngDimensions(filePath) {
+  const buf = fs.readFileSync(filePath);
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
 
 function img(name, w = 500, h = 320) {
@@ -748,6 +704,16 @@ function img(name, w = 500, h = 320) {
     spacing: { before: 100, after: 100 },
     children: [new ImageRun({ type: "png", data: fs.readFileSync(p), transformation: { width: w, height: h }, altText: { title: name, description: name, name } })],
   });
+}
+
+/** Image centrée en conservant le ratio (diagramme global TAMELA). */
+function imgFit(name, maxW = 520) {
+  const p = pngFiles[name];
+  if (!p) return new Paragraph({ children: [new TextRun({ text: `[Diagramme ${name} manquant]`, italics: true })] });
+  const { w, h } = pngDimensions(p);
+  const width = maxW;
+  const height = Math.round((h / w) * width);
+  return img(name, width, height);
 }
 
 const border = { style: BorderStyle.SINGLE, size: 1, color: "AAAAAA" };
@@ -777,6 +743,34 @@ function useCaseTable(uc) {
     rows: rows.map(([k, v], i) => new TableRow({ children: [cell(k, { width: 2200, header: i === 0 }), cell(v, { width: 6826 })] })),
   });
 }
+
+function mappingTable(rows) {
+  return new Table({
+    width: { size: 9026, type: WidthType.DXA },
+    columnWidths: [2400, 6626],
+    rows: rows.map(([k, v], i) => new TableRow({ children: [cell(k, { width: 2400, header: i === 0 }), cell(v, { width: 6626 })] })),
+  });
+}
+
+const GLOBAL_UC_ROWS = [
+  ["Acteur", "Cas d'utilisation associés"],
+  [
+    "Administrateur de groupe",
+    "Créer un groupe ; Gérer les membres ; Gérer les cycles ; Gérer rubriques ; Gérer réunions ; Gérer l'épargne ; Gérer les prêts ; Générer rapports",
+  ],
+  [
+    "Membre",
+    "Payer cotisation ; Payer rubrique ; Consulter cycle ; Demander échange ; Déposer épargne ; Demander prêt ; Consulter finances ; Accepter garantie",
+  ],
+  [
+    "Utilisateur non authentifié",
+    "S'inscrire ; Se connecter ; Rejoindre un groupe (nécessite une session après inscription ou connexion)",
+  ],
+  [
+    "Cas transversal",
+    "S'authentifier — inclus (<<include>>) par les seize cas métier nécessitant une session active",
+  ],
+];
 
 let figNum = 1;
 function nextFig(label) {
@@ -856,37 +850,115 @@ const children = [
   new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun("Utilisabilité : interface bilingue FR/EN, responsive, statuts visuels VERT/ORANGE/ROUGE.")] }),
   new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun("Traçabilité : notifications métier, rapports PDF/Excel, audit épargne.")] }),
 
-  // ── III. Acteurs (première version) ──
+  // ── III. Acteurs ──
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("III. Acteurs du système")] }),
   new Paragraph({
     spacing: { after: 120 },
-    children: [new TextRun("À partir de l'étude du domaine de la tontine et de l'application E-Tontine, nous identifions les acteurs suivants :")],
+    children: [
+      new TextRun(
+        "L'étude du domaine et l'implémentation E-Tontine distinguent les acteurs principaux du diagramme global (section IV) et des acteurs complémentaires détaillés dans les diagrammes de modules (section V).",
+      ),
+    ],
   }),
-  new Paragraph({ children: [new TextRun({ text: "Visiteur", bold: true }), new TextRun(" : consulte la page d'accueil publique et peut créer un compte ou ouvrir un lien d'invitation.")] }),
-  new Paragraph({ children: [new TextRun({ text: "Utilisateur authentifié", bold: true }), new TextRun(" : accède au tableau de bord global et à son compte personnel.")] }),
-  new Paragraph({ children: [new TextRun({ text: "Membre de groupe", bold: true }), new TextRun(" : participe aux cycles, paie ses obligations, consulte son épargne et reçoit des notifications.")] }),
-  new Paragraph({ children: [new TextRun({ text: "Administrateur de groupe", bold: true }), new TextRun(" : pilote le groupe (membres, cycles, finances, prêts, réunions, rapports).")] }),
-  new Paragraph({ children: [new TextRun({ text: "Avaliste", bold: true }), new TextRun(" : membre garant d'un prêt interne, accepte ou refuse la garantie.")] }),
-  new Paragraph({ spacing: { after: 160 }, children: [new TextRun({ text: "Système", bold: true }), new TextRun(" : applique automatiquement pénalités, rappels et finalisations de paiements.")] }),
+  new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("III.1 Acteurs du diagramme global")] }),
+  new Paragraph({
+    children: [
+      new TextRun({ text: "Administrateur de groupe", bold: true }),
+      new TextRun(
+        " : membre actif disposant du rôle ADMIN sur un groupe ; pilote les membres, cycles, rubriques, réunions, épargne, prêts et rapports.",
+      ),
+    ],
+  }),
+  new Paragraph({
+    children: [
+      new TextRun({ text: "Membre", bold: true }),
+      new TextRun(
+        " : utilisateur authentifié adhérant à un groupe (rôle MEMBRE ou ADMIN) ; participe aux cycles, paie ses obligations, consulte son épargne et interagit avec les prêts.",
+      ),
+    ],
+  }),
+  new Paragraph({
+    spacing: { after: 120 },
+    children: [
+      new TextRun({ text: "Utilisateur non authentifié", bold: true }),
+      new TextRun(
+        " : visiteur sans session ; peut s'inscrire, se connecter ou ouvrir un lien d'invitation. L'adhésion effective à un groupe suppose ensuite une session active.",
+      ),
+    ],
+  }),
+  new Paragraph({
+    spacing: { after: 80 },
+    children: [
+      new TextRun(
+        "Généralisation UML : l'administrateur de groupe est une spécialisation du membre (triangle creux vers Membre). Il hérite implicitement des cas réservés au membre sans association redondante sur le diagramme.",
+      ),
+    ],
+  }),
+  new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("III.2 Acteurs complémentaires (modules détaillés)")] }),
+  new Paragraph({ children: [new TextRun({ text: "Avaliste", bold: true }), new TextRun(" : membre garant d'un prêt interne ; accepte ou refuse la garantie (cas « Accepter garantie »).")] }),
+  new Paragraph({ children: [new TextRun({ text: "Utilisateur invité", bold: true }), new TextRun(" : personne disposant d'un code d'invitation avant adhésion au groupe.")] }),
+  new Paragraph({ spacing: { after: 160 }, children: [new TextRun({ text: "Système / Opérateur Mobile Money", bold: true }), new TextRun(" : acteurs externes pour pénalités automatiques, finalisation des paiements et confirmation Orange/MTN (détaillés en section V).")] }),
 
-  new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("IV. Diagrammes de cas d'utilisation globaux")] }),
+  new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("IV. Diagramme de cas d'utilisation global")] }),
   new Paragraph({
     spacing: { after: 100 },
-    children: [new TextRun("Les diagrammes ci-dessous présentent une vue synthétique des interactions entre les acteurs principaux et le système E-Tontine.")],
+    children: [
+      new TextRun(
+        "Le diagramme global synthétise l'ensemble du système E-Tontine dans un cadre unique « E-Tontine » (style TAMELA) : trois acteurs à gauche, une colonne de dix-neuf cas d'utilisation, le cas transversal « S'authentifier » à droite, des associations pleines sans flèche, seize relations <<include>> et une relation <<extend>>.",
+      ),
+    ],
   }),
-  nextFig("Diagramme de cas d'utilisation — Administrateur de groupe"),
-  img("uc-global-admin", 520, 330),
+  nextFig("Diagramme de cas d'utilisation global — Système E-Tontine"),
+  imgFit("uc-global", 520),
+  new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 160 }, children: [new TextRun("IV.1 Inventaire des cas et acteurs")] }),
+  new Paragraph({
+    spacing: { after: 100 },
+    children: [new TextRun("Le tableau ci-dessous reprend exactement les libellés et associations du diagramme global.")],
+  }),
+  mappingTable(GLOBAL_UC_ROWS),
+  new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 160 }, children: [new TextRun("IV.2 Relations UML du diagramme global")] }),
+  new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun("Association : trait plein sans flèche entre chaque acteur et ses cas (huit cas admin, huit cas membre, trois cas visiteur).")] }),
+  new Paragraph({
+    numbering: { reference: "bullets", level: 0 },
+    children: [
+      new TextRun(
+        "<<include>> : les seize premiers cas (administration et activités membre) incluent obligatoirement « S'authentifier » ; trait pointillé horizontal vers l'ovale de droite.",
+      ),
+    ],
+  }),
+  new Paragraph({
+    numbering: { reference: "bullets", level: 0 },
+    children: [
+      new TextRun(
+        "<<extend>> : « Générer rapports » étend « Consulter finances » — l'administrateur exporte en PDF/Excel ce que le membre consulte en ligne (journal, caisses).",
+      ),
+    ],
+  }),
+  new Paragraph({
+    numbering: { reference: "bullets", level: 0 },
+    children: [
+      new TextRun(
+        "Généralisation d'acteurs : Administrateur de groupe → Membre (l'admin reste membre du groupe et conserve ses droits de participation).",
+      ),
+    ],
+  }),
   new Paragraph({
     spacing: { after: 160 },
-    children: [new TextRun("L'administrateur dispose d'un accès complet à la gestion du groupe : membres, cycles, rubriques, réunions, épargne, prêts, paiements sortants, finances et rapports.")],
+    children: [
+      new TextRun(
+        "Les paiements Mobile Money, la vérification des identifiants et les scénarios d'exception sont détaillés dans les diagrammes de modules (section V) sans alourdir la vue globale.",
+      ),
+    ],
   }),
-  nextFig("Diagramme de cas d'utilisation — Membre / Visiteur"),
-  img("uc-global-membre", 520, 310),
 
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("V. Analyse des cas d'utilisation")] }),
   new Paragraph({
     spacing: { after: 120 },
-    children: [new TextRun("Pour chaque cas d'utilisation majeur : fiche descriptive (modèle TAMELA), diagramme de cas d'utilisation et diagramme d'activité.")],
+    children: [
+      new TextRun(
+        "Chaque module métier ci-dessous décompose les cas du diagramme global : fiche descriptive (modèle TAMELA), diagramme de cas d'utilisation et diagramme d'activité.",
+      ),
+    ],
   }),
 ];
 
@@ -926,7 +998,7 @@ children.push(
   new Paragraph({
     children: [
       new TextRun(
-        "Ce cahier d'analyse a rappelé le contexte, les besoins, les acteurs, les cas d'utilisation avec fiches descriptives, diagrammes de cas d'utilisation, diagrammes d'activité et un diagramme de classes. Il constitue la base analytique pour la rédaction du mémoire.",
+        "Ce cahier d'analyse a rappelé le contexte, les besoins, les acteurs, le diagramme de cas d'utilisation global, l'analyse détaillée par module avec fiches descriptives, diagrammes de cas d'utilisation, diagrammes d'activité et un diagramme de classes. Il constitue la base analytique alignée sur l'application E-Tontine.",
       ),
     ],
   }),
