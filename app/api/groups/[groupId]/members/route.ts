@@ -34,7 +34,10 @@ export async function GET(
   }
 
   const members = await prisma.membreGroupe.findMany({
-    where: { id_groupe: groupId },
+    where: {
+      id_groupe: groupId,
+      statut_adhesion: { in: ["ACTIF", "EN_ATTENTE"] },
+    },
     include: {
       user: {
         select: {
