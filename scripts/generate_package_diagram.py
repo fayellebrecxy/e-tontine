@@ -2,12 +2,11 @@
 """
 Diagramme de packages UML 2.x — E-Tontine (système complet).
 
-Respecte :
-  - Symbole paquetage (onglet + corps)
-  - Stéréotypes d'architecture (<<interface>>, <<application>>, <<domaine>>, …)
-  - Éléments internes publics (+) dans les paquetages ouverts
-  - Dépendances pointillées <<use>> (A → B : A dépend de B)
-  - Graphe acyclique (couches : interface → application → domaine → infrastructure)
+Version épurée et hautement lisible :
+  - Suppression des listes de classes internes pour réduire le bruit visuel.
+  - Paquetages standardisés de taille uniforme.
+  - Organisation en grille symétrique par couches.
+  - Dépendances claires et aérées.
 """
 from __future__ import annotations
 
@@ -22,19 +21,16 @@ PNG_PATH = DOCS / "diagramme-packages-e-tontine.png"
 
 BLACK = (0, 0, 0)
 GRAY = (100, 100, 100)
-LIGHT = (248, 249, 250)
 WHITE = (255, 255, 255)
 
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-FONT_MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 
-W, H = 1680, 1120
+SCALE = 2
+W, H = 1600 * SCALE, 900 * SCALE
 
 
-def _font(size: int, bold: bool = False, mono: bool = False):
-    if mono:
-        return ImageFont.truetype(FONT_MONO, size)
+def _font(size: int, bold: bool = False):
     return ImageFont.truetype(FONT_BOLD if bold else FONT_PATH, size)
 
 
@@ -42,32 +38,40 @@ def _draw_package(
     d: ImageDraw.ImageDraw,
     x: float,
     y: float,
-    w: float,
-    h: float,
     stereotype: str,
     name: str,
-    members: list[str] | None,
     fonts: dict,
 ) -> dict:
-    """Paquetage UML : onglet supérieur + corps ; members = éléments publics (+)."""
-    tab_h = 22
-    tab_w = min(max(len(name) * 7 + 24, 100), w * 0.62)
+    """Dessine un paquetage UML standardisé et fermé avec nom multi-ligne."""
+    w = 220 * SCALE
+    h = 72 * SCALE
+    tab_h = 20 * SCALE
+    tab_w = 135 * SCALE
     body_y = y + tab_h
 
-    d.rectangle((x, body_y, x + w, y + h), outline=BLACK, fill=WHITE, width=1)
-    d.rectangle((x, y, x + tab_w, y + tab_h), outline=BLACK, fill=WHITE, width=1)
-    d.line((x + tab_w, y, x + tab_w, y + tab_h), fill=WHITE, width=2)
+    WRAPPED_NAMES = {
+        "AuthentificationSession": "Authentification",
+        "GestionMembres": "Gestion\nMembres",
+        "GestionGroupes": "Gestion\nGroupes",
+        "CyclesTontine": "Cycles\nTontine",
+        "RubriquesCotisation": "Rubriques\nCotisation",
+        "ReunionsAmendes": "Réunions\net Amendes",
+        "EpargneIndividuelle": "Épargne\nIndividuelle",
+        "PretsInternes": "Prêts\nInternes",
+        "PaiementsMobileMoney": "Paiements\nMobile Money",
+        "JournalFinancier": "Journal\nFinancier"
+    }
 
-    d.text((x + 6, y + 3), f"<<{stereotype}>>", font=fonts["st"], fill=GRAY)
-    d.text((x + 6, body_y + 6), name, font=fonts["name"], fill=BLACK)
+    # Dessin des contours du paquetage (B&W)
+    d.rectangle((x, body_y, x + w, y + h), outline=BLACK, fill=WHITE, width=3)
+    d.rectangle((x, y, x + tab_w, y + tab_h), outline=BLACK, fill=WHITE, width=3)
 
-    ty = body_y + 26
-    if members:
-        for m in members:
-            d.text((x + 10, ty), m, font=fonts["mem"], fill=BLACK)
-            ty += 16
-    elif h > 56:
-        d.text((x + 10, ty), "(encapsulé)", font=fonts["st"], fill=GRAY)
+    # Textes stéréotype et nom du paquetage
+    d.text((x + 6 * SCALE, y + 2 * SCALE), f"«{stereotype}»", font=fonts["st"], fill=BLACK)
+    
+    wrapped_name = WRAPPED_NAMES.get(name, name)
+    body_cy = body_y + (h - tab_h) / 2
+    d.text((x + w / 2, body_cy), wrapped_name, font=fonts["name"], fill=BLACK, anchor="mm", align="center")
 
     cx = x + w / 2
     cy = y + tab_h + (h - tab_h) / 2
@@ -88,7 +92,7 @@ def _draw_package(
 
 def _port(g: dict, side: str) -> tuple[float, float]:
     if side == "top":
-        return g["cx"], g["top"]
+        return g["cx"], g["y"]
     if side == "bottom":
         return g["cx"], g["bottom"]
     if side == "left":
@@ -96,7 +100,7 @@ def _port(g: dict, side: str) -> tuple[float, float]:
     return g["right"], g["cy"]
 
 
-def _dashed(d: ImageDraw.ImageDraw, x1, y1, x2, y2, step=9):
+def _dashed(d: ImageDraw.ImageDraw, x1, y1, x2, y2, step=9 * SCALE):
     dist = math.hypot(x2 - x1, y2 - y1)
     if dist < 1:
         return
@@ -107,23 +111,21 @@ def _dashed(d: ImageDraw.ImageDraw, x1, y1, x2, y2, step=9):
         if draw:
             d.line(
                 (x1 + ux * pos, y1 + uy * pos, x1 + ux * nxt, y1 + uy * nxt),
-                fill=GRAY,
-                width=1,
+                fill=BLACK,
+                width=5,
             )
         pos, draw = nxt, not draw
 
 
 def _arrow_head(d: ImageDraw.ImageDraw, x, y, ang):
-    s = 9
-    d.polygon(
-        [
-            (x, y),
-            (x - s * math.cos(ang - 0.42), y - s * math.sin(ang - 0.42)),
-            (x - s * math.cos(ang + 0.42), y - s * math.sin(ang + 0.42)),
-        ],
-        outline=GRAY,
-        fill=WHITE,
-    )
+    s = 12 * SCALE
+    # Branches de la flèche ouverte UML (en gras)
+    x1 = x - s * math.cos(ang - 0.42)
+    y1 = y - s * math.sin(ang - 0.42)
+    x2 = x - s * math.cos(ang + 0.42)
+    y2 = y - s * math.sin(ang + 0.42)
+    d.line((x1, y1, x, y), fill=BLACK, width=5)
+    d.line((x2, y2, x, y), fill=BLACK, width=5)
 
 
 def _dep(
@@ -134,10 +136,8 @@ def _dep(
     d_side: str,
     *,
     route: tuple[float, float] | None = None,
-    label_once: bool = False,
-    fonts=None,
 ):
-    """Dépendance : src → dst (src utilise dst)."""
+    """Dépendance pointillée «utilise» entre paquetages."""
     x1, y1 = _port(src, s_side)
     x2, y2 = _port(dst, d_side)
     if route:
@@ -149,163 +149,163 @@ def _dep(
         if abs(x2 - mx) >= abs(y2 - my):
             ang = 0.0 if x2 > mx else math.pi
         _arrow_head(d, x2, y2, ang)
-        if label_once and fonts:
-            d.text((mx + 4, (y1 + y2) / 2 - 6), "<<use>>", font=fonts["st"], fill=GRAY, anchor="lm")
     else:
         _dashed(d, x1, y1, x2, y2)
         _arrow_head(d, x2, y2, math.atan2(y2 - y1, x2 - x1))
-        if label_once and fonts:
-            d.text(((x1 + x2) / 2, (y1 + y2) / 2 - 8), "<<use>>", font=fonts["st"], fill=GRAY, anchor="mm")
+
+
+def _dep_multi(
+    d: ImageDraw.ImageDraw,
+    src: dict,
+    dst: dict,
+    s_side: str,
+    d_side: str,
+    intermediate_points: list[tuple[float, float]],
+    angle: float,
+):
+    """Dépendance pointillée multi-segments «utilise» entre paquetages."""
+    x1, y1 = _port(src, s_side)
+    x2, y2 = _port(dst, d_side)
+    
+    prev_x, prev_y = x1, y1
+    for px, py in intermediate_points:
+        _dashed(d, prev_x, prev_y, px, py)
+        prev_x, prev_y = px, py
+    _dashed(d, prev_x, prev_y, x2, y2)
+    _arrow_head(d, x2, y2, angle)
 
 
 def _frame_dashed(d: ImageDraw.ImageDraw, x, y, w, h):
-    for i in range(0, int(w), 14):
-        d.line((x + i, y, x + min(i + 7, w), y), fill=GRAY)
-        d.line((x + i, y + h, x + min(i + 7, w), y + h), fill=GRAY)
-    for j in range(0, int(h), 14):
-        d.line((x, y + j, x, y + min(j + 7, h)), fill=GRAY)
-        d.line((x + w, y + j, x + w, y + min(j + 7, h)), fill=GRAY)
+    step = 14 * SCALE
+    line_len = 7 * SCALE
+    for i in range(0, int(w), step):
+        d.line((x + i, y, x + min(i + line_len, w), y), fill=GRAY, width=2)
+        d.line((x + i, y + h, x + min(i + line_len, w), y + h), fill=GRAY, width=2)
+    for j in range(0, int(h), step):
+        d.line((x, y + j, x, y + min(j + line_len, h)), fill=GRAY, width=2)
+        d.line((x + w, y + j, x + w, y + min(j + line_len, h)), fill=GRAY, width=2)
 
 
 def render() -> Path:
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
     fonts = {
-        "name": _font(12, bold=True),
-        "mem": _font(10, mono=True),
-        "st": _font(9),
+        "title": _font(20 * SCALE, bold=True),
+        "name": _font(17 * SCALE, bold=True),
+        "st": _font(14 * SCALE),
     }
 
-    # Cadre <<système>>
-    sx, sy, sw, sh = 40, 28, 1600, 1060
-    d.rectangle((sx, sy, sx + sw, sy + sh), outline=BLACK, fill=LIGHT, width=1)
-    d.text((sx + 12, sy + 8), "<<système>> E-Tontine", font=fonts["name"], fill=BLACK)
+    # Cadre «système» (B&W)
+    sx, sy, sw, sh = 40 * SCALE, 28 * SCALE, 1520 * SCALE, 840 * SCALE
+    d.rectangle((sx, sy, sx + sw, sy + sh), outline=BLACK, fill=WHITE, width=3)
+    d.text((sx + 12 * SCALE, sy + 10 * SCALE), "«système»", font=fonts["title"], fill=BLACK)
 
-    # ── 1. Interface ──
-    ui = _draw_package(
-        d, 120, 66, 300, 108,
-        "interface", "InterfaceUtilisateur",
-        ["+ DashboardPages", "+ ComposantsReact", "+ JoinGroupDialog"],
-        fonts,
-    )
-    ctrl = _draw_package(
-        d, 480, 66, 300, 108,
-        "application", "CoucheControleurs",
-        ["+ ApiRoutes", "+ ServerActions", "+ ValidationsEntrée"],
-        fonts,
-    )
+    # ── Couche 1 : Configuration et Accès (y=120) ──
+    auth = _draw_package(d, 220 * SCALE, 120 * SCALE, "module", "AuthentificationSession", fonts)
+    membres = _draw_package(d, 660 * SCALE, 120 * SCALE, "module", "GestionMembres", fonts)
+    groupes = _draw_package(d, 1100 * SCALE, 120 * SCALE, "module", "GestionGroupes", fonts)
 
-    # ── 2. Authentification (transversal domaine) ──
-    auth = _draw_package(
-        d, 120, 216, 280, 96,
-        "domaine", "AuthentificationSession",
-        ["+ SupabaseServerClient", "+ getActiveMembership"],
-        fonts,
-    )
+    # ── Couche 2 : Opérations Tontine (y=380) ──
+    cycles = _draw_package(d, 120 * SCALE, 380 * SCALE, "module", "CyclesTontine", fonts)
+    rubriques = _draw_package(d, 480 * SCALE, 380 * SCALE, "module", "RubriquesCotisation", fonts)
+    reunions = _draw_package(d, 840 * SCALE, 380 * SCALE, "module", "ReunionsAmendes", fonts)
+    epargne = _draw_package(d, 1200 * SCALE, 380 * SCALE, "module", "EpargneIndividuelle", fonts)
 
-    # ── 3. Domaine métier (cadre) ──
-    dx, dy, dw, dh = 430, 204, 1180, 500
-    _frame_dashed(d, dx, dy, dw, dh)
+    # ── Couche 3 : Financement & Intégration (y=640) ──
+    paiements = _draw_package(d, 300 * SCALE, 640 * SCALE, "module", "PaiementsMobileMoney", fonts)
+    prets = _draw_package(d, 660 * SCALE, 640 * SCALE, "module", "PretsInternes", fonts)
+    finances = _draw_package(d, 1020 * SCALE, 640 * SCALE, "module", "JournalFinancier", fonts)
 
-    groupes = _draw_package(
-        d, 450, 236, 200, 58, "domaine", "GestionGroupes", None, fonts,
-    )
-    cycles = _draw_package(
-        d, 670, 236, 220, 112,
-        "domaine", "CyclesTontine",
-        ["+ CycleDistributions", "+ CyclePenalties", "+ CycleMemberDebts"],
-        fonts,
-    )
-    rubriques = _draw_package(
-        d, 910, 236, 200, 58, "domaine", "RubriquesCotisation", None, fonts,
-    )
-    reunions = _draw_package(
-        d, 1130, 236, 200, 58, "domaine", "ReunionsAmendes", None, fonts,
-    )
+    # ── Dépendances principales ──
+    # 1. Membres -> Authentification & Groupes
+    _dep(d, membres, auth, "left", "right")
+    _dep(d, membres, groupes, "right", "left")
 
-    epargne = _draw_package(
-        d, 450, 376, 200, 58, "domaine", "EpargneIndividuelle", None, fonts,
-    )
-    prets = _draw_package(
-        d, 670, 376, 220, 112,
-        "domaine", "PretsInternes",
-        ["+ PretService", "+ PretBanque", "+ PretAvalistes"],
-        fonts,
-    )
-    paiements = _draw_package(
-        d, 910, 376, 230, 112,
-        "domaine", "PaiementsMobileMoney",
-        ["+ PaymentProcess", "+ PaymentFinalize", "+ PaymentAmounts"],
-        fonts,
-    )
-    finances = _draw_package(
-        d, 1160, 376, 220, 112,
-        "domaine", "JournalFinancier",
-        ["+ FinancialJournal", "+ CaisseFinanciere", "+ MouvementFinancier"],
-        fonts,
-    )
+    # 2. Modules opérationnels -> GestionGroupes (dépendance de contexte)
+    # Bus à y=280
+    _dep_multi(d, cycles, groupes, "top", "bottom", [
+        (cycles["cx"], 280 * SCALE),
+        (groupes["cx"], 280 * SCALE)
+    ], -math.pi / 2)
+    
+    _dep_multi(d, rubriques, groupes, "top", "bottom", [
+        (rubriques["cx"], 280 * SCALE),
+        (groupes["cx"], 280 * SCALE)
+    ], -math.pi / 2)
+    
+    _dep_multi(d, reunions, groupes, "top", "bottom", [
+        (reunions["cx"], 280 * SCALE),
+        (groupes["cx"], 280 * SCALE)
+    ], -math.pi / 2)
+    
+    _dep_multi(d, epargne, groupes, "top", "bottom", [
+        (epargne["cx"], 280 * SCALE),
+        (groupes["cx"], 280 * SCALE)
+    ], -math.pi / 2)
+    
+    _dep_multi(d, prets, groupes, "top", "bottom", [
+        (prets["cx"], 280 * SCALE),
+        (groupes["cx"], 280 * SCALE)
+    ], -math.pi / 2)
 
-    exports = _draw_package(
-        d, 450, 516, 220, 96,
-        "domaine", "RapportsExports",
-        ["+ RapportGroupePdf", "+ RapportGroupeExcel"],
-        fonts,
-    )
+    # 3. Prêts dépendent des Épargnes et des Cycles (Garanties / Échéances)
+    # Bus à y=510
+    _dep_multi(d, prets, epargne, "top", "bottom", [
+        (prets["cx"], 510 * SCALE),
+        (epargne["cx"], 510 * SCALE)
+    ], -math.pi / 2)
+    
+    _dep_multi(d, prets, cycles, "top", "bottom", [
+        (prets["cx"], 510 * SCALE),
+        (cycles["cx"], 510 * SCALE)
+    ], -math.pi / 2)
 
-    # ── 4. Infrastructure ──
-    notif = _draw_package(
-        d, 720, 736, 260, 96,
-        "infrastructure", "NotificationsMetier",
-        ["+ createNotification", "+ notifyGroupMembers"],
-        fonts,
-    )
-    valid = _draw_package(
-        d, 1020, 736, 260, 96,
-        "transversal", "ValidationsMetier",
-        ["+ SchemasZod", "+ normalizeEmail"],
-        fonts,
-    )
-    data = _draw_package(
-        d, 1320, 736, 280, 112,
-        "infrastructure", "PersistanceDonnees",
-        ["+ PrismaClient", "+ SchemaMetier", "+ Transactions"],
-        fonts,
-    )
+    # 4. Utilisation de la passerelle de Paiements Mobile Money
+    # Bus à y=540
+    _dep_multi(d, cycles, paiements, "bottom", "top", [
+        (cycles["cx"], 540 * SCALE),
+        (paiements["cx"], 540 * SCALE)
+    ], math.pi / 2)
+    
+    _dep_multi(d, rubriques, paiements, "bottom", "top", [
+        (rubriques["cx"], 540 * SCALE),
+        (paiements["cx"], 540 * SCALE)
+    ], math.pi / 2)
+    
+    _dep_multi(d, epargne, paiements, "bottom", "top", [
+        (epargne["cx"], 540 * SCALE),
+        (paiements["cx"], 540 * SCALE)
+    ], math.pi / 2)
+    
+    _dep(d, prets, paiements, "left", "right")
 
-    # ── Dépendances (acycliques) ──
-    # Couche interface → application
-    _dep(d, ui, ctrl, "right", "left")
+    # 5. Écritures dans la comptabilité (Journal Financier)
+    # Bus à y=570
+    _dep_multi(d, cycles, finances, "bottom", "top", [
+        (cycles["cx"], 570 * SCALE),
+        (finances["cx"], 570 * SCALE)
+    ], math.pi / 2)
+    
+    _dep_multi(d, rubriques, finances, "bottom", "top", [
+        (rubriques["cx"], 570 * SCALE),
+        (finances["cx"], 570 * SCALE)
+    ], math.pi / 2)
+    
+    _dep_multi(d, reunions, finances, "bottom", "top", [
+        (reunions["cx"], 570 * SCALE),
+        (finances["cx"], 570 * SCALE)
+    ], math.pi / 2)
+    
+    _dep_multi(d, epargne, finances, "bottom", "top", [
+        (epargne["cx"], 570 * SCALE),
+        (finances["cx"], 570 * SCALE)
+    ], math.pi / 2)
+    
+    _dep(d, prets, finances, "right", "left")
 
-    _dep(d, ctrl, auth, "left", "right", route=(400, ctrl["cy"]))
-    _dep(d, ctrl, cycles, "bottom", "top", route=(ctrl["cx"], 196))
-    _dep(d, ctrl, valid, "bottom", "top", route=(560, 716))
-
-    # Paiements (hub) → autres domaines
-    _dep(d, paiements, finances, "right", "left")
-    _dep(d, paiements, cycles, "left", "right", route=(860, 336))
-    _dep(d, paiements, rubriques, "top", "bottom", route=(1020, 356))
-    _dep(d, paiements, epargne, "left", "right", route=(820, 436))
-    _dep(d, paiements, prets, "left", "right")
-
-    _dep(d, prets, finances, "right", "left", route=(1120, 426))
-    _dep(d, prets, cycles, "top", "bottom", route=(780, 356))
-    _dep(d, cycles, finances, "right", "left", route=(1100, 306))
-    _dep(d, rubriques, finances, "bottom", "top", route=(1020, 486))
-    _dep(d, reunions, finances, "bottom", "top", route=(1270, 486))
-    _dep(d, exports, finances, "right", "left", route=(1150, 566))
-
-    _dep(d, groupes, notif, "bottom", "top", route=(550, 696))
-    _dep(d, cycles, notif, "bottom", "top", route=(780, 696))
-    _dep(d, paiements, notif, "bottom", "top", route=(1020, 696))
-    _dep(d, prets, notif, "bottom", "top", route=(880, 696))
-
-    for pkg in [auth, groupes, cycles, rubriques, reunions, epargne, prets, paiements, finances, exports, notif]:
-        _dep(d, pkg, data, "bottom", "top", route=(pkg["cx"], 711))
-
+    # Sauvegarde
     DOCS.mkdir(parents=True, exist_ok=True)
     img.save(PNG_PATH, quality=95, optimize=True)
-    out = img.resize((1920, int(img.height * 1920 / img.width)), Image.Resampling.LANCZOS)
-    out.save(PNG_PATH, quality=95)
     return PNG_PATH
 
 

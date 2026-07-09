@@ -26,7 +26,10 @@ const DOCS = path.join(ROOT, "Docs");
 const CAPTURES = path.join(DOCS, "captures-application");
 const DIAG = path.join(DOCS, "cahier-implementation-diagrammes");
 const OUT = path.join(DOCS, "cahier-implementation-E-TONTINE.docx");
-const DATE = "26 juin 2026";
+const OUT_GENERATED = path.join(DOCS, "cahier-implementation-E-TONTINE-genere.docx");
+const DATE = "29 juin 2026";
+const FORCE_CAPTURE =
+  process.env.FORCE_SCREENSHOT_CAPTURE === "1" || process.argv.includes("--capture");
 
 const P = { after: 70 };
 const H1 = { before: 200, after: 100 };
@@ -136,6 +139,9 @@ function table(headers, rows) {
 // ─── Préparation des assets ──────────────────────────────────────────────────
 
 execSync(`python3 "${path.join(ROOT, "scripts/generate_deployment_diagram.py")}"`, { stdio: "inherit" });
+execSync(`python3 "${path.join(ROOT, "scripts/generate_logical_data_model_diagram.py")}"`, {
+  stdio: "inherit",
+});
 
 const REQUIRED_CAPTURES = [
   "capture-accueil.png",
@@ -156,15 +162,24 @@ const REQUIRED_CAPTURES = [
   "capture-paiements.png",
 ];
 const capturesMissing = REQUIRED_CAPTURES.some((f) => !exists(path.join(CAPTURES, f)));
-if (process.env.FORCE_SCREENSHOT_CAPTURE === "1" || capturesMissing) {
+if (FORCE_CAPTURE || capturesMissing) {
+  console.log(
+    FORCE_CAPTURE
+      ? "Capture forcée des écrans (état actuel de l'application)…"
+      : "Captures manquantes — génération en cours…",
+  );
   execSync(`node "${path.join(ROOT, "scripts/capture_implementation_screenshots.mjs")}"`, {
     stdio: "inherit",
+    env: { ...process.env, FORCE_SCREENSHOT_CAPTURE: "1" },
   });
 } else {
-  console.log("Captures existantes réutilisées (FORCE_SCREENSHOT_CAPTURE=1 pour régénérer).");
+  console.log(
+    "Captures existantes réutilisées (node scripts/generate-cahier-implementation.mjs --capture pour régénérer).",
+  );
 }
 
 const DEPLOY_PNG = path.join(DIAG, "diagramme-deploiement-e-tontine.png");
+const MLD_PNG = path.join(DIAG, "modele-logique-donnees-e-tontine.png");
 
 const SCREENSHOTS = [
   {
@@ -261,7 +276,7 @@ const SCREENSHOTS = [
     heading: "Paiements Mobile Money",
     file: "capture-paiements.png",
     caption: "Modale de paiement Mobile Money (opérateur et numéro)",
-    desc: "Lors d'un paiement, une carte modale s'ouvre pour choisir l'opérateur (Orange Money ou MTN MoMo), saisir le numéro à débiter et valider la transaction.",
+    desc: "La modale Mobile Money permet de choisir l'opérateur (Orange Money ou MTN MoMo), saisir le numéro à débiter et lancer la transaction. Elle est utilisée pour les cotisations de cycle, les rubriques, l'épargne et les remboursements de prêts.",
   },
 ];
 
@@ -283,8 +298,9 @@ const children = [
   p(
     "Ce document complète le cahier d'analyse (besoins et cas d'utilisation) et le cahier de conception (architecture technique et diagrammes de séquence). Il atteste que les fonctionnalités prévues ont été développées, testées et déployées sur une infrastructure cloud adaptée au contexte camerounais (devise XAF, Mobile Money, interface bilingue FR/EN).",
   ),
-  p("Le cahier est structuré en cinq sections :"),
+  p("Le cahier est structuré en six sections :"),
   bullet("Le diagramme de déploiement du système en production."),
+  bullet("Le modèle logique de données de l'application."),
   bullet("L'environnement de développement (matériel et logiciel)."),
   bullet("La présentation des résultats avec captures d'écran des fonctionnalités implémentées."),
   bullet("Une conclusion sur l'état d'avancement du projet."),
@@ -292,32 +308,53 @@ const children = [
   // II. Diagramme de déploiement
   h1("II. Diagramme de déploiement"),
   p(
-    "L'application E-Tontine est déployée selon une architecture cloud serverless. Le client web (navigateur) communique en HTTPS avec l'application Next.js hébergée sur Vercel. Celle-ci s'appuie sur Supabase pour l'authentification (Auth) et la persistance des données métier (PostgreSQL via Prisma). Les paiements Mobile Money et les notifications e-mail transitent par des services externes.",
+    "Le diagramme de déploiement suit la présentation du mémoire de référence : architecture en trois nœuds UML (client, Serveur Web, Serveur de base de données). L'application E-Tontine est hébergée sur Vercel (Next.js 15) ; la couche Service correspond à l'accès aux données via Prisma ORM et la couche Contrôleur à l'API avec Express.js ; la persistance est assurée par PostgreSQL via Supabase.",
   ),
-  p("Les composants du déploiement sont les suivants :"),
-  bullet("Client : navigateur web moderne (Chrome, Firefox, Safari, Edge) sur PC ou smartphone."),
-  bullet("Application : Next.js 15 déployée sur Vercel (build automatique depuis GitHub, CDN global)."),
-  bullet("Authentification : Supabase Auth (sessions JWT en cookies SSR, inscription et connexion)."),
-  bullet("Base de données : PostgreSQL managé par Supabase (migrations Prisma, connexion via DATABASE_URL)."),
-  bullet("Intégrations : opérateurs Mobile Money pour les paiements ; serveur SMTP (Gmail/Nodemailer) pour les e-mails."),
-  bullet("CI/CD : GitHub Actions exécute le lint et le build à chaque push ou pull request."),
-  bullet("Alternative Docker : un Dockerfile multi-stage permet un déploiement conteneurisé (Node.js 20 Alpine) avec healthcheck sur /api/health."),
+  p("Correspondance avec l'implémentation E-Tontine :"),
+  bullet("client / Interface web : navigateur de l'utilisateur (PC ou smartphone)."),
+  bullet("Serveur Web / Service : ORM Prisma pour l'accès aux données."),
+  bullet("Serveur Web / Contrôleur : API avec Express.js."),
+  bullet("Serveur de base de données : PostgreSQL managé (Supabase Cloud)."),
+  bullet("Authentification : Supabase Auth (sessions JWT, cookies SSR)."),
+  bullet("Intégrations externes : opérateurs Mobile Money (Orange Money, MTN MoMo) et SMTP pour les e-mails."),
   ...figureBlock(
     "Diagramme de déploiement — E-Tontine",
     DEPLOY_PNG,
-    500,
+    520,
     "Déploiement",
   ),
 
   new Paragraph({ children: [new PageBreak()] }),
 
-  // III. Environnement de développement
-  h1("III. Environnement de développement"),
+  // III. Modèle logique de données
+  h1("III. Modèle logique de données"),
+  p(
+    "Le modèle logique de données (MLD) est présenté sous la forme d'un schéma relationnel (style MySQL Workbench), comme dans le mémoire de référence : chaque table PostgreSQL est représentée avec ses colonnes, types de données et clés primaires (PK) / étrangères (FK).",
+  ),
+  p("Les relations principales sont les suivantes :"),
+  bullet("Un utilisateur (users) peut appartenir à plusieurs groupes via membres_groupe (rôle ADMIN ou MEMBRE)."),
+  bullet("Chaque groupe (groupes) centralise les cycles_tontine, rubriques_cotisation, reunions, comptes_epargne, prets et caisses_financieres."),
+  bullet("Les cotisations et versements sont rattachés à un cycle et à un membre actif ; les mouvements_financiers journalisent les écritures sur les caisses."),
+  bullet("Les payment_transactions enregistrent les paiements Mobile Money initiés depuis l'interface (module cycles)."),
+  p(
+    "Le schéma complet (tables secondaires : pénalités, présences, avalistes, invitations, notifications…) est défini dans prisma/schema.prisma et synchronisé par les migrations Prisma.",
+  ),
+  ...figureBlock(
+    "Modèle logique de données — E-Tontine",
+    MLD_PNG,
+    520,
+    "MLD",
+  ),
+
+  new Paragraph({ children: [new PageBreak()] }),
+
+  // IV. Environnement de développement
+  h1("IV. Environnement de développement"),
   p(
     "Le développement d'E-Tontine a été réalisé sur un poste de travail standard, avec des outils open source et des services cloud en mode gratuit ou pro pour les phases de test et de production.",
   ),
 
-  h2("III.1 Environnement matériel"),
+  h2("IV.1 Environnement matériel"),
   p("Le tableau ci-dessous décrit les ressources matérielles utilisées ou requises :"),
   table(
     ["Élément", "Spécification", "Usage"],
@@ -330,7 +367,7 @@ const children = [
     ],
   ),
 
-  h2("III.2 Environnement logiciel"),
+  h2("IV.2 Environnement logiciel"),
   p("L'environnement logiciel de développement comprend :"),
   table(
     ["Logiciel", "Version", "Rôle"],
@@ -351,7 +388,7 @@ const children = [
     ],
   ),
 
-  h3("III.2.1 Configuration locale"),
+  h3("IV.2.1 Configuration locale"),
   p("La mise en route du projet en local suit les étapes suivantes :"),
   bullet("Cloner le dépôt Git et exécuter npm install."),
   bullet("Copier .env.template vers .env et renseigner les clés Supabase (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, DATABASE_URL, DIRECT_URL)."),
@@ -359,7 +396,7 @@ const children = [
   bullet("Appliquer les migrations : npx prisma migrate dev."),
   bullet("Lancer le serveur de développement : npm run dev (http://localhost:3000)."),
 
-  h3("III.2.2 Déploiement production"),
+  h3("IV.2.2 Déploiement production"),
   p("Le déploiement sur Vercel est configuré via vercel.json :"),
   bullet("Commande d'installation : npm ci."),
   bullet("Commande de build : npm run vercel-build (prisma generate && next build)."),
@@ -368,10 +405,10 @@ const children = [
 
   new Paragraph({ children: [new PageBreak()] }),
 
-  // IV. Présentation des résultats
-  h1("IV. Présentation des résultats"),
+  // V. Présentation des résultats
+  h1("V. Présentation des résultats"),
   p(
-    "Cette section présente les interfaces réalisées pour les principaux modules de l'application E-Tontine. Les captures d'écran illustrent le parcours utilisateur depuis l'accueil jusqu'aux modules métier (cycles, membres, réunions, épargne, finances, rubriques, prêts et paiements Mobile Money).",
+    "Cette section présente les interfaces réelles de l'application E-Tontine, capturées sur https://e-tontine.vercel.app avec le compte utilisateur et le groupe Association des tontiniers de worketyamo (ATW). Aucune donnée fictive ni écran simulé n'a été utilisé.",
   ),
 ];
 
@@ -379,7 +416,7 @@ for (let i = 0; i < SCREENSHOTS.length; i++) {
   const s = SCREENSHOTS[i];
   const imgPath = path.join(CAPTURES, s.file);
   children.push(
-    h2(`IV.${i + 1} ${s.heading}`),
+    h2(`V.${i + 1} ${s.heading}`),
     p(s.desc),
     ...figureBlock(s.caption, imgPath, 500, s.caption),
   );
@@ -387,7 +424,7 @@ for (let i = 0; i < SCREENSHOTS.length; i++) {
 
 children.push(
   new Paragraph({ children: [new PageBreak()] }),
-  h1("V. Conclusion"),
+  h1("VI. Conclusion"),
   p(
     "Le cahier d'implémentation atteste que le système E-Tontine a été développé et déployé selon l'architecture prévue : application Next.js sur Vercel, authentification Supabase, persistance PostgreSQL via Prisma, et intégrations Mobile Money et e-mail.",
   ),
@@ -395,7 +432,7 @@ children.push(
     "L'environnement de développement (Node.js 20, Prisma, Supabase CLI, Docker) a permis une itération rapide avec migrations versionnées et tests locaux. L'intégration continue via GitHub Actions garantit la qualité du code avant chaque déploiement.",
   ),
   p(
-    "Les seize captures d'écran présentées couvrent l'ensemble des modules fonctionnels implémentés : authentification, gestion des groupes et membres, cycles de tontine, rubriques, réunions, épargne, prêts, paiements Mobile Money et consolidation financière. L'application est opérationnelle et prête pour des tests utilisateurs en conditions réelles avec des groupes pilotes.",
+    "Les seize captures d'écran présentées couvrent l'ensemble des modules fonctionnels implémentés : authentification, gestion des groupes et membres, cycles de tontine, rubriques, réunions, épargne, prêts, paiements Mobile Money et consolidation financière. Le diagramme de déploiement et le modèle logique de données complètent cette documentation pour le chapitre III du mémoire. L'application est opérationnelle et prête pour des tests utilisateurs en conditions réelles avec des groupes pilotes.",
   ),
   p(
     "Les perspectives d'évolution incluent l'optimisation des performances sur mobile, l'intégration native avec les API opérateurs Mobile Money camerounais (MTN, Orange) et l'extension des rapports analytiques pour les administrateurs de groupe.",
@@ -458,5 +495,8 @@ const doc = new Document({
   ],
 });
 
-fs.writeFileSync(OUT, await Packer.toBuffer(doc));
+const buffer = await Packer.toBuffer(doc);
+fs.writeFileSync(OUT, buffer);
+fs.writeFileSync(OUT_GENERATED, buffer);
 console.log(`Cahier d'implémentation généré : ${OUT}`);
+console.log(`Copie générée : ${OUT_GENERATED}`);

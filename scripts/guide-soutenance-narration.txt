@@ -1,0 +1,195 @@
+Guide technique de soutenance. Application E-Tontine. Ce qu'il faut savoir pour la soutenance.
+
+Section 1. Qu'est-ce qu'E-Tontine ?
+
+E-Tontine est une application web de gestion de tontines communautaires. Elle digitalise les opérations d'un groupe d'épargne collective : adhésion des membres, cycles de cotisation, distributions du pot, rubriques de contribution, épargne individuelle, prêts internes, réunions, journal financier et paiements Mobile Money, Orange Money et M T N MoMo, actuellement simulés en développement.
+
+Chaque groupe est un espace isolé. Un utilisateur peut appartenir à plusieurs groupes avec un rôle différent dans chacun : administrateur ou membre.
+
+Section 2. Architecture du système.
+
+L'application suit une architecture trois tiers. Couche présentation : le navigateur web avec interface React responsive. Couche application : Next.js 15 sur Vercel, pages, A P I Routes et Server Actions. Couche données : PostgreSQL hébergé par Supabase, plus authentification Supabase Auth.
+
+Flux d'une requête. Le navigateur envoie une requête. Le middleware Next.js rafraîchit la session Supabase via cookies H T T P only. Le serveur vérifie l'identité avec get User, puis les droits métier : appartenance au groupe et rôle. Prisma exécute des requêtes S Q L paramétrées sur PostgreSQL. La réponse est renvoyée en H T M L ou en J S O N.
+
+Organisation du code. Le dossier app contient les pages Next.js et les A P I Routes. components contient les composants React par module. lib contient la logique métier, Prisma et Supabase. prisma contient le schéma et les migrations. middleware point t s protège les routes dashboard et account.
+
+Section 3. Stack technologique et justifications.
+
+Next.js 15 : framework full-stack qui unifie frontend et backend en TypeScript. Alternative Laravel ou Django : plus lourd pour une application web moderne.
+
+React 19 : bibliothèque d'interface utilisateur, standard du web, composants réutilisables.
+
+TypeScript : typage statique qui réduit les erreurs avant l'exécution.
+
+Node.js 20 plus : runtime serveur JavaScript, même langage côté client et serveur.
+
+Prisma O R M : accès typé à PostgreSQL, migrations versionnées, requêtes paramétrées anti-injection S Q L.
+
+Supabase : authentification clé en main et hébergement PostgreSQL managé. Alternative Firebase : base No S Q L moins adaptée aux transactions financières.
+
+Tailwind C S S : mise en forme utility-first, responsive et cohérente avec le design system.
+
+shadcn ui et Radix : composants accessibles et personnalisables.
+
+Zod : validation des entrées utilisateur côté serveur.
+
+Vercel : hébergement optimisé pour Next.js, déploiement automatique depuis GitHub.
+
+GitHub Actions : intégration continue, lint et build à chaque modification.
+
+Section 4. Fonctionnement global.
+
+Parcours utilisateur. Le visiteur accède à la page d'accueil, peut s'inscrire ou se connecter. Le membre connecté voit son tableau de bord et la liste Mes groupes. Il rejoint un groupe via lien d'invitation ou demande d'adhésion. Dans un groupe, il navigue entre Aperçu, Membres, Cycles, Rubriques, Épargne, Prêts, Réunions et Finances.
+
+Modules métier. Groupes : créer et gérer une tontine, devise X A F, lien d'invitation. Le créateur devient A D M I N automatiquement.
+
+Membres : liste, rôles, statut d'adhésion, indicateur vert, orange ou rouge selon la régularité.
+
+Invitations : codes pour rejoindre un groupe, réservé aux administrateurs.
+
+Cycles : tontine rotative, tours, ordre de passage, cotisations et distributions.
+
+Rubriques : contributions ponctuelles ou récurrentes hors cycle, avec caisse dédiée.
+
+Paiements : Mobile Money Orange et M T N, flux initiation, simulation et finalisation.
+
+Épargne : compte individuel par membre, dépôts et retraits, peut servir de garantie pour les prêts.
+
+Prêts : demande, avalistes, remboursements, paramètres du groupe.
+
+Réunions : planification, présences, amendes d'absence, rappels automatiques par cron.
+
+Finances : journal des mouvements et caisses typées. Chaque opération passe par record Mouvement Financier.
+
+Section 5. Modèle de données.
+
+La base PostgreSQL contient une trentaine de tables. L'identifiant utilisateur id user est le même U U I D que dans Supabase Auth.
+
+Relations principales. User lié à Membre Groupe lié à Groupes, relation many-to-many avec rôle et statut. Groupes vers Cycle Tontine, participants, cotisations, versements et pénalités. Groupes vers Rubrique Cotisation et Paiement Rubrique. Groupes vers Caisse Financière et Mouvement Financier, le journal comptable. Membre Groupe vers Compte Epargne et Mouvement Epargne. Groupes vers Prêt, Avaliste Prêt et Mouvement Prêt. Payment Transaction trace chaque tentative de paiement Mobile Money.
+
+Les migrations Prisma versionnent l'évolution du schéma.
+
+Section 6. Design system E-Tontine.
+
+Défini dans globals point c s s et tailwind point config point j s. Couleur primaire : vert zéro zéro six b deux c, confiance et épargne. Secondaire : bleu quatre zéro cinq neuf a a. Fond vert très clair f quatre f c f zéro. Sidebar bleu marine zéro zéro un six quatre e.
+
+Polices Inter pour le texte et Poppins pour les titres. Composants shadcn ui basés sur Radix : boutons, formulaires, dialogs, tableaux, graphiques Recharts. Thème clair par défaut, mode sombre disponible.
+
+Section 7. Sécurité.
+
+Ressources à protéger. S U P A B A S E underscore S E R V I C E underscore R O L E underscore K E Y : accès admin total Supabase, jamais côté client. D A T A B A S E underscore U R L et D I R E C T underscore U R L : accès PostgreSQL, secrets Vercel uniquement. C R O N underscore S E C R E T : protège les tâches planifiées. Données financières : transactions Prisma et validation Zod. Sessions : cookies H T T P only Supabase.
+
+Mécanismes. Authentification Supabase avec mot de passe hashé, confirmation email, O T P pour réinitialisation. Middleware bloque dashboard sans session. Validation Zod sur tous les formulaires et A P I. Prisma : requêtes paramétrées, pas d'injection S Q L. Transactions atomiques pour les opérations financières. En-têtes H T T P : C S P, X Frame Options, H S T S en production. Server Actions : protection C S R F intégrée.
+
+Pourquoi ainsi ? L'authentification est déléguée à Supabase. Les autorisations métier restent dans l'application car les règles d'une tontine sont trop fines. Le R L S Row Level Security est activé sur Supabase mais sans policies : le filtrage se fait dans le code Prisma.
+
+Section 8. Gestion des autorisations.
+
+Deux rôles par groupe. A D M I N administrateur : invitations, paramètres, paiements sortants, distributions, retraits, gestion complète. M E M B R E : consulter, payer ses cotisations, gérer son épargne, demander un prêt, participer aux réunions.
+
+Le rôle est par groupe, pas global. Un utilisateur peut être A D M I N dans un groupe et M E M B R E dans un autre.
+
+Vérifications. Layout groupe : membre actif requis. Navigation : Invitations et Paramètres masqués si non admin. A P I Routes : get Group Membership et require Admin. Paiements : can Initiate Payment, un membre ne paie que pour lui. Server Actions rubriques : require Group Admin.
+
+Statuts. Adhésion : A C T I F, I N A C T I F, E N underscore A T T E N T E. Visuel : V E R T à jour, O R A N G E léger retard, R O U G E situation critique.
+
+Section 9. Flux techniques.
+
+Connexion. Inscription, Supabase crée le compte, email de confirmation, callback échange le code, cookie session, upsert ligne users dans Prisma.
+
+Paiement Mobile Money. POST payments initiate, création Payment Transaction, simulation, finalize Payment Transaction, écriture journal financier.
+
+Journal financier. record Mouvement Financier crée ou met à jour une caisse G E N E R A L E, C Y C L E, R U B R I Q U E, et enregistre le mouvement.
+
+Section 10. Déploiement.
+
+Production sur Vercel plus Supabase. Build : prisma generate et next build. C I GitHub Actions : lint et build. Variables d'environnement sur Vercel, jamais dans le code. Alternative Docker pour auto-hébergement. Cron réunions protégé par C R O N underscore S E C R E T.
+
+Section 11. Questions fréquentes du jury.
+
+Pourquoi Next.js et pas mobile natif ? Une web app responsive couvre ordinateur et smartphone avec un seul code.
+
+Pourquoi Prisma si Supabase a PostgreSQL ? Prisma apporte typage TypeScript, migrations et transactions.
+
+Comment isoler les groupes ? Chaque requête A P I vérifie Membre Groupe avec id user, id groupe et statut A C T I F. Sans adhésion : erreur 403.
+
+Paiements réels ? Actuellement simulés, architecture prête pour brancher les A P I Orange et M T N.
+
+Paiements simultanés ? Transactions Prisma atomiques, pas de solde incohérent.
+
+Qui change les rôles ? Un A D M I N du groupe uniquement.
+
+Où est la session ? Cookies H T T P only Supabase, rafraîchis par le middleware.
+
+Audit financier ? Module Finances et Payment Transaction.
+
+Section 12. Glossaire des termes techniques essentiels.
+
+A P I : interface de communication entre programmes. A P I Route : point d'accès H T T P dans app slash api.
+
+App Router : routage Next.js basé sur le dossier app.
+
+Architecture trois tiers : présentation, application, données.
+
+Middleware : code exécuté avant chaque requête pour la session et la protection des routes.
+
+Server Actions : fonctions serveur appelées depuis les formulaires React.
+
+U U I D : identifiant unique universel.
+
+Next.js : framework React full-stack. React : bibliothèque d'interface. TypeScript : JavaScript typé. Node point j s : runtime serveur.
+
+Prisma O R M : mapping objet-relationnel pour PostgreSQL. PostgreSQL : base de données relationnelle S Q L.
+
+Supabase : plateforme Auth plus PostgreSQL. Supabase Auth : service d'authentification.
+
+Tailwind : framework C S S utility-first. Zod : validation de schémas. Vercel : hébergement.
+
+Authentification : vérifier qui est l'utilisateur. Autorisation : vérifier ce qu'il a le droit de faire.
+
+C S R F : attaque par requête forgée, bloquée par les Server Actions.
+
+C S P : politique de sécurité du contenu web. H T T P S : protocole chiffré.
+
+O T P : mot de passe à usage unique. J W T : jeton d'identité signé.
+
+R L S Row Level Security : filtrage de lignes en base, ici géré plutôt dans le code.
+
+Injection S Q L : attaque par code S Q L malveillant, neutralisée par Prisma.
+
+Transaction atomique : tout réussit ou tout est annulé.
+
+401 : non authentifié. 403 : non autorisé.
+
+Schéma Prisma : description des tables. Migration : évolution versionnée de la base.
+
+Enum : valeurs fixes comme A D M I N ou M E M B R E.
+
+Tontine : épargne collective à tour de rôle. Cycle : période de cotisations et distributions. Cotisation : paiement périodique. Pot : montant collecté versé au bénéficiaire.
+
+Rubrique : contribution hors cycle. Caisse financière : compte virtuel du groupe. Journal financier : historique des mouvements.
+
+Épargne : compte individuel membre. Prêt interne : argent prêté par la caisse. Avaliste : garant d'un prêt.
+
+Mobile Money : paiement par téléphone, Orange ou M T N.
+
+A D M I N : administrateur groupe. M E M B R E : membre standard.
+
+Design system : règles visuelles cohérentes. Composant : brique U I réutilisable. Token : variable C S S de design.
+
+Section 13. Phrases clés pour la soutenance.
+
+E-Tontine est une application web full-stack Next.js déployée sur Vercel, avec authentification Supabase et données PostgreSQL via Prisma.
+
+L'architecture est en trois tiers : navigateur, serveur Next.js, base Supabase.
+
+La sécurité combine auth managée, validation Zod, transactions atomiques et contrôle des rôles A D M I N et M E M B R E par groupe.
+
+Le journal financier centralise toutes les opérations d'argent dans des caisses typées.
+
+Le design system vert et bleu assure une interface cohérente et professionnelle.
+
+Les modules couvrent le cycle de vie complet d'une tontine : adhésion, cycles, épargne, prêts, réunions et paiements.
+
+Fin du guide technique de soutenance E-Tontine. Bonne préparation.

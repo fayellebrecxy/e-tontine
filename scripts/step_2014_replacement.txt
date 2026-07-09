@@ -1,0 +1,2 @@
+"    heading(\"II.3.2 Diagrammes de séquence système\", HeadingLevel.HEADING_3),\n    justify(\"Les diagrammes de séquence système (DSS) traduisent la dynamique fonctionnelle de la plateforme E-Tontine. Ils décrivent de manière chronologique les flux
+<truncated 5654 bytes>

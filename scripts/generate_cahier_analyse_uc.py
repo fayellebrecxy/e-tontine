@@ -56,7 +56,15 @@ def draw_actor(d, x, y, label):
         d.text((x, ty), line, font=FSB, fill=BLACK, anchor="ma")
         ty += 20
     link_y = y + 38
-    return x + 18, link_y, ty
+    return {
+        "chest": (x + 18, link_y),
+        "head_top": (x, y),
+        "feet_bottom": (x, y + 72),
+        "text_bottom": (x, ty),
+        "x": x,
+        "y": y,
+    }
+
 
 
 def draw_oval(d, cx, cy, rx, ry, label):
@@ -213,10 +221,18 @@ def dashed_line(d, x1, y1, x2, y2, fill=GRAY, width=1, dash=8, gap=5):
         draw_seg = not draw_seg
 
 
-def actor_generalization(d, child_link, parent_link):
-    """Généralisation acteur UML : trait droit + triangle creux au parent."""
-    x1, y1 = child_link
-    x2, y2 = parent_link
+def actor_generalization(d, child_actor: dict, parent_actor: dict):
+    """Généralisation acteur UML : de la tête de l'enfant au mot de l'acteur parent (ou inversement)."""
+    # Determine the vertical positions of child and parent to draw from head to text_bottom / head_top
+    if child_actor["y"] > parent_actor["y"]:
+        # Child is below parent: line starts at top of child's head and ends at bottom of parent's text
+        x1, y1 = child_actor["head_top"]
+        x2, y2 = parent_actor["text_bottom"]
+    else:
+        # Child is above parent: line starts at bottom of child's text and ends at top of parent's head
+        x1, y1 = child_actor["text_bottom"]
+        x2, y2 = parent_actor["head_top"]
+
     dx, dy = x1 - x2, y1 - y2
     length = math.hypot(dx, dy) or 1.0
     ux, uy = dx / length, dy / length
@@ -259,21 +275,21 @@ def use_case_diagram(
     d.rectangle((bx + 6, by + 6, bx + bw - 6, by + 52), fill=WHITE, outline=WHITE)
     d.text((bx + bw / 2, by + 28), title, font=FB, fill=BLACK, anchor="ma")
 
-    actor_links = []
+    actor_pts = []
     for ax, ay, label in actors:
-        lx, ly, _ = draw_actor(d, ax, ay, label)
-        actor_links.append((lx, ly))
+        pt = draw_actor(d, ax, ay, label)
+        actor_pts.append(pt)
 
     ovals = []
     for cx, cy, rx, ry, label in cases:
         ovals.append(draw_oval(d, cx, cy, rx, ry, label))
 
     for ai, ci in links:
-        lx, ly = actor_links[ai]
+        lx, ly = actor_pts[ai]["chest"]
         assoc_direct(d, lx, ly, ovals[ci])
 
     for child, parent in actor_gen:
-        actor_generalization(d, actor_links[child], actor_links[parent])
+        actor_generalization(d, actor_pts[child], actor_pts[parent])
 
     for i, (fi, ti) in enumerate(includes):
         include_relation(d, ovals[fi], ovals[ti], "<<include>>", bx, route_idx=i)

@@ -80,6 +80,69 @@ export async function signUpAction(
 
   const origin = await getOrigin();
   const nextPath = normalizeNextPath(input.next);
+
+  // Essai de création via le client Admin pour forcer email_confirm à true.
+  // Cela contourne les erreurs d'envoi d'email de confirmation de la sandbox Supabase
+  // pour les adresses autres que le propriétaire du projet.
+  const admin = createSupabaseAdminClient();
+  if (admin) {
+    const { data: adminData, error: adminError } = await admin.auth.admin.createUser({
+      email,
+      password: parsed.data.password,
+      email_confirm: true,
+      user_metadata: {
+        nom: normalizeName(parsed.data.nom),
+        prenom: normalizeName(parsed.data.prenom),
+        telephone,
+      },
+    });
+
+    if (adminError) {
+      return { ok: false as const, error: adminError.message };
+    }
+
+    const user = adminData.user;
+    if (user) {
+      await prisma.user.upsert({
+        where: { id_user: user.id },
+        update: {
+          email,
+          nom: normalizeName(parsed.data.nom),
+          prenom: normalizeName(parsed.data.prenom),
+          telephone,
+        },
+        create: {
+          id_user: user.id,
+          nom: normalizeName(parsed.data.nom),
+          prenom: normalizeName(parsed.data.prenom),
+          email,
+          telephone,
+        },
+      });
+
+      // Connexion automatique immédiate après création
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: parsed.data.password,
+      });
+
+      if (!signInError && signInData.session) {
+        return {
+          ok: true as const,
+          redirectTo: nextPath,
+          message: "Compte créé et connecté avec succès.",
+        };
+      }
+    }
+
+    return {
+      ok: true as const,
+      redirectTo: `/auth/login?next=${encodeURIComponent(nextPath)}`,
+      message: "Compte créé avec succès. Connectez-vous pour commencer.",
+    };
+  }
+
+  // Repli vers l'inscription standard si l'admin n'est pas disponible
   const { data, error } = await supabase.auth.signUp({
     email,
     password: parsed.data.password,

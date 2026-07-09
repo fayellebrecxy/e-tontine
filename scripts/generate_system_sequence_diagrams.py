@@ -3,7 +3,7 @@
 Diagrammes de séquence système (SSD) — E-Tontine.
 
 Un diagramme par module métier (10 modules).
-Règle SSD : un acteur ↔ :E-Tontine (boîte noire).
+Règle SSD : un acteur ↔ :Système (boîte noire).
 
 Acteurs (diagramme UC global) :
   - Utilisateur non authentifié : auth plateforme (hors groupe)
@@ -232,7 +232,7 @@ def _draw_system(d: ImageDraw.ImageDraw, x: int, y: int, font_name):
     bw, bh = 200, 52
     box = (x - bw // 2, y, x + bw // 2, y + bh)
     d.rectangle(box, outline=BLACK, fill=WHITE, width=1)
-    d.text((x, y + bh // 2), ":E-Tontine", font=font_name, fill=BLACK, anchor="mm")
+    d.text((x, y + bh // 2), ":Système", font=font_name, fill=BLACK, anchor="mm")
     return y + bh + 12
 
 

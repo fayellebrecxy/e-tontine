@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """
 Diagrammes de cas d'utilisation par module — E-Tontine.
-
-Style TAMELA (aligné sur le diagramme global) :
-  - Cas principaux à gauche, cas inclus/étendus au centre si nécessaire
-  - « S'authentifier » à droite (<<include>> horizontal)
-  - Généralisation acteur : couloir à gauche + triangle creux (TAMELA)
+Style Noir & Blanc académique, sans titre, avec uniquement les acteurs autorisés.
 """
 from __future__ import annotations
 
@@ -16,33 +12,42 @@ from textwrap import wrap
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "Docs" / "diagramme uses case module"
+OUT = ROOT / "Docs" / "diagramme de cas d'utilisation des module"
 OUT.mkdir(parents=True, exist_ok=True)
 
-BLACK = (20, 20, 20)
-GRAY = (90, 90, 90)
-UC_BLUE = (37, 99, 235)
-UC_FILL = (247, 251, 255)
+# Pure Black & White Color Palette
+BLACK = (0, 0, 0)
+GRAY = (100, 100, 100)
 WHITE = (255, 255, 255)
-SYS_FILL = (252, 253, 255)
+UC_BORDER = (0, 0, 0)
+UC_FILL = (255, 255, 255)      # Pure white fill for use cases
+SYS_FILL = (255, 255, 255)     # Pure white fill for system boundary
+SHADOW_COLOR = (240, 240, 240)
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-FB = ImageFont.truetype(BOLD, 24)
-FS = ImageFont.truetype(FONT, 19)
-FSB = ImageFont.truetype(BOLD, 20)
-FX = ImageFont.truetype(FONT, 15)
 
-ACTOR_X = 58
+if Path(FONT).exists():
+    FB = ImageFont.truetype(BOLD, 24)
+    FS = ImageFont.truetype(FONT, 19)
+    FSB = ImageFont.truetype(BOLD, 20)
+    FX = ImageFont.truetype(FONT, 15)
+else:
+    FB = ImageFont.load_default()
+    FS = ImageFont.load_default()
+    FSB = ImageFont.load_default()
+    FX = ImageFont.load_default()
+
+ACTOR_X = 113
 TOP = 95
 ROW = 78
 AUTH_RX, AUTH_RY_BASE = 82, 26
 
 
 def _layout(n_rows: int, has_side: bool) -> dict:
-    main_x = 280
-    side_x = 490 if has_side else None
-    auth_x = 700 if not has_side else 720
+    main_x = 335
+    side_x = 545 if has_side else None
+    auth_x = 755 if not has_side else 775
     bw = 620 if not has_side else 720
     return {"main_x": main_x, "side_x": side_x, "auth_x": auth_x, "bw": bw}
 
@@ -59,22 +64,35 @@ def _text_center(d, box, label, font=FS, max_chars=18):
         y += lh
 
 
-def _draw_actor(d, x, y, label):
+def _draw_actor(d, x, y, label, on_right=False):
+    # Head
     d.ellipse((x - 14, y, x + 14, y + 28), outline=BLACK, width=2)
+    # Body
     d.line((x, y + 28, x, y + 52), fill=BLACK, width=2)
+    # Arms
     d.line((x - 18, y + 38, x + 18, y + 38), fill=BLACK, width=2)
+    # Legs
     d.line((x, y + 52, x - 16, y + 72), fill=BLACK, width=2)
     d.line((x, y + 52, x + 16, y + 72), fill=BLACK, width=2)
+    
+    # Actor Label
     ty = y + 86
     for line in label.split("\n"):
         d.text((x, ty), line, font=FSB, fill=BLACK, anchor="ma")
         ty += 19
-    return x + 18, y + 38
+    return {
+        "cx": x,
+        "chest": (x - 18, y + 38) if on_right else (x + 18, y + 38),
+        "head_top": (x, y),
+        "feet_bottom": (x, y + 72),
+        "text_bottom": (x, ty),
+        "y": y
+    }
 
 
 def _draw_oval(d, cx, cy, rx, ry, label):
     box = (cx - rx, cy - ry, cx + rx, cy + ry)
-    d.ellipse(box, outline=UC_BLUE, fill=UC_FILL, width=2)
+    d.ellipse(box, outline=UC_BORDER, fill=UC_FILL, width=2)
     _text_center(d, box, label, FS)
     return {
         "cx": cx, "cy": cy, "rx": rx, "ry": ry,
@@ -86,10 +104,11 @@ def _draw_oval(d, cx, cy, rx, ry, label):
 def _auth_geom(n_rows: int, auth_x: int) -> dict:
     y1, y2 = TOP, TOP + (n_rows - 1) * ROW
     cy = (y1 + y2) / 2
-    ry = (y2 - y1) / 2 + AUTH_RY_BASE + 4
+    rx = AUTH_RX
+    ry = 26
     return {
-        "cx": auth_x, "cy": cy, "rx": AUTH_RX, "ry": ry,
-        "left": auth_x - AUTH_RX, "right": auth_x + AUTH_RX,
+        "cx": auth_x, "cy": cy, "rx": rx, "ry": ry,
+        "left": auth_x - rx, "right": auth_x + rx,
         "top": cy - ry, "bottom": cy + ry,
     }
 
@@ -126,16 +145,26 @@ def _open_arrow(d, tx, ty, dx, dy):
 
 
 def _include_tamela(d, src, dst, label="<<include>>", y_off: float = 0):
-    sy = src["cy"] + y_off
-    sx = src["right"]
-    tx = _ellipse_left_x(dst, sy)
+    x1, y1 = src["cx"], src["cy"] + y_off
+    x2, y2 = dst["cx"], dst["cy"]
+    
+    angle = math.atan2(y2 - y1, x2 - x1)
+    
+    sx = x1 + src["rx"] * math.cos(angle)
+    sy = y1 + src["ry"] * math.sin(angle)
+    tx = x2 - dst["rx"] * math.cos(angle)
+    ty = y2 - dst["ry"] * math.sin(angle)
+    
     if tx <= sx + 4:
         return
-    _dashed(d, sx, sy, tx, sy)
-    _open_arrow(d, tx, sy, tx - sx, 0)
+        
+    _dashed(d, sx, sy, tx, ty)
+    _open_arrow(d, tx, ty, tx - sx, ty - sy)
+    
     lx = (sx + tx) / 2
-    ly = sy + 16 if tx - sx <= 120 else sy - 16
-    d.text((lx, ly), label, font=FX, fill=BLACK, anchor="ma")
+    ly = (sy + ty) / 2
+    px, py = -math.sin(angle) * 14, math.cos(angle) * 14
+    d.text((lx + px, ly + py - 8), label, font=FX, fill=BLACK, anchor="ma")
 
 
 def _extend_tamela(d, ext, base, bx):
@@ -158,51 +187,51 @@ def _extend_tamela(d, ext, base, bx):
 
 
 def _actor_positions(spec, n_rows):
-    n = len(spec["actors"])
-    gen = spec.get("actor_gen", [])
-
-    if n == 1:
-        return [TOP + (n_rows - 1) * ROW // 2]
-
-    if n == 2 and gen:
-        spread = max((n_rows - 1) * ROW, 220)
-        return [TOP + 40, TOP + 40 + spread]
-
-    if n == 3 and gen:
-        y0 = TOP + 20
-        y2 = TOP + (n_rows - 1) * ROW - 10
-        y1 = (y0 + y2) // 2
-        return [y0, y1, y2]
-
-    linked = []
-    for ai in range(n):
-        rows = [i for i, p in enumerate(spec["primary"]) if p[3] & (1 << ai)]
-        linked.append(int(sum(TOP + i * ROW for i in rows) / len(rows)) if rows else TOP + (n_rows - 1) * ROW // 2)
-    return linked
-
-
-def _actor_for_case(mask: int, gen_pairs: list[tuple[int, int]]) -> int | None:
-    """Acteur à associer — évite le doublon parent/enfant (TAMELA)."""
-    child_of = {c: p for c, p in gen_pairs}
-    bits = [i for i in range(8) if mask & (1 << i)]
-    if not bits:
-        return None
-    if len(bits) == 1:
-        return bits[0]
-    # cas partagés parent/enfant : association sur le parent (TAMELA)
-    for c, p in gen_pairs:
-        if c in bits and p in bits:
-            return p
-    return bits[0]
+    left_actors = [act for act in spec["actors"] if act != "API de paiement"]
+    right_actors = [act for act in spec["actors"] if act == "API de paiement"]
+    
+    ys = [0] * len(spec["actors"])
+    
+    # Position left actors
+    nl = len(left_actors)
+    if nl == 1:
+        ly = [TOP + (n_rows - 1) * ROW // 2]
+    elif nl == 2:
+        spread = max((n_rows - 1) * ROW, 160)
+        ly = [TOP + 20, TOP + 20 + spread]
+    else:
+        ly = [TOP + i * ROW for i in range(nl)]
+        
+    l_idx = 0
+    for i, act in enumerate(spec["actors"]):
+        if act != "API de paiement":
+            ys[i] = ly[l_idx]
+            l_idx += 1
+            
+    # Position right actors (at most 1: API de paiement)
+    if right_actors:
+        ry = ly[-1]
+        for i, act in enumerate(spec["actors"]):
+            if act == "API de paiement":
+                ys[i] = ry
+                
+    return ys
 
 
-def _actor_gen(d, child_xy, parent_xy):
-    """Généralisation UML : trait droit enfant → parent + triangle creux au parent."""
-    x1, y1 = child_xy
-    x2, y2 = parent_xy
+def _actor_gen(d, child_actor: dict, parent_actor: dict):
+    # Determine the vertical positions of child and parent to draw from head to text_bottom / head_top
+    if child_actor["y"] > parent_actor["y"]:
+        # Child is below parent: line starts at top of child's head and ends at bottom of parent's text
+        x1, y1 = child_actor["head_top"]
+        x2, y2 = parent_actor["text_bottom"]
+    else:
+        # Child is above parent: line starts at bottom of child's text and ends at top of parent's head
+        x1, y1 = child_actor["text_bottom"]
+        x2, y2 = parent_actor["head_top"]
+
     dx, dy = x1 - x2, y1 - y2
     length = math.hypot(dx, dy) or 1.0
-    ux, uy = dx / length, dy / length  # parent → enfant
+    ux, uy = dx / length, dy / length
     tri_h, tri_w = 18, 10
     ax, ay = x2, y2
     bx, by = x2 + ux * tri_h, y2 + uy * tri_h
@@ -223,16 +252,23 @@ def render_diagram(spec: dict) -> Path:
     gen_pairs = spec.get("actor_gen", [])
     actor_ys = _actor_positions(spec, n_rows)
     bh = max(TOP + (n_rows - 1) * ROW + 60, max(actor_ys) + 120 if actor_ys else 200)
-    bx, by, bw = 145, 38, lay["bw"]
+    bx, by, bw = 200, 38, lay["bw"]
 
-    img = Image.new("RGB", (bx + bw + 50, by + bh + 50), WHITE)
+    # Check if we have a right-side actor
+    has_right_actor = any(act == "API de paiement" for act in spec["actors"])
+    canvas_w = bx + bw + 150 if has_right_actor else bx + bw + 50
+
+    # Image canvas
+    img = Image.new("RGB", (canvas_w, by + bh + 50), WHITE)
     d = ImageDraw.Draw(img)
+    # Draw System Boundary
     d.rectangle((bx, by, bx + bw, by + bh), outline=BLACK, width=2, fill=SYS_FILL)
-    d.text((bx + bw / 2, by + 26), spec["title"], font=FB, fill=BLACK, anchor="ma")
 
     actor_pts = []
     for ai, label in enumerate(spec["actors"]):
-        actor_pts.append(_draw_actor(d, ACTOR_X, actor_ys[ai] - 38, label))
+        on_right = (label == "API de paiement")
+        ax = bx + bw + 87 if on_right else ACTOR_X
+        actor_pts.append(_draw_actor(d, ax, actor_ys[ai] - 38, label, on_right=on_right))
 
     for child, parent in gen_pairs:
         _actor_gen(d, actor_pts[child], actor_pts[parent])
@@ -242,10 +278,21 @@ def render_diagram(spec: dict) -> Path:
         cy = TOP + i * ROW
         ov = _draw_oval(d, lay["main_x"], cy, rx, ry, label)
         povals.append(ov)
-        ai = _actor_for_case(mask, gen_pairs)
-        if ai is not None:
-            lx, ly = actor_pts[ai]
-            d.line((lx, ly, ov["left"], cy), fill=BLACK, width=1)
+        
+        # Link all active actors in mask to this Use Case (respecting generalization)
+        for ai in range(len(spec["actors"])):
+            if mask & (1 << ai):
+                is_child_of_another_in_mask = False
+                for child, parent in gen_pairs:
+                    if ai == child and (mask & (1 << parent)):
+                        is_child_of_another_in_mask = True
+                if is_child_of_another_in_mask:
+                    continue
+                
+                lx, ly = actor_pts[ai]["chest"]
+                on_right = (spec["actors"][ai] == "API de paiement")
+                tx = ov["right"] if on_right else ov["left"]
+                d.line((lx, ly, tx, cy), fill=BLACK, width=1)
 
     if lay["side_x"] is not None:
         for row, label, rx, ry in side:
@@ -284,13 +331,12 @@ MODULES = [
         "auth": False,
         "actors": ["Utilisateur"],
         "primary": [
-            ("S'inscrire", 78, 24, 0b1),
             ("Se connecter", 78, 24, 0b1),
+            ("Se déconnecter", 78, 24, 0b1),
             ("Réinitialiser\nmot de passe", 95, 28, 0b1),
-            ("Modifier profil", 78, 24, 0b1),
         ],
-        "side": [(1, "Vérifier\nidentifiants", 92, 28)],
-        "includes": [(1, 1)],
+        "side": [(0, "Vérifier\nidentifiants", 92, 28)],
+        "includes": [(0, 0)],
     },
     {
         "file": "uc-groupes",
@@ -306,17 +352,17 @@ MODULES = [
     {
         "file": "uc-membres",
         "title": "Module Membres",
-        "actors": ["Utilisateur", "Membre", "Administrateur"],
-        "actor_gen": [(2, 1)],  # Administrateur → Membre
+        "actors": ["Membre", "Administrateur"],
+        "actor_gen": [(1, 0)],  # Administrateur → Membre
         "no_auth": [0],
         "primary": [
-            ("Rejoindre\nun groupe", 95, 28, 0b001),
-            ("Consulter membres", 92, 24, 0b010),
-            ("Demander\nréintégration", 95, 28, 0b010),
-            ("Générer\ninvitation", 95, 28, 0b100),
-            ("Promouvoir membre", 92, 24, 0b100),
-            ("Exclure membre", 88, 24, 0b100),
-            ("Valider\nréintégration", 95, 28, 0b100),
+            ("Rejoindre\nun groupe", 95, 28, 0b01),
+            ("Consulter membres", 92, 24, 0b01),
+            ("Demander\nréintégration", 95, 28, 0b01),
+            ("Générer\ninvitation", 95, 28, 0b10),
+            ("Promouvoir membre", 92, 24, 0b10),
+            ("Exclure membre", 88, 24, 0b10),
+            ("Valider\nréintégration", 95, 28, 0b10),
         ],
     },
     {
@@ -368,7 +414,7 @@ MODULES = [
         "primary": [
             ("Consulter\népargne", 92, 28, 0b01),
             ("Effectuer dépôt", 88, 24, 0b01),
-            ("Effectuer retrait", 88, 24, 0b01),
+            ("Effectuer retrait", 88, 24, 0b10),
             ("Signaler\nmouvement", 92, 28, 0b01),
             ("Ouvrir compte", 88, 24, 0b10),
             ("Auditer\nmouvements", 92, 28, 0b10),
@@ -391,11 +437,11 @@ MODULES = [
     {
         "file": "uc-paiements",
         "title": "Module Paiements",
-        "actors": ["Membre", "Administrateur"],
+        "actors": ["Membre", "Administrateur", "API de paiement"],
         "actor_gen": [(1, 0)],
         "primary": [
-            ("Initier\nMobile Money", 98, 28, 0b11),
-            ("Suivre transaction", 92, 24, 0b11),
+            ("Initier\nMobile Money", 98, 28, 0b101),
+            ("Suivre transaction", 92, 24, 0b101),
         ],
     },
     {

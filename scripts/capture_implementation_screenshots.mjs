@@ -6,6 +6,8 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
 import puppeteer from "puppeteer-core";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -135,25 +137,62 @@ async function shotGroupDetail(page, file, groupUrl) {
   console.log(`  ${file}`);
 }
 
-async function shotMobileMoneyDialog(page, file, cyclesUrl) {
+async function shotMobileMoneyDialog(page, file, cyclesUrl, rubriquesUrl) {
   const dest = path.join(OUT, file);
-  await page.goto(`${BASE}${cyclesUrl}`, { waitUntil: "domcontentloaded", timeout: 90000 });
-  await page.waitForSelector("main", { timeout: 60000 });
-  await wait(3500);
 
-  await clickButtonByText(page, "Payer", { exact: true });
-  await wait(1500);
+  async function captureDialog() {
+    await page.waitForSelector('[role="dialog"]', { timeout: 30000 });
+    await page.waitForSelector("#mm-phone", { timeout: 30000 });
+    await wait(1200);
+    await page.screenshot({ path: dest });
+    console.log(`  ${file}`);
+  }
 
-  await fillInput(page, "#cycle-montant", "5000");
-  await wait(500);
+  async function tryCyclePayment() {
+    await page.goto(`${BASE}${cyclesUrl}`, { waitUntil: "domcontentloaded", timeout: 90000 });
+    await page.waitForSelector("main", { timeout: 60000 });
+    await wait(3500);
 
-  await clickButtonByText(page, "Payer via Mobile Money");
-  await page.waitForSelector('[role="dialog"]', { timeout: 30000 });
-  await page.waitForSelector("#mm-phone", { timeout: 30000 });
-  await wait(1200);
+    const payerTab = await page.evaluate(() => {
+      const buttons = [...document.querySelectorAll("button")];
+      const match = buttons.find((btn) => btn.textContent?.replace(/\s+/g, " ").trim() === "Payer");
+      if (!match) return false;
+      match.click();
+      return true;
+    });
 
-  await page.screenshot({ path: dest });
-  console.log(`  ${file}`);
+    if (!payerTab) throw new Error("Onglet Payer indisponible sur le cycle");
+
+    await wait(1200);
+    const montantInput = await page.$("#cycle-montant");
+    if (!montantInput) throw new Error("Formulaire de paiement cycle absent");
+    await fillInput(page, "#cycle-montant", "5000");
+    await wait(800);
+    await clickButtonByText(page, "Payer via Mobile Money");
+    await captureDialog();
+  }
+
+  async function tryRubriquePayment() {
+    await page.goto(`${BASE}${rubriquesUrl}`, { waitUntil: "domcontentloaded", timeout: 90000 });
+    await page.waitForSelector("main", { timeout: 60000 });
+    await wait(4000);
+    const clicked = await page.evaluate(() => {
+      const buttons = [...document.querySelectorAll("button")];
+      const pay = buttons.find((btn) => btn.textContent?.includes("Payer via Mobile Money"));
+      if (!pay || pay.disabled) return false;
+      pay.click();
+      return true;
+    });
+    if (!clicked) throw new Error("Bouton Payer via Mobile Money indisponible sur les rubriques");
+    await captureDialog();
+  }
+
+  try {
+    await tryCyclePayment();
+  } catch (cycleError) {
+    console.error(`  Cycle : ${cycleError.message} — tentative rubriques…`);
+    await tryRubriquePayment();
+  }
 }
 
 async function waitHydrated(page) {
@@ -163,17 +202,9 @@ async function waitHydrated(page) {
 
 async function fillInput(page, selector, value) {
   await page.waitForSelector(selector);
-  await page.$eval(
-    selector,
-    (el, val) => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-      if (setter) setter.call(el, val);
-      else el.value = val;
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    },
-    value,
-  );
+  await page.click(selector, { clickCount: 3 });
+  await page.keyboard.press("Backspace");
+  await page.type(selector, String(value), { delay: 25 });
 }
 
 async function loginViaForm(page, email, password) {
@@ -191,14 +222,55 @@ async function loginViaForm(page, email, password) {
   await wait(2500);
 }
 
+async function authenticateViaMagicLink(page, email) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !serviceKey) {
+    throw new Error("Variables Supabase admin manquantes pour le magic link.");
+  }
+  const admin = createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+  if (error) throw new Error(error.message);
+  const tokenHash = data.properties?.hashed_token;
+  if (!tokenHash) throw new Error("Token magic link introuvable.");
+  const confirmUrl = new URL("/auth/confirm", BASE);
+  confirmUrl.searchParams.set("token_hash", tokenHash);
+  confirmUrl.searchParams.set("type", "magiclink");
+  confirmUrl.searchParams.set("next", "/dashboard");
+  await page.goto(confirmUrl.toString(), { waitUntil: "networkidle2", timeout: 120000 });
+  await wait(2000);
+}
+
 async function authenticate(page, email, password) {
-  await loginViaForm(page, email, password);
+  if (password) {
+    try {
+      await loginViaForm(page, email, password);
+      return;
+    } catch (e) {
+      console.error(`  Connexion par mot de passe échouée : ${e.message}`);
+    }
+  }
+  console.error("  Connexion via magic link (compte réel)…");
+  await authenticateViaMagicLink(page, email);
+  if (!page.url().includes("/dashboard")) {
+    await page.waitForFunction(
+      () => window.location.pathname.startsWith("/dashboard"),
+      { timeout: 120000 },
+    );
+  }
+  await wait(2500);
 }
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
 
-  const only = process.env.CAPTURE_ONLY?.split(",")
+  const only = (process.env.CAPTURE_ONLY?.split(",") ?? [])
     .map((s) => s.trim().replace(/\.png$/, "").replace(/^capture-/, ""))
     .filter(Boolean);
   const wants = (name) => {
@@ -221,6 +293,7 @@ async function main() {
   const { email, password, groupId, cycleId } = creds ?? {};
   const g = groupId ? `/dashboard/groups/${groupId}` : "";
   const cyclesUrl = cycleId ? `${g}/cycles/${cycleId}` : `${g}/cycles`;
+  const rubriquesUrl = `${g}/rubriques`;
 
   const browser = await puppeteer.launch({
     executablePath: CHROME,
@@ -294,7 +367,7 @@ async function main() {
     }
 
     if (wants("capture-paiements")) {
-      await shotMobileMoneyDialog(page, "capture-paiements.png", cyclesUrl);
+      await shotMobileMoneyDialog(page, "capture-paiements.png", cyclesUrl, rubriquesUrl);
     }
   } finally {
     await browser.close();

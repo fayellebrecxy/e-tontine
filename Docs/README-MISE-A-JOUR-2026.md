@@ -6,6 +6,8 @@ Les fichiers actualises a utiliser pour le memoire sont :
 - `cahier-de-charge-E-TONTINE-actualise-2026.md` : source texte editable du cahier actualise.
 - `MLD-E-TONTINE-actualise.md` : modele logique de donnees aligne sur le schema Prisma actuel.
 - `diagrammes-uml-e-tontine-actualises.md` : tous les diagrammes UML dans un seul document Mermaid.
+- `organigramme_fonctionnel.png` : organigramme fonctionnel détaillant la structure modulaire de l'application E-Tontine.
+- `analyse_fonctionnement_etontine.md` : document d'analyse détaillée du fonctionnement technique et fonctionnel de l'application de fond en comble.
 - `diagrammes-academiques-e-tontine/*.png` : diagrammes UML propres, lisibles et prets a inserer dans le memoire.
 - `diagrammes-academiques-e-tontine/index.html` : page de consultation rapide des diagrammes academiques.
 - `diagrammes-drawio-e-tontine/*.drawio` : versions ouvrables avec Draw.io / diagrams.net.

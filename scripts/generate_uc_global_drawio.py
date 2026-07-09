@@ -217,7 +217,13 @@ def _draw_actor(d: ImageDraw.ImageDraw, x, y, label, font_label):
     for line in label.split("\n"):
         d.text((x, ty), line, font=font_label, fill=BLACK, anchor="ma")
         ty += font_label.size + 2
-    return x + 14, y + 36
+    return {
+        "chest": (x + 14, y + 36),
+        "head_top": (x, y),
+        "feet_bottom": (x, y + 66),
+        "text_bottom": (x, ty),
+        "y": y
+    }
 
 
 def _assoc_direct(d: ImageDraw.ImageDraw, ax, ay, o: dict):
@@ -225,10 +231,17 @@ def _assoc_direct(d: ImageDraw.ImageDraw, ax, ay, o: dict):
     d.line((ax, ay, o["left"], o["cy"]), fill=BLACK, width=1)
 
 
-def _actor_generalization(d: ImageDraw.ImageDraw, child_xy, parent_xy):
-    """Généralisation UML : trait droit + triangle creux au parent."""
-    x1, y1 = child_xy
-    x2, y2 = parent_xy
+def _actor_generalization(d: ImageDraw.ImageDraw, child_actor: dict, parent_actor: dict):
+    # Determine the vertical positions of child and parent to draw from head to text_bottom / head_top
+    if child_actor["y"] > parent_actor["y"]:
+        # Child is below parent: line starts at top of child's head and ends at bottom of parent's text
+        x1, y1 = child_actor["head_top"]
+        x2, y2 = parent_actor["text_bottom"]
+    else:
+        # Child is above parent: line starts at bottom of child's text and ends at top of parent's head
+        x1, y1 = child_actor["text_bottom"]
+        x2, y2 = parent_actor["head_top"]
+
     dx, dy = x1 - x2, y1 - y2
     length = math.hypot(dx, dy) or 1.0
     ux, uy = dx / length, dy / length
@@ -268,11 +281,11 @@ def render_tamela_png(target: Path):
     _actor_generalization(d, actor_pts[ACTOR_GEN[0]], actor_pts[ACTOR_GEN[1]])
 
     for idx in ADMIN_LINKS:
-        _assoc_direct(d, *actor_pts[0], cases[idx])
+        _assoc_direct(d, *actor_pts[0]["chest"], cases[idx])
     for idx in MEMBER_LINKS:
-        _assoc_direct(d, *actor_pts[1], cases[idx])
+        _assoc_direct(d, *actor_pts[1]["chest"], cases[idx])
     for idx in GUEST_LINKS:
-        _assoc_direct(d, *actor_pts[2], cases[idx])
+        _assoc_direct(d, *actor_pts[2]["chest"], cases[idx])
 
     for ext_i, base_i in EXTENDS:
         _extend_relation(d, cases[ext_i], cases[base_i], f_inc)

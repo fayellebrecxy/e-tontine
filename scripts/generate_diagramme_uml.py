@@ -22,12 +22,15 @@ SYS_FILL = (245, 249, 255)
 
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-TITLE = ImageFont.truetype(BOLD, 50)
-SUBTITLE = ImageFont.truetype(BOLD, 34)
-TEXT = ImageFont.truetype(FONT, 28)
-SMALL = ImageFont.truetype(FONT, 23)
-SMALL_BOLD = ImageFont.truetype(BOLD, 23)
-TINY = ImageFont.truetype(FONT, 19)
+TITLE = ImageFont.truetype(BOLD, 60)
+SUBTITLE = ImageFont.truetype(BOLD, 44)
+TEXT = ImageFont.truetype(FONT, 34)
+SMALL = ImageFont.truetype(FONT, 29)
+SMALL_BOLD = ImageFont.truetype(BOLD, 29)
+TINY = ImageFont.truetype(FONT, 24)
+CLASS_TITLE_FONT = ImageFont.truetype(BOLD, 38)
+CLASS_ATTR_FONT = ImageFont.truetype(FONT, 33)
+CLASS_CARD_FONT = ImageFont.truetype(BOLD, 36)
 
 
 def canvas(title: str):
@@ -320,18 +323,18 @@ def class_box(d, name, box, attrs, methods=None):
     methods = methods or []
     x1, y1, x2, y2 = box
     rect(d, box, fill=WHITE)
-    d.line((x1, y1 + 58, x2, y1 + 58), fill=BLACK, width=2)
-    d.text(((x1 + x2) / 2, y1 + 16), name, font=SMALL_BOLD, fill=BLACK, anchor="ma")
-    y = y1 + 78
+    d.line((x1, y1 + 80, x2, y1 + 80), fill=BLACK, width=2)
+    d.text(((x1 + x2) / 2, y1 + 20), name, font=CLASS_TITLE_FONT, fill=BLACK, anchor="ma")
+    y = y1 + 100
     for attr in attrs:
-        d.text((x1 + 22, y), attr, font=SMALL, fill=BLACK)
-        y += 38
+        d.text((x1 + 22, y), attr, font=CLASS_ATTR_FONT, fill=BLACK)
+        y += 52
     if methods:
         d.line((x1, y + 4, x2, y + 4), fill=BLACK, width=2)
         y += 28
         for m in methods:
-            d.text((x1 + 22, y), m, font=SMALL, fill=BLACK)
-            y += 38
+            d.text((x1 + 22, y), m, font=CLASS_ATTR_FONT, fill=BLACK)
+            y += 44
 
 
 def class_assoc(d, p1, p2, c1, c2):
@@ -341,41 +344,106 @@ def class_assoc(d, p1, p2, c1, c2):
     d.text((mx, my), f"{c1}    {c2}", font=SMALL_BOLD, fill=BLACK, anchor="ma")
 
 
+def draw_association_large(d, points: list[tuple[int, int]], card_start: str, card_end: str):
+    # Draw segments
+    for i in range(len(points) - 1):
+        d.line((points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]), fill=BLACK, width=3)
+    
+    # Fonts for cardinalities
+    f_card = CLASS_CARD_FONT
+    
+    # Place card_start
+    p0 = points[0]
+    p1 = points[1]
+    if p1[0] > p0[0]:  # Right
+        d.text((p0[0] + 12, p0[1] - 8), card_start, font=f_card, fill=BLACK, anchor="lb")
+    elif p1[0] < p0[0]:  # Left
+        d.text((p0[0] - 12, p0[1] - 8), card_start, font=f_card, fill=BLACK, anchor="rb")
+    elif p1[1] > p0[1]:  # Down
+        d.text((p0[0] + 12, p0[1] + 8), card_start, font=f_card, fill=BLACK, anchor="lt")
+    else:  # Up
+        d.text((p0[0] + 12, p0[1] - 8), card_start, font=f_card, fill=BLACK, anchor="lb")
+
+    # Place card_end
+    pn = points[-1]
+    pn_1 = points[-2]
+    if pn[0] > pn_1[0]:  # Right
+        d.text((pn[0] - 12, pn[1] - 8), card_end, font=f_card, fill=BLACK, anchor="rb")
+    elif pn[0] < pn_1[0]:  # Left
+        d.text((pn[0] + 12, pn[1] - 8), card_end, font=f_card, fill=BLACK, anchor="lb")
+    elif pn[1] > pn_1[1]:  # Down
+        d.text((pn[0] + 12, pn[1] - 8), card_end, font=f_card, fill=BLACK, anchor="lb")
+    else:  # Up
+        d.text((pn[0] + 12, pn[1] + 8), card_end, font=f_card, fill=BLACK, anchor="lt")
+
 def class_diagram_global():
-    img, d = canvas("Diagramme de classes — Modele metier E-Tontine")
-    # Disposition en colonnes pour limiter les croisements
+    w, h = 3300, 1500
+    img = Image.new("RGB", (w, h), WHITE)
+    d = ImageDraw.Draw(img)
+
+    # Cadre extérieur
+    d.rectangle((15, 15, w - 15, h - 15), outline=BLACK, width=4)
+
     boxes = {
-        "User": (80, 300, 500, 560, ["- id_user: UUID", "- nom: String", "- prenom: String", "- email: String", "- telephone: String"]),
-        "MembreGroupe": (620, 300, 1080, 620, ["- id_membre_groupe: UUID", "- role: RoleMembre", "- statut_adhesion: StatutAdhesion", "- statut_visuel: StatutVisuel"]),
-        "Groupes": (1200, 300, 1640, 560, ["- id_groupe: UUID", "- nom: String", "- devise: String", "- lien_invitation: String"]),
-        "CycleTontine": (1800, 280, 2280, 620, ["- id_cycle: UUID", "- montant_cotisation: Decimal", "- duree_tour_de_gain: Int", "- mode_penalite: ModePenalite"]),
-        "Cotisations": (1800, 880, 2280, 1180, ["- id_cotisation: UUID", "- montant: Decimal", "- numero_tour: Int", "- date_echeance: DateTime"]),
-        "RubriqueCotisation": (620, 880, 1080, 1180, ["- id_rubrique: UUID", "- nom: String", "- montant_fixe: Decimal", "- type_rubrique: TypeRubrique"]),
-        "Reunion": (1200, 880, 1640, 1180, ["- id_reunion: UUID", "- titre: String", "- date_reunion: DateTime", "- montant_amende: Decimal"]),
-        "CompteEpargne": (620, 1420, 1080, 1720, ["- id_compte: UUID", "- numero_compte: String", "- solde_actuel: Decimal", "- statut: StatutCompteEpargne"]),
-        "Pret": (80, 1420, 500, 1760, ["- id_pret: UUID", "- montant: Decimal", "- statut: StatutPret", "- taux_interet: Decimal"]),
-        "CaisseFinanciere": (1800, 1420, 2280, 1720, ["- id_caisse: UUID", "- type_caisse: TypeCaisse", "- solde_actuel: Decimal"]),
-        "MouvementFinancier": (2440, 1420, 2980, 1760, ["- id_mouvement: UUID", "- source: SourceMouvement", "- montant: Decimal", "- solde_apres: Decimal"]),
-        "PaymentTransaction": (2440, 880, 2980, 1180, ["- id_transaction: UUID", "- statut: StatutPaiement", "- montant: Decimal", "- operateur: OperateurMM"]),
+        "User": (120, 150, 600, 550, ["- id_user: UUID", "+ nom: String", "+ prenom: String", "- email: String", "- telephone: String"]),
+        "MembreGroupe": (720, 150, 1280, 550, ["- id_membre_groupe: UUID", "- role: RoleMembre", "- statut_adhesion: StatutAdhesion", "- statut_visuel: StatutVisuel"]),
+        "Groupes": (1380, 150, 1880, 550, ["- id_groupe: UUID", "+ nom: String", "+ devise: String", "- lien_invitation: String"]),
+        "CycleTontine": (1980, 150, 2520, 550, ["- id_cycle: UUID", "+ montant_cotisation: Decimal", "+ duree_tour_de_gain: Int", "+ mode_penalite: ModePenalite"]),
+        "Cotisations": (2620, 150, 3180, 550, ["- id_cotisation: UUID", "+ montant: Decimal", "+ numero_tour: Int", "+ date_echeance: DateTime"]),
+        
+        "Pret": (120, 850, 600, 1250, ["- id_pret: UUID", "+ montant: Decimal", "- statut: StatutPret", "+ taux_interet: Decimal"]),
+        "CompteEpargne": (720, 850, 1280, 1250, ["- id_compte: UUID", "- numero_compte: String", "- solde_actuel: Decimal", "- statut: StatutCompteEpargne"]),
+        "Reunion": (1380, 850, 1880, 1250, ["- id_reunion: UUID", "+ titre: String", "+ date_reunion: DateTime", "+ montant_amende: Decimal"]),
+        "RubriqueCotisation": (1980, 850, 2520, 1250, ["- id_rubrique: UUID", "+ nom: String", "+ montant_fixe: Decimal", "+ type_rubrique: TypeRubrique"]),
+        "CaisseFinanciere": (2620, 850, 3180, 1250, ["- id_caisse: UUID", "+ type_caisse: TypeCaisse", "- solde_actuel: Decimal"]),
     }
+
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         class_box(d, name, (x1, y1, x2, y2), attrs)
 
-    class_assoc(d, (500, 430), (620, 430), "1", "0..*")
-    class_assoc(d, (1080, 430), (1200, 430), "0..*", "1")
-    class_assoc(d, (1640, 430), (1800, 430), "1", "0..*")
-    class_assoc(d, (2040, 620), (2040, 880), "1", "0..*")
-    class_assoc(d, (1420, 560), (850, 880), "1", "0..*")
-    class_assoc(d, (1420, 560), (1420, 880), "1", "0..*")
-    class_assoc(d, (850, 620), (850, 1420), "1", "0..1")
-    class_assoc(d, (1420, 560), (290, 1420), "1", "0..*")
-    class_assoc(d, (1420, 560), (2040, 1420), "1", "1..*")
-    class_assoc(d, (2280, 1570), (2440, 1570), "1", "0..*")
-    class_assoc(d, (1420, 560), (2710, 880), "1", "0..*")
+    # 1. User -> MembreGroupe
+    draw_association_large(d, [(600, 280), (720, 280)], "1", "0..*")
+    # 2. Groupes -> MembreGroupe
+    draw_association_large(d, [(1380, 280), (1280, 280)], "1", "1..*")
+    
+    # 3. Groupes -> CycleTontine
+    draw_association_large(d, [(1880, 280), (1980, 280)], "1", "0..*")
+    
+    # 4. CycleTontine -> Cotisations
+    draw_association_large(d, [(2520, 280), (2620, 280)], "1", "0..*")
+    
+    # 5. MembreGroupe -> CompteEpargne
+    draw_association_large(d, [(1000, 550), (1000, 850)], "1", "0..1")
+    
+    # 6. Groupes -> Reunion
+    draw_association_large(d, [(1630, 550), (1630, 850)], "1", "0..*")
+    
+    # 7. MembreGroupe -> Pret (Orthogonal)
+    draw_association_large(d, [(850, 550), (850, 660), (360, 660), (360, 850)], "1", "0..*")
+    # 8. Groupes -> RubriqueCotisation (Orthogonal)
+    draw_association_large(d, [(1750, 550), (1750, 660), (2250, 660), (2250, 850)], "1", "0..*")
 
-    d.text((W // 2, H - 70), "Associations avec cardinalites — niveau analyse UML (attributs principaux du schema Prisma)",
-           font=SMALL, fill=BLACK, anchor="ma")
-    save(img, "CLASSES-diagramme-global.png")
+    # 9. Groupes -> CaisseFinanciere (Orthogonal)
+    draw_association_large(d, [(1830, 550), (1830, 600), (2900, 600), (2900, 850)], "1", "1..*")
+
+    # Save to all three locations
+    docs_dir = Path(__file__).resolve().parent.parent / "Docs"
+    
+    # 1. Docs/diagrame-de-classe-e-tontine.png
+    img.save(docs_dir / "diagrame-de-classe-e-tontine.png", quality=95, optimize=True)
+    print(f"Généré dans Docs : {docs_dir / 'diagrame-de-classe-e-tontine.png'}")
+
+    # 2. Docs/diagramme de conception 2/diagramme-classes.png
+    conception_dir = docs_dir / "diagramme de conception 2"
+    conception_dir.mkdir(parents=True, exist_ok=True)
+    img.save(conception_dir / "diagramme-classes.png", quality=95, optimize=True)
+    print(f"Généré dans Conception 2 : {conception_dir / 'diagramme-classes.png'}")
+
+    # 3. Docs/Diagramme/CLASSES-diagramme-global.png
+    diagramme_dir = docs_dir / "Diagramme"
+    diagramme_dir.mkdir(parents=True, exist_ok=True)
+    img.save(diagramme_dir / "CLASSES-diagramme-global.png", quality=95, optimize=True)
+    print(f"Généré dans Diagramme : {diagramme_dir / 'CLASSES-diagramme-global.png'}")
 
 
 # ─── Modules ─────────────────────────────────────────────────────────────────

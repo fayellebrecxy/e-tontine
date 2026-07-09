@@ -117,7 +117,10 @@ def render() -> Path:
     f_title = _font(22, bold=True)
     f_lbl = _font(11)
 
-    d.text((W / 2, 36), "Diagramme de contexte — E-Tontine", font=f_title, fill=BLACK, anchor="mm")
+    # Draw border rectangle around the diagram
+    d.rectangle((20, 20, W - 20, H - 20), outline=BLACK, width=2)
+
+    d.text((W / 2, 56), "Diagramme de contexte — E-Tontine", font=f_title, fill=BLACK, anchor="mm")
 
     system = _box_edges(700, 460, 400, 200)
     _draw_box(

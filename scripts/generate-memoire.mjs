@@ -300,6 +300,11 @@ function chapter1PartI1() {
     justify(i12Intro, { after: 160 }),
     justify(i12P1, { after: 200 }),
     justify(i12P2, { after: 240 }),
+    ...figureBlock(
+      path.join(DOCS, "organigramme.png"),
+      "Organigramme de fonctionnement de l'application E-Tontine",
+      500
+    ),
     heading("I.1.3 Unité de stage", HeadingLevel.HEADING_3),
     justify(i13Intro, { after: 160 }),
     justify(i13P1, { after: 200 }),
@@ -516,6 +521,233 @@ function chapter1Conclusion() {
   ];
 }
 
+function chapter2() {
+  const diagDir = path.join(DOCS, "diagramme de conception 2");
+  
+  return [
+    heading("CHAPITRE II : METHODOLOGIE DE CONCEPTION ET SPECIFICATION DES BESOINS ET CONCEPTION TECHNIQUE", HeadingLevel.HEADING_1),
+    
+    heading("II.1 Méthodologie de conception", HeadingLevel.HEADING_2),
+    justify(
+      "La conception d'une solution informatique robuste et adaptée aux réalités complexes des tontines communautaires exige l'adoption d'une méthodologie structurée. E-Tontine a été modélisée selon le processus 2TUP (2 Tracks Unified Process), un processus unifié qui sépare le développement en deux branches : une branche fonctionnelle (étude des besoins et modélisation des cas d'utilisation) et une branche technique (conception de l'architecture et choix de la stack technologique). Les besoins du système ont été modélisés à l'aide du langage standard UML (Unified Modeling Language)."
+    ),
+    
+    heading("II.2 Spécification des besoins", HeadingLevel.HEADING_2),
+    justify(
+      "Cette section détaille l'identification des acteurs du système et la spécification des exigences fonctionnelles nécessaires pour couvrir l'intégralité du cycle de vie d'une tontine."
+    ),
+    
+    heading("II.2.1 Identification et description des acteurs du système", HeadingLevel.HEADING_3),
+    justify(
+      "Afin de définir précisément la portée de l'application, nous avons identifié les principaux acteurs qui interagissent avec la plateforme :"
+    ),
+    bulletItem(
+      "Visiteur : tout utilisateur non connecté accédant à la page d'accueil ou à un lien d'invitation pour rejoindre un groupe."
+    ),
+    bulletItem(
+      "Membre : utilisateur enregistré ayant rejoint un ou plusieurs groupes. Il peut cotiser, épargner, faire des demandes de prêts, planifier ou participer à des réunions et consulter ses transactions."
+    ),
+    bulletItem(
+      "Administrateur : membre ayant créé le groupe ou ayant reçu des droits administratifs. Il gère les paramètres du groupe, valide les adhésions, configure les cycles de tontine et les rubriques, valide les demandes de prêts, enregistre les présences aux réunions et effectue les opérations de caisse."
+    ),
+    bulletItem(
+      "Opérateur Mobile Money / Système Externe : passerelle externe permettant d'exécuter et de valider les transactions financières par push USSD."
+    ),
+    
+    heading("II.3 CONCEPTION", HeadingLevel.HEADING_2),
+    justify(
+      "La conception technique d'E-Tontine traduit les besoins fonctionnels et non fonctionnels identifiés en une architecture logicielle concrète, modélisée sous forme statique et dynamique pour assurer la robustesse, la flexibilité et la sécurité du système."
+    ),
+    
+    heading("II.3.1 Architecture système", HeadingLevel.HEADING_3),
+    justify(
+      "Cette section présente l'architecture matérielle et applicative globale de la plateforme, justifiant les choix technologiques et la répartition des responsabilités au sein du système."
+    ),
+    
+    heading("II.3.1.1 Choix et description de l'architecture (Tiers / MVC)", HeadingLevel.HEADING_4),
+    justify(
+      "L'architecture système d'E-Tontine adopte un modèle 3-tiers (Présentation, Application, Données) intégré de manière monolithique et modulaire au sein du framework Next.js. Le système est structuré autour de trois couches logiques :"
+    ),
+    bulletItem(
+      "Tier Présentation (Interface Client) : Construit avec React et Tailwind CSS, il s'exécute côté client (navigateur) pour capter les actions de l'utilisateur, valider localement les entrées via react-hook-form et Zod, et effectuer le rendu dynamique des données."
+    ),
+    bulletItem(
+      "Tier Application (Serveur Next.js) : Il regroupe les API Routes REST et les Server Actions. Cette couche applique les règles métier, gère la session utilisateur via Supabase Auth SSR, valide les données de manière stricte côté serveur avec Zod, et orchestre les intégrations tierces (SMTP pour les courriels, API opérateurs pour Mobile Money)."
+    ),
+    bulletItem(
+      "Tier Données (Persistance) : Il s'appuie sur le client Prisma ORM pour communiquer avec la base de données relationnelle PostgreSQL hébergée sur Supabase. Cette couche garantit l'intégrité référentielle et transactionnelle de toutes les opérations comptables."
+    ),
+    
+    heading("II.3.1.2 Insertion et interprétation du schéma d'architecture système", HeadingLevel.HEADING_4),
+    justify(
+      "Le schéma ci-dessous illustre l'organisation physique et logique de ces différentes couches ainsi que la circulation des requêtes et réponses entre l'appareil du membre, le serveur d'application Next.js, le service d'authentification de Supabase et la base de données PostgreSQL."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "architecture-systeme.png"),
+      "Schéma de l'architecture système 3-tiers d'E-Tontine",
+      500
+    ),
+    
+    heading("II.3.2 Diagrammes de séquence détaillés (Conception dynamique)", HeadingLevel.HEADING_3),
+    justify(
+      "Les diagrammes de séquence détaillés (DSD) traduisent la dynamique interne d'E-Tontine en illustrant la séquence chronologique des messages échangés entre les couches de l'application (Client, Next.js API, Prisma, Supabase Auth, et la base de données) lors de l'exécution des principales fonctionnalités."
+    ),
+    
+    // 1. Se connecter
+    heading("II.3.2.1 Diagramme de séquence détaillé — « Se connecter »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme montre les échanges entre l'utilisateur, le formulaire de connexion (LoginForm), la fonction d'authentification backend (login) et le modèle d'utilisateur en base de données (User). L'utilisateur saisit ses identifiants et valide le formulaire, qui transmet la requête d'authentification au serveur. Le serveur vérifie alors les informations auprès du modèle utilisateur. Dans le cas d'une session valide, le profil utilisateur est renvoyé, le système redirige l'utilisateur vers son tableau de bord et affiche son espace personnel. Dans le cas d'identifiants invalides, le système retourne une erreur et affiche un message d'échec à l'écran."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-se-connecter.png"),
+      "Diagramme de séquence détaillé — Se connecter",
+      500
+    ),
+    
+    // 2. Créer groupe
+    heading("II.3.2.2 Diagramme de séquence détaillé — « Créer groupe »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme illustre le processus de création de groupe impliquant l'administrateur, le formulaire de création (CreateGroupForm), la route API backend (api/groups) et la table des groupes en base de données. L'administrateur remplit et valide le formulaire, qui envoie une requête de création. Le serveur reçoit cette demande et crée le groupe en y rattachant l'administrateur. En cas de succès, l'enregistrement est validé, les informations du groupe sont renvoyées et l'utilisateur est redirigé vers l'espace du groupe. En cas de données invalides ou de contraintes non respectées, la requête est rejetée, un code d'erreur est retourné et le formulaire affiche les messages de validation."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-creer-groupe.png"),
+      "Diagramme de séquence détaillé — Créer groupe",
+      500
+    ),
+    
+    // 3. Rejoindre groupe
+    heading("II.3.2.3 Diagramme de séquence détaillé — « Rejoindre groupe »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme présente l'adhésion d'un membre à un groupe existant via le formulaire de saisie du code (JoinInvitationForm), la route API d'invitation (api/invitations/[code]/join) et la table d'association (MembreGroupe). Le membre valide le formulaire avec le code reçu. Le système vérifie ensuite si le code d'invitation est valide. Si l'invitation est valide, l'adhésion du membre est créée, l'invitation est marquée comme utilisée et le système confirme le succès en redirigeant le membre. Si l'invitation est expirée ou invalide, un code d'erreur est renvoyé et l'interface affiche une erreur."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-rejoindre-groupe.png"),
+      "Diagramme de séquence détaillé — Rejoindre groupe",
+      500
+    ),
+    
+    // 4. Créer cycle
+    heading("II.3.2.4 Diagramme de séquence détaillé — « Créer cycle »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme décrit la planification d'un cycle de cotisations entre l'administrateur, le formulaire de cycle (CreateCycleForm), la route API (api/groups/[id]/cycles) et le modèle de base de données (CycleTontine). L'administrateur saisit les paramètres du cycle (montant, nombre de tours) et valide. L'API vérifie d'abord si l'utilisateur possède bien le rôle d'administrateur. Si l'accès est autorisé, le cycle et l'ordre de passage des participants sont enregistrés en base de données, les informations du cycle sont retournées et affichées. Si l'utilisateur n'est pas autorisé, le serveur retourne une erreur d'accès refusé et l'interface affiche un message indiquant des droits insuffisants."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-creer-cycles.png"),
+      "Diagramme de séquence détaillé — Créer cycle",
+      500
+    ),
+    
+    // 5. Créer rubrique
+    heading("II.3.2.5 Diagramme de séquence détaillé — « Créer rubrique »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme détaille la mise en place d'une rubrique de cotisation spécifique, mettant en relation l'administrateur, l'assistant de création (RubriqueAssistant), l'action de création backend (api/groups/[id]/rubriques) et le modèle de données (RubriqueCotisation). L'administrateur remplit le formulaire et valide. Le système backend vérifie ses droits d'administrateur et crée la rubrique en l'associant à une caisse financière dédiée. Si l'opération réussit, la confirmation est renvoyée et la nouvelle rubrique apparaît à l'écran. En cas d'erreur ou d'absence d'autorisation, un message d'échec est renvoyé et affiché sur l'interface."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-creer-rubrique.png"),
+      "Diagramme de séquence détaillé — Créer rubrique",
+      500
+    ),
+    
+    // 6. Planifier réunion
+    heading("II.3.2.6 Diagramme de séquence détaillé — « Planifier réunion »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme montre les interactions entre l'administrateur, le formulaire de planification (CreateReunionSheet), la route API (api/groups/[id]/reunions) et l'entité de réunion en base de données (Reunion). L'administrateur soumet les détails de la réunion. L'API valide son rôle d'administrateur et la validité de la date choisie. Si la date est valide, la réunion est enregistrée, les invitations sont expédiées par courrier électronique aux membres et la confirmation est affichée. Si les informations saisies sont incorrectes ou si la date est déjà passée, un code d'erreur est retourné et le message correspondant s'affiche."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-planifier-reunion.png"),
+      "Diagramme de séquence détaillé — Planifier réunion",
+      500
+    ),
+    
+    // 7. Ouvrir compte épargne
+    heading("II.3.2.7 Diagramme de séquence détaillé — « Ouvrir compte épargne »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme illustre le processus d'ouverture de compte d'épargne individuelle pour le membre via l'interface d'action (CreateAccountActions), la route API (api/groups/[id]/epargne/accounts) et le modèle de données (CompteEpargne). Le membre clique sur le bouton de création. Le système backend vérifie d'abord que ce membre ne possède pas déjà un compte d'épargne ouvert dans ce groupe. Si aucun compte n'est trouvé, le compte est créé avec un solde à zéro, ses détails sont retournés et le compte s'affiche à l'écran. Si un compte existe déjà, le système renvoie une erreur de conflit et affiche que le compte est déjà actif."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-ouvrir-compte-epargne.png"),
+      "Diagramme de séquence détaillé — Ouvrir compte épargne",
+      500
+    ),
+    
+    // 8. Demander prêt
+    heading("II.3.2.8 Diagramme de séquence détaillé — « Demander prêt »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme détaille le parcours d'une demande d'emprunt impliquant le membre, le formulaire de demande (DemandePretForm), la route API des prêts (api/groups/[id]/prets) et le modèle en base de données (Pret). Le membre saisit le montant, le motif et ses garants puis valide. Le système backend examine l'éligibilité du membre et la solvabilité de sa demande. Si les conditions sont respectées, le prêt est créé au statut en attente, les garanties sont enregistrées, la confirmation de création est renvoyée et l'interface affiche la demande en attente d'approbation. Si les conditions ne sont pas réunies, le serveur rejette la demande, renvoie une erreur et l'interface en affiche le motif."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-demander-prets.png"),
+      "Diagramme de séquence détaillé — Demander prêt",
+      500
+    ),
+    
+    // 9. Initier paiement Mobile Money
+    heading("II.3.2.9 Diagramme de séquence détaillé — « Initier paiement Mobile Money »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme décrit les interactions lors d'un versement Mobile Money entre le membre, le formulaire de paiement (MobileMoneyCheckout), la route API d'initiation (api/groups/[id]/payments/initiate) et le modèle de transaction (PaymentTransaction). Le membre saisit son numéro et le montant. Le système vérifie la validité du compte saisi. Si le compte est valide, la transaction est créée au statut en attente, le serveur renvoie la confirmation et demande à l'opérateur de déclencher la validation par code secret sur le téléphone de l'utilisateur. En cas de numéro incorrect ou de solde insuffisant, le système retourne une erreur et affiche le message d'échec envoyé par l'opérateur."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-initier-paiement-mobile-money.png"),
+      "Diagramme de séquence détaillé — Initier paiement Mobile Money",
+      500
+    ),
+    
+    // 10. Consulter journal financier
+    heading("II.3.2.10 Diagramme de séquence détaillé — « Consulter journal financier »", HeadingLevel.HEADING_4),
+    justify(
+      "Ce diagramme montre comment un utilisateur accède à l'historique financier via la page des finances (FinancesPage), qui interroge la source de données (Prisma Client) pour lire la table des mouvements d'argent (MouvementFinancier). Lorsque l'utilisateur clique sur l'onglet du journal financier, le système interroge la base de données pour récupérer la liste chronologique des transactions et les soldes des caisses. Ces données financières sont ensuite retournées à l'interface pour alimenter les graphiques et les tableaux récapitulatifs mis à la disposition des membres."
+    ),
+    ...figureBlock(
+      path.join(diagDir, "dsd-consulter-journal-financier.png"),
+      "Diagramme de séquence détaillé — Consulter journal financier",
+      500
+    ),
+    
+    heading("II.3.3 Diagramme de classes (Conception statique)", HeadingLevel.HEADING_3),
+    justify(
+      "Le diagramme de classes modélise la structure statique du système en définissant les entités de données, leurs attributs et les associations qui régissent le fonctionnement de l'application."
+    ),
+    
+    heading("II.3.3.1 Modélisation logique et relations de données", HeadingLevel.HEADING_4),
+    justify(
+      "Ainsi, dans le diagramme de classes présenté ci-dessous, nous constatons que :"
+    ),
+    justify(
+      "Un membre a la possibilité de participer à un ou plusieurs cycles de tontine, d'effectuer des dépôts ou des retraits sur son compte d'épargne individuelle, et de soumettre des demandes d'emprunt garanties par d'autres participants. Ces actions se traduisent par des relations avec les entités CompteEpargne, Pret, AvalistePret, Cotisations et PresenceReunion."
+    ),
+    justify(
+      "L'administrateur, quant à lui, joue un rôle central dans le système : il gère la configuration globale de l'association, planifie les réunions, valide les adhésions des membres, approuve les prêts, et assure le suivi et la prise en charge des entités telles que Groupes, CycleTontine, RubriqueCotisation, Reunion, CaisseFinanciere et MouvementFinancier."
+    ),
+    
+    heading("II.3.3.2 Insertion et interprétation du diagramme de classes", HeadingLevel.HEADING_4),
+    justify(
+      "Le diagramme suivant présente l'intégralité du schéma conçu pour supporter la persistance de l'état de l'application E-Tontine :"
+    ),
+    ...figureBlock(
+      path.join(diagDir, "diagramme-classes.png"),
+      "Diagramme de classes du système E-Tontine",
+      500
+    ),
+    
+    heading("Conclusion", HeadingLevel.HEADING_2, { bold: true }),
+    justify(
+      "En somme, ce chapitre a permis de spécifier les besoins fonctionnels et de concevoir l'architecture technique d'E-Tontine à l'aide de diagrammes UML statiques et dynamiques. Ces modèles guident la phase de réalisation qui sera détaillée dans le chapitre suivant dédié à l'implémentation."
+    ),
+    
+    new Paragraph({ children: [new PageBreak()] }),
+  ];
+}
+
+function generalConclusionSection() {
+  return [
+    heading("CONCLUSION GENERALE ET PERSPECTIVES", HeadingLevel.HEADING_1, { bold: true }),
+    justify(
+      "Dans ce travail, il était question pour nous de mettre sur pied une plateforme web de gestion de tontines communautaires compte tenu du fait que la gestion des tontines au Cameroun rencontre de nombreuses difficultés notamment dans le suivi des caisses, la centralisation des transactions et surtout dans la transparence entre les membres. L’objectif principal étant de centraliser les flux financiers et organisationnels en gérant les cycles de cotisation, l'épargne individuelle, les prêts et les réunions. À travers une étude approfondie des enjeux de la gestion des tontines et un état de l’art des solutions existantes, nous avons identifié les besoins spécifiques de la gestion des associations financières informelles et proposé une solution innovante. Cette solution comprend l’utilisation du processus 2TUP qui part de l’élaboration des diagrammes de cas d’utilisation des différents acteurs intervenant dans notre système jusqu’au déploiement de notre plateforme à travers des technologies modernes. En résultat, nous avons une plateforme web avec des fonctionnalités telles que la gestion automatisée des cycles et des pénalités de retard, le suivi en temps réel du journal financier et la simulation de paiements Mobile Money. À terme, une intégration effective aux API réelles de paiement mobile (MTN et Orange Money) et un système d'alertes par notifications SMS pourraient considérablement améliorer l'accessibilité, la réactivité et la fiabilité de la gestion de ces tontines."
+    ),
+    new Paragraph({ children: [new PageBreak()] }),
+  ];
+}
+
 function referencesSection() {
   const refs = [
     "[1] FRANCE 24. Ancient community banking enters digital age in Cameroon. 12 mars 2024. Disponible sur : https://www.france24.com/en/live-news/20240312-ancient-community-banking-enters-digital-age-in-cameroon (consulté en juin 2026).",
@@ -632,11 +864,10 @@ function sommairePage() {
     { level: 1, text: "CHAPITRE I : PRESENTATION DE L'ENTREPRISE ET ETUDE DE L'EXISTANT" },
     { level: 2, text: "I.1 Presentation de l'entreprise" },
     { level: 2, text: "I.2 Etude de l'existant" },
-    { level: 1, text: "CHAPITRE II : METHODOLOGIE ET CONCEPTION" },
-    { level: 2, text: "II.1 Methodologie" },
-    { level: 2, text: "II.2 Analyse des besoins" },
-    { level: 2, text: "II.3 Diagramme de classes" },
-    { level: 2, text: "II.4 Conception" },
+    { level: 1, text: "CHAPITRE II : METHODOLOGIE DE CONCEPTION, SPECIFICATION DES BESOINS ET CONCEPTION TECHNIQUE" },
+    { level: 2, text: "II.1 Méthodologie de conception" },
+    { level: 2, text: "II.2 Spécification des besoins" },
+    { level: 2, text: "II.3 Conception" },
     { level: 1, text: "CHAPITRE III : IMPLEMENTATION ET PRESENTATION DES RESULTATS" },
     { level: 2, text: "III.1 Diagramme de deploiement" },
     { level: 2, text: "III.2 Environnement de developpement" },
@@ -733,7 +964,7 @@ function introductionGeneralePage() {
       "Chapitre 1 : présentation de l'entreprise et étude de l'existant.",
       "intro-chapters",
     ),
-    bulletItem("Chapitre 2 : méthodologie et conception.", "intro-chapters"),
+    bulletItem("Chapitre 2 : méthodologie de conception, spécification des besoins et conception technique.", "intro-chapters"),
     bulletItem(
       "Chapitre 3 : implémentation et présentation des résultats et enfin la conclusion dans laquelle on fera un bilan de notre travail et on proposera des perspectives d'évolution.",
       "intro-chapters",
@@ -753,6 +984,9 @@ const children = [
   ...chapter1PartI1(),
   ...chapter1PartI2(),
   ...chapter1Conclusion(),
+  ...chapter2(),
+  ...generalConclusionSection(),
+  ...referencesSection(),
 ];
 
 const doc = new Document({

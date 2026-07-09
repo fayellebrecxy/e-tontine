@@ -1,0 +1,2 @@
+"    heading(\"II.3.2 Diagrammes de séquence détaillés\", HeadingLevel.HEADING_3),\n    justify(\"Les diagrammes de séquence détaillés (DSD) traduisent la dynamique interne du système. Ils décrivent chronologiquement la séquence des messages et le
+<truncated 6510 bytes>

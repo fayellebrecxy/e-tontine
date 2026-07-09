@@ -559,21 +559,21 @@ def draw_class_box(d, name, box, attrs):
     d.text(((x1 + x2) / 2, y1 + 18), name, font=SMALL_BOLD, fill=BLACK, anchor="ma")
     y = y1 + 82
     for attr in attrs:
-        d.text((x1 + 28, y), f"- {attr}", font=SMALL, fill=BLACK)
+        d.text((x1 + 28, y), attr, font=SMALL, fill=BLACK)
         y += 44
 
 
 def class_core_diagram():
     img, d = canvas("Diagramme de classes - Noyau tontine")
     boxes = {
-        "User": (100, 300, 560, 610, ["id_user", "nom", "prenom", "email", "telephone"]),
-        "MembreGroupe": (760, 300, 1300, 650, ["id_membre_groupe", "role", "statut_adhesion", "statut_visuel"]),
-        "Groupes": (1500, 300, 1980, 610, ["id_groupe", "nom", "description", "devise"]),
-        "CycleTontine": (2200, 280, 2920, 680, ["id_cycle", "nom_cycle", "montant_cotisation", "duree_tour_de_gain", "mode_penalite"]),
-        "CycleParticipant": (1260, 910, 1860, 1250, ["id_cycle_participant", "ordre", "date_ajout"]),
-        "Cotisations": (2180, 920, 2760, 1260, ["id_cotisation", "montant", "numero_tour", "date_echeance"]),
-        "Penalite": (2180, 1510, 2760, 1810, ["id_penalite", "motif", "montant_final"]),
-        "Versement": (960, 1510, 1540, 1810, ["id_versement", "numero_tour", "montant_verse"]),
+        "User": (100, 300, 560, 610, ["- id_user", "+ nom", "+ prenom", "- email", "- telephone"]),
+        "MembreGroupe": (760, 300, 1300, 650, ["- id_membre_groupe", "- role", "- statut_adhesion", "- statut_visuel"]),
+        "Groupes": (1500, 300, 1980, 610, ["- id_groupe", "+ nom", "+ description", "+ devise"]),
+        "CycleTontine": (2200, 280, 2920, 680, ["- id_cycle", "+ nom_cycle", "+ montant_cotisation", "+ duree_tour_de_gain", "+ mode_penalite"]),
+        "CycleParticipant": (1260, 910, 1860, 1250, ["- id_cycle_participant", "+ ordre", "+ date_ajout"]),
+        "Cotisations": (2180, 920, 2760, 1260, ["- id_cotisation", "+ montant", "+ numero_tour", "+ date_echeance"]),
+        "Penalite": (2180, 1510, 2760, 1810, ["- id_penalite", "+ motif", "+ montant_final"]),
+        "Versement": (960, 1510, 1540, 1810, ["- id_versement", "+ numero_tour", "+ montant_verse"]),
     }
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         draw_class_box(d, name, (x1, y1, x2, y2), attrs)
@@ -597,10 +597,10 @@ def class_core_diagram():
 def class_rubriques_diagram():
     img, d = canvas("Diagramme de classes - Rubriques de cotisation")
     boxes = {
-        "Groupes": (280, 520, 820, 850, ["id_groupe", "nom", "devise"]),
-        "MembreGroupe": (280, 1290, 900, 1630, ["id_membre_groupe", "role", "statut_visuel"]),
-        "RubriqueCotisation": (1420, 420, 2100, 820, ["id_rubrique", "nom", "montant_fixe", "frequence"]),
-        "PaiementRubrique": (1420, 1240, 2100, 1580, ["id_paiement", "montant_paye", "date_paiement"]),
+        "Groupes": (280, 520, 820, 850, ["- id_groupe", "+ nom", "+ devise"]),
+        "MembreGroupe": (280, 1290, 900, 1630, ["- id_membre_groupe", "- role", "- statut_visuel"]),
+        "RubriqueCotisation": (1420, 420, 2100, 820, ["- id_rubrique", "+ nom", "+ montant_fixe", "+ frequence"]),
+        "PaiementRubrique": (1420, 1240, 2100, 1580, ["- id_paiement", "+ montant_paye", "+ date_paiement"]),
     }
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         draw_class_box(d, name, (x1, y1, x2, y2), attrs)
@@ -618,11 +618,11 @@ def class_rubriques_diagram():
 def class_reunions_diagram():
     img, d = canvas("Diagramme de classes - Reunions et presences")
     boxes = {
-        "Groupes": (280, 520, 820, 850, ["id_groupe", "nom", "devise"]),
-        "MembreGroupe": (280, 1290, 900, 1630, ["id_membre_groupe", "role", "statut_visuel"]),
-        "Reunion": (1420, 420, 2100, 820, ["id_reunion", "titre", "date_reunion", "montant_amende"]),
-        "PresenceReunion": (1420, 1240, 2100, 1580, ["id_presence", "statut_presence", "amende_payee"]),
-        "RetraitAmendeReunion": (2440, 1240, 3140, 1580, ["id_retrait_amende", "montant", "motif"]),
+        "Groupes": (280, 520, 820, 850, ["- id_groupe", "+ nom", "+ devise"]),
+        "MembreGroupe": (280, 1290, 900, 1630, ["- id_membre_groupe", "- role", "- statut_visuel"]),
+        "Reunion": (1420, 420, 2100, 820, ["- id_reunion", "+ titre", "+ date_reunion", "+ montant_amende"]),
+        "PresenceReunion": (1420, 1240, 2100, 1580, ["- id_presence", "- statut_presence", "- amende_payee"]),
+        "RetraitAmendeReunion": (2440, 1240, 3140, 1580, ["- id_retrait_amende", "+ montant", "+ motif"]),
     }
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         draw_class_box(d, name, (x1, y1, x2, y2), attrs)
@@ -641,13 +641,13 @@ def class_reunions_diagram():
 def class_epargne_finances_diagram():
     img, d = canvas("Diagramme de classes - Epargne et finances")
     boxes = {
-        "Groupes": (180, 330, 700, 650, ["id_groupe", "nom", "devise"]),
-        "MembreGroupe": (180, 1200, 760, 1540, ["id_membre_groupe", "role", "statut_visuel"]),
-        "CompteEpargne": (1180, 330, 1780, 680, ["id_compte", "numero_compte", "solde_actuel", "statut"]),
-        "MouvementEpargne": (1180, 1200, 1780, 1560, ["id_mouvement", "type_operation", "montant", "solde_apres"]),
-        "SignalementEpargne": (2200, 1200, 2820, 1560, ["id_signalement", "motif", "statut"]),
-        "CaisseFinanciere": (2200, 330, 2820, 700, ["id_caisse", "type_caisse", "solde_actuel"]),
-        "MouvementFinancier": (2200, 1740, 2920, 2100, ["id_mouvement", "source", "montant", "solde_avant", "solde_apres"]),
+        "Groupes": (180, 330, 700, 650, ["- id_groupe", "+ nom", "+ devise"]),
+        "MembreGroupe": (180, 1200, 760, 1540, ["- id_membre_groupe", "- role", "- statut_visuel"]),
+        "CompteEpargne": (1180, 330, 1780, 680, ["- id_compte", "- numero_compte", "- solde_actuel", "- statut"]),
+        "MouvementEpargne": (1180, 1200, 1780, 1560, ["- id_mouvement", "+ type_operation", "+ montant", "- solde_apres"]),
+        "SignalementEpargne": (2200, 1200, 2820, 1560, ["- id_signalement", "+ motif", "- statut"]),
+        "CaisseFinanciere": (2200, 330, 2820, 700, ["- id_caisse", "+ type_caisse", "- solde_actuel"]),
+        "MouvementFinancier": (2200, 1740, 2920, 2100, ["- id_mouvement", "+ source", "+ montant", "- solde_avant", "- solde_apres"]),
     }
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         draw_class_box(d, name, (x1, y1, x2, y2), attrs)
@@ -668,17 +668,17 @@ def class_epargne_finances_diagram():
 def old_class_diagram_removed():
     img, d = canvas("Diagramme de classes simplifie - E-Tontine")
     boxes = {
-        "User": (160, 250, 650, 560, ["id_user", "nom", "prenom", "email", "telephone"]),
-        "MembreGroupe": (840, 250, 1380, 620, ["id_membre_groupe", "role", "statut_adhesion", "statut_visuel"]),
-        "Groupes": (1600, 250, 2120, 560, ["id_groupe", "nom", "description", "devise"]),
-        "CycleTontine": (2350, 250, 3040, 650, ["id_cycle", "nom_cycle", "montant_cotisation", "duree_tour_de_gain", "mode_penalite"]),
-        "Cotisations": (320, 900, 880, 1240, ["id_cotisation", "montant", "numero_tour", "date_echeance"]),
-        "Penalite": (1060, 900, 1580, 1240, ["id_penalite", "motif", "montant_final"]),
-        "Versement": (1760, 900, 2280, 1240, ["id_versement", "numero_tour", "montant_verse"]),
-        "RubriqueCotisation": (2460, 900, 3120, 1260, ["id_rubrique", "nom", "montant_fixe", "frequence"]),
-        "Reunion": (320, 1550, 880, 1880, ["id_reunion", "titre", "date_reunion", "montant_amende"]),
-        "CompteEpargne": (1060, 1550, 1640, 1880, ["id_compte", "numero_compte", "solde_actuel", "statut"]),
-        "MouvementFinancier": (1850, 1550, 2550, 1920, ["id_mouvement", "source", "montant", "solde_avant", "solde_apres"]),
+        "User": (160, 250, 650, 560, ["- id_user", "+ nom", "+ prenom", "- email", "- telephone"]),
+        "MembreGroupe": (840, 250, 1380, 620, ["- id_membre_groupe", "- role", "- statut_adhesion", "- statut_visuel"]),
+        "Groupes": (1600, 250, 2120, 560, ["- id_groupe", "+ nom", "+ description", "+ devise"]),
+        "CycleTontine": (2350, 250, 3040, 650, ["- id_cycle", "+ nom_cycle", "+ montant_cotisation", "+ duree_tour_de_gain", "+ mode_penalite"]),
+        "Cotisations": (320, 900, 880, 1240, ["- id_cotisation", "+ montant", "+ numero_tour", "+ date_echeance"]),
+        "Penalite": (1060, 900, 1580, 1240, ["- id_penalite", "+ motif", "+ montant_final"]),
+        "Versement": (1760, 900, 2280, 1240, ["- id_versement", "+ numero_tour", "+ montant_verse"]),
+        "RubriqueCotisation": (2460, 900, 3120, 1260, ["- id_rubrique", "+ nom", "+ montant_fixe", "+ frequence"]),
+        "Reunion": (320, 1550, 880, 1880, ["- id_reunion", "+ titre", "+ date_reunion", "+ montant_amende"]),
+        "CompteEpargne": (1060, 1550, 1640, 1880, ["- id_compte", "- numero_compte", "- solde_actuel", "- statut"]),
+        "MouvementFinancier": (1850, 1550, 2550, 1920, ["- id_mouvement", "+ source", "+ montant", "- solde_avant", "- solde_apres"]),
     }
     for name, (x1, y1, x2, y2, attrs) in boxes.items():
         rect(d, (x1, y1, x2, y2), fill=WHITE)
@@ -686,7 +686,7 @@ def old_class_diagram_removed():
         d.text(((x1 + x2) / 2, y1 + 18), name, font=SMALL_BOLD, fill=BLACK, anchor="ma")
         y = y1 + 82
         for attr in attrs:
-            d.text((x1 + 28, y), f"- {attr}", font=SMALL, fill=BLACK)
+            d.text((x1 + 28, y), attr, font=SMALL, fill=BLACK)
             y += 44
     def c(a, b, label):
         ax = (boxes[a][0] + boxes[a][2]) // 2
