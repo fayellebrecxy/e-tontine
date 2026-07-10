@@ -43,3 +43,12 @@ next-env.d.ts
 /lib/generated/prisma
 
 /lib/generated/prisma
+ 
+# Ignore large documentation/media files not used by the app
+Docs/**/*.docx
+Docs/**/*.pdf
+Docs/**/*.pptx
+Docs/**/*.mp3
+Docs/**/*.mp4
+Docs/**/*.mov
+Docs/**/media/
