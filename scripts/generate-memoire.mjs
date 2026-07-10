@@ -554,6 +554,19 @@ function chapter2() {
       "Opérateur Mobile Money / Système Externe : passerelle externe permettant d'exécuter et de valider les transactions financières par push USSD."
     ),
     
+    heading("II.2.2 Diagramme de packages fonctionnels", HeadingLevel.HEADING_3),
+    justify(
+      "Le découpage en packages fonctionnels structure l'application E-Tontine en regroupements logiques ou modules métiers cohérents. Cette décomposition facilite la compréhension de l'architecture fonctionnelle de la plateforme en éliminant toute notation technique superflue lors de la phase d'analyse globale."
+    ),
+    ...figureBlock(
+      path.join(DOCS, "diagramme-packages-e-tontine.png"),
+      "Diagramme de packages fonctionnels E-Tontine",
+      500
+    ),
+    justify(
+      "Ce diagramme de packages présente l'organisation modulaire de l'application E-Tontine et les dépendances logiques entre ses composants. L'authentification contrôle l'accès des membres aux différents groupes. Chaque module métier (cycles de cotisation, rubriques secondaires, planification des réunions, épargne individuelle et prêts) fonctionne dans le contexte d'un groupe spécifique. Par ailleurs, le module de prêt s'appuie sur le cycle actif pour ses échéances et utilise l'épargne des membres comme garantie (avalistes). Enfin, toutes les opérations de ces modules transitent par le système de paiement Mobile Money et sont automatiquement enregistrées dans le journal financier, garantissant ainsi la traçabilité comptable et la transparence pour l'ensemble du groupe."
+    ),
+    
     heading("II.3 CONCEPTION", HeadingLevel.HEADING_2),
     justify(
       "La conception technique d'E-Tontine traduit les besoins fonctionnels et non fonctionnels identifiés en une architecture logicielle concrète, modélisée sous forme statique et dynamique pour assurer la robustesse, la flexibilité et la sécurité du système."
